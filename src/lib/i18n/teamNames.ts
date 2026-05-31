@@ -1,0 +1,68 @@
+/**
+ * German display names for national teams, keyed by the English name used by
+ * the data providers (openfootball and football-data.org). Shared by the seed
+ * generator and the live sync adapter so the German UI shows German nation
+ * names from both sources. Unknown names fall back to the provider's name.
+ */
+const GERMAN_TEAM_NAME: Record<string, string> = {
+  Mexico: "Mexiko",
+  "South Africa": "Südafrika",
+  "South Korea": "Südkorea",
+  "Korea Republic": "Südkorea",
+  "Czech Republic": "Tschechien",
+  Czechia: "Tschechien",
+  Canada: "Kanada",
+  "Bosnia & Herzegovina": "Bosnien-Herzegowina",
+  "Bosnia and Herzegovina": "Bosnien-Herzegowina",
+  Qatar: "Katar",
+  Switzerland: "Schweiz",
+  Brazil: "Brasilien",
+  Morocco: "Marokko",
+  Haiti: "Haiti",
+  Scotland: "Schottland",
+  USA: "USA",
+  "United States": "USA",
+  Paraguay: "Paraguay",
+  Australia: "Australien",
+  Turkey: "Türkei",
+  Türkiye: "Türkei",
+  Germany: "Deutschland",
+  Curaçao: "Curaçao",
+  "Ivory Coast": "Elfenbeinküste",
+  "Côte d'Ivoire": "Elfenbeinküste",
+  Ecuador: "Ecuador",
+  Netherlands: "Niederlande",
+  Japan: "Japan",
+  Sweden: "Schweden",
+  Tunisia: "Tunesien",
+  Belgium: "Belgien",
+  Egypt: "Ägypten",
+  Iran: "Iran",
+  "New Zealand": "Neuseeland",
+  Spain: "Spanien",
+  "Cape Verde": "Kap Verde",
+  "Cabo Verde": "Kap Verde",
+  "Saudi Arabia": "Saudi-Arabien",
+  Uruguay: "Uruguay",
+  France: "Frankreich",
+  Senegal: "Senegal",
+  Iraq: "Irak",
+  Norway: "Norwegen",
+  Argentina: "Argentinien",
+  Algeria: "Algerien",
+  Austria: "Österreich",
+  Jordan: "Jordanien",
+  Portugal: "Portugal",
+  "DR Congo": "DR Kongo",
+  "Congo DR": "DR Kongo",
+  Uzbekistan: "Usbekistan",
+  Colombia: "Kolumbien",
+  England: "England",
+  Croatia: "Kroatien",
+  Ghana: "Ghana",
+  Panama: "Panama",
+};
+
+export function germanTeamName(englishName: string): string {
+  return GERMAN_TEAM_NAME[englishName] ?? englishName;
+}
