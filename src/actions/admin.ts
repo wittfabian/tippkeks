@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { invalidateTags } from "@/lib/cache/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { de } from "@/messages/de";
@@ -360,6 +361,9 @@ export async function saveScoringAction(
   });
   if (recomputeError) return { error: de.auth.errorGeneric };
 
+  // Recompute only touched this tenant's scores.
+  await invalidateTags(`leaderboard:${parsed.data.tenantId}`);
+
   revalidatePath(`/${parsed.data.slug}`);
   return { error: null, info: de.admin.scoringSaved };
 }
@@ -458,6 +462,9 @@ export async function overrideResultAction(
     p_fixture: parsed.data.fixtureId,
   });
   if (scoreError) return { error: de.admin.resultError };
+
+  // The fixture result is global; scoring shifts every affected tenant's board.
+  await invalidateTags("tournament", "leaderboard");
 
   await supabase.from("admin_audit_log").insert({
     tenant_id: parsed.data.tenantId,

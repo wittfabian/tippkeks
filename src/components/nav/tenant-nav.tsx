@@ -13,7 +13,6 @@ export function TenantNav({ slug, isAdmin }: { slug: string; isAdmin: boolean })
     { href: base, label: de.nav.dashboard, exact: true },
     { href: `${base}/spiele`, label: de.nav.fixtures, exact: false },
     { href: `${base}/rangliste`, label: de.nav.leaderboard, exact: false },
-    { href: `${base}/profil`, label: de.nav.profile, exact: false },
     ...(isAdmin
       ? [
           { href: `${base}/tipps`, label: de.admin.enterTips, exact: false },

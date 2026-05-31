@@ -16,6 +16,10 @@ const ServerEnvSchema = z.object({
   FOOTBALL_DATA_API_TOKEN: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   FOOTBALL_DATA_COMPETITION: z.preprocess(emptyToUndefined, z.string().min(1).default("WC")),
   CRON_SECRET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  // Valkey/Redis connection for the data cache and rate limiting. Optional: when
+  // absent the cache no-ops (reads fall through to Postgres) and rate limits
+  // fail open, so the app boots fine without it.
+  REDIS_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
 });
 
 export const serverEnv = ServerEnvSchema.parse(process.env);

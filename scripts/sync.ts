@@ -21,7 +21,13 @@ async function main() {
   );
 }
 
-main().catch((error) => {
-  console.error("[sync] failed:", error);
-  process.exitCode = 1;
-});
+main()
+  .catch((error) => {
+    console.error("[sync] failed:", error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    // Close the cache connection so its open socket doesn't keep Node alive.
+    const { closeRedis } = await import("../src/lib/cache/redis");
+    await closeRedis();
+  });

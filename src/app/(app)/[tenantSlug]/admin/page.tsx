@@ -8,6 +8,7 @@ import {
   ScoringForm,
   type ScoringValues,
 } from "@/components/admin/admin-forms";
+import { InviteShare } from "@/components/admin/invite-share";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -229,18 +230,21 @@ async function InvitesTab({
       ) : (
         <ul className="divide-y rounded-md border text-sm">
           {(invites ?? []).map((inv) => (
-            <li key={inv.code} className="flex items-center justify-between gap-2 px-3 py-2">
-              <span className="flex items-center gap-2">
-                <code className="bg-muted rounded px-2 py-0.5 font-mono">{inv.code}</code>
-                {inv.role === "admin" && <Badge>{de.groups.role.admin}</Badge>}
-              </span>
-              <span className="flex items-center gap-3">
-                <span className="text-muted-foreground text-xs">
-                  {de.admin.uses}: {inv.used_count}
-                  {inv.max_uses != null ? `/${inv.max_uses}` : ` (${de.admin.inviteUnlimited})`}
+            <li key={inv.code} className="space-y-2 px-3 py-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2">
+                  <code className="bg-muted rounded px-2 py-0.5 font-mono">{inv.code}</code>
+                  {inv.role === "admin" && <Badge>{de.groups.role.admin}</Badge>}
                 </span>
-                <DeleteInviteButton tenantId={tenantId} slug={slug} code={inv.code} />
-              </span>
+                <span className="flex items-center gap-3">
+                  <span className="text-muted-foreground text-xs">
+                    {de.admin.uses}: {inv.used_count}
+                    {inv.max_uses != null ? `/${inv.max_uses}` : ` (${de.admin.inviteUnlimited})`}
+                  </span>
+                  <DeleteInviteButton tenantId={tenantId} slug={slug} code={inv.code} />
+                </span>
+              </div>
+              <InviteShare code={inv.code} />
             </li>
           ))}
         </ul>

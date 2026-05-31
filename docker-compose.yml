@@ -1,0 +1,24 @@
+# Local Valkey (Redis-compatible) for the data cache + rate limiting.
+#
+#   podman compose up -d        # or: docker compose up -d
+#
+# Then add to .env.local:
+#   REDIS_URL="redis://127.0.0.1:6379"
+#
+# Supabase is NOT here — it is managed by the Supabase CLI (see CLAUDE.md).
+services:
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: tippkeks-valkey
+    # Bound to localhost only — never expose the cache publicly.
+    ports:
+      - "127.0.0.1:6379:6379"
+    # Pure cache: no persistence (RDB + AOF off). The data is rebuildable from
+    # Postgres at any time, so losing it on restart is harmless.
+    command: ["valkey-server", "--save", "", "--appendonly", "no"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5

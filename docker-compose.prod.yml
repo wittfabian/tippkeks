@@ -1,0 +1,112 @@
+# Production compose for TippKeks: Next.js app + Valkey on a PRIVATE network.
+#
+# Valkey publishes NO ports — it is reachable only by the app over the internal
+# network (`redis://valkey:6379`). The app publishes on loopback only; terminate
+# TLS with a reverse proxy on the host (Caddy/nginx/Traefik) upstreaming to it.
+#
+# Bring up (build args + runtime secrets both come from .env.prod):
+#   podman compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+#
+# .env.prod is git-ignored — never commit it. See .env.example for the keys, plus
+# the two runtime-only keys below. Required in .env.prod:
+#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY   (build-time + runtime)
+#   SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET                    (runtime secrets)
+#   FOOTBALL_DATA_API_TOKEN, FOOTBALL_DATA_COMPETITION        (sync)
+#   NEXT_SERVER_ACTIONS_ENCRYPTION_KEY  (openssl rand -base64 32 — keep stable,
+#                                        MANDATORY once you run >1 app replica)
+# REDIS_URL is set here, not in .env.prod, so it points at the compose service.
+
+name: tippkeks
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # NEXT_PUBLIC_* are inlined into the CLIENT bundle at build time, so they
+        # must be present for `--env-file .env.prod` interpolation here.
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    image: tippkeks-app:latest
+    restart: unless-stopped
+    # Runtime secrets are injected into the container (distinct from the
+    # build-arg interpolation above).
+    env_file:
+      - .env.prod
+    environment:
+      # Reach Valkey by service name over the private network.
+      REDIS_URL: "redis://valkey:6379"
+    # Loopback only: a host reverse proxy terminates TLS and upstreams here. If
+    # your proxy is itself a container, drop this and add it to `internal`.
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      valkey:
+        condition: service_healthy
+    networks:
+      - internal
+
+  # Sync scheduler: a tiny curl loop that pokes the secret-protected sync
+  # endpoint over the private network at a fixed cadence. This IS the "container
+  # timer" that POST /api/cron/sync expects — without it, results and the
+  # leaderboard never refresh on their own (you'd be running `pnpm sync` by hand
+  # on match days). The sync is idempotent and cheap, so a short interval is safe;
+  # going below ~2 min buys nothing because the football-data.org free tier is
+  # itself delayed. Tune SYNC_INTERVAL_SECONDS, or `podman compose stop cron`
+  # off-season. See docs/sync-scheduler.md.
+  cron:
+    image: curlimages/curl:8.11.1
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      # Only this one secret crosses into the sidecar (not all of .env.prod). It
+      # is interpolated from the --env-file at compose time and must match the
+      # app's CRON_SECRET, or the endpoint answers 401/404.
+      CRON_SECRET: ${CRON_SECRET}
+      SYNC_URL: "http://app:3000/api/cron/sync"
+      SYNC_INTERVAL_SECONDS: "120"
+      SYNC_STARTUP_DELAY_SECONDS: "15"
+    # `$$` escapes compose interpolation so the shell expands these at runtime;
+    # `${CRON_SECRET}` above is the only value resolved by compose.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "[sync-cron] starting; target=$${SYNC_URL} interval=$${SYNC_INTERVAL_SECONDS}s"
+        sleep "$${SYNC_STARTUP_DELAY_SECONDS}"
+        while true; do
+          code=$$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 \
+            -X POST -H "Authorization: Bearer $${CRON_SECRET}" "$${SYNC_URL}" || echo 000)
+          echo "[sync-cron] $$(date -u +%Y-%m-%dT%H:%M:%SZ) POST -> $${code}"
+          sleep "$${SYNC_INTERVAL_SECONDS}"
+        done
+    networks:
+      - internal
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    # No published ports — private to the compose network. Pure cache: no
+    # persistence, bounded memory with LRU eviction.
+    command:
+      - valkey-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge

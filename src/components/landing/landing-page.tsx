@@ -276,9 +276,17 @@ export function LandingPage() {
 
       <FlagMarquee />
 
-      <footer className="relative z-10 flex items-center justify-center gap-4 px-5 pb-6 text-xs text-white/40">
+      <footer className="relative z-10 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 px-5 pb-6 text-xs text-white/40">
+        <Link href="/info" className="transition hover:text-white/70">
+          {de.legal.footerNav.info}
+        </Link>
+        <span aria-hidden>·</span>
         <Link href="/datenschutz" className="transition hover:text-white/70">
-          {de.landing.privacy}
+          {de.legal.footerNav.privacy}
+        </Link>
+        <span aria-hidden>·</span>
+        <Link href="/impressum" className="transition hover:text-white/70">
+          {de.legal.footerNav.impressum}
         </Link>
         <span aria-hidden>·</span>
         <span>{de.common.poweredBy}</span>

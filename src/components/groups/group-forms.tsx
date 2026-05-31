@@ -19,7 +19,13 @@ export function CreateGroupForm() {
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="slug">{de.groups.slug}</Label>
-        <Input id="slug" name="slug" required pattern="[a-z0-9\-]+" placeholder="z-b-bueroliga" />
+        <Input
+          id="slug"
+          name="slug"
+          required
+          pattern="[a-z0-9\-]+"
+          placeholder={de.groups.slugPlaceholder}
+        />
         <p className="text-muted-foreground text-xs">{de.groups.slugHint}</p>
       </div>
       {state.error && (

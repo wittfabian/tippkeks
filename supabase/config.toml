@@ -235,6 +235,15 @@ otp_length = 6
 # for email delivery while limiting the window a leaked link is usable.
 otp_expiry = 1800
 
+# Custom recovery (password-reset) email. Uses the token_hash flow so the link
+# hits our own /auth/confirm route (verifyOtp) and lands on /passwort-neu.
+# IMPORTANT: configure the SAME template in the hosted Supabase dashboard
+# (Authentication → Email Templates → Reset Password) — config.toml only applies
+# to the local stack.
+[auth.email.template.recovery]
+subject = "Passwort zurücksetzen – TippKeks"
+content_path = "./supabase/templates/recovery.html"
+
 # Use a production-ready SMTP server
 # [auth.email.smtp]
 # enabled = true

@@ -10,17 +10,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { requireMembership } from "@/lib/auth/membership";
+import { getLeaderboard } from "@/lib/data/leaderboard";
 import { cn } from "@/lib/utils";
 import { de } from "@/messages/de";
-
-type Row = {
-  user_id: string;
-  display_name: string;
-  total_points: number;
-  exact_count: number;
-  hit_count: number;
-  rank: number;
-};
 
 const PODIUM_TONE = [
   "bg-reward/15 border-reward/40 text-reward", // 1
@@ -49,13 +41,7 @@ export default async function LeaderboardPage({
   const { sort = "rank" } = await searchParams;
   const membership = await requireMembership(tenantSlug);
 
-  const { data } = await membership.supabase
-    .from("leaderboard")
-    .select("user_id, display_name, total_points, exact_count, hit_count, rank")
-    .eq("tenant_id", membership.tenantId)
-    .order("rank", { ascending: true });
-
-  const rows = (data ?? []) as Row[];
+  const rows = await getLeaderboard(membership.tenantId);
 
   if (rows.length === 0) {
     return (

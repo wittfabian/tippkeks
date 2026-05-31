@@ -1,4 +1,4 @@
-import { Settings } from "lucide-react";
+import { Settings, User } from "lucide-react";
 import Link from "next/link";
 
 import { signOutAction } from "@/actions/auth";
@@ -22,6 +22,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Wordmark />
           </Link>
           <div className="flex items-center gap-1">
+            <Link
+              href="/profil"
+              aria-label={de.nav.profile}
+              title={de.nav.profile}
+              className={buttonVariants({ variant: "ghost", size: "icon" })}
+            >
+              <User className="size-4" />
+            </Link>
             {siteAdmin && (
               <Link
                 href="/einstellungen"
@@ -42,8 +50,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </header>
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">{children}</main>
-      <footer className="text-muted-foreground border-t px-4 py-3 text-center text-xs">
-        {de.common.poweredBy}
+      <footer className="text-muted-foreground border-t">
+        <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-3 text-center text-xs">
+          <Link href="/info" className="transition hover:text-foreground">
+            {de.legal.footerNav.info}
+          </Link>
+          <span aria-hidden>·</span>
+          <Link href="/datenschutz" className="transition hover:text-foreground">
+            {de.legal.footerNav.privacy}
+          </Link>
+          <span aria-hidden>·</span>
+          <Link href="/impressum" className="transition hover:text-foreground">
+            {de.legal.footerNav.impressum}
+          </Link>
+          <span aria-hidden>·</span>
+          <span>{de.common.poweredBy}</span>
+        </div>
       </footer>
     </div>
   );

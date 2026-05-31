@@ -17,7 +17,6 @@ async function currentUser(supabase: Awaited<ReturnType<typeof createClient>>) {
 }
 
 const displayNameSchema = z.object({
-  slug: z.string().min(1),
   displayName: z.string().trim().min(1).max(60),
 });
 
@@ -26,7 +25,6 @@ export async function updateDisplayNameAction(
   formData: FormData,
 ): Promise<ActionState> {
   const parsed = displayNameSchema.safeParse({
-    slug: formData.get("slug"),
     displayName: formData.get("displayName"),
   });
   if (!parsed.success) return { error: de.profile.error };
@@ -44,7 +42,7 @@ export async function updateDisplayNameAction(
     return { error: de.profile.error };
   }
 
-  revalidatePath(`/${parsed.data.slug}/profil`);
+  revalidatePath("/profil");
   return { error: null, info: de.profile.saved };
 }
 

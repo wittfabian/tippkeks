@@ -7,6 +7,7 @@ export const de = {
   app: {
     name: "TippKeks",
     tagline: "Tippen, mitfiebern, Kekse kassieren – WM 2026",
+    description: "TippKeks – privates Fußball-Tippspiel für Freundesgruppen zur WM 2026.",
   },
   landing: {
     eyebrow: "Privates Tippspiel · FIFA WM 2026",
@@ -21,7 +22,6 @@ export const de = {
     units: { days: "Tage", hours: "Std", minutes: "Min", seconds: "Sek" },
     stats: { teamsLabel: "Nationen", matchesLabel: "Spiele", winnerLabel: "Sieger pro Gruppe" },
     scoreTags: { exact: "Exakt", tendency: "Tendenz" },
-    privacy: "Datenschutz",
   },
   dashboard: {
     nextDue: "Als Nächstes fällig",
@@ -36,9 +36,8 @@ export const de = {
     leaderboard: "Rangliste",
     profile: "Profil",
     admin: "Verwaltung",
-    groups: "Meine Gruppen",
-    settings: "Einstellungen",
     signOut: "Abmelden",
+    toggleTheme: "Hell/Dunkel umschalten",
   },
   auth: {
     loginTitle: "Anmelden",
@@ -53,10 +52,29 @@ export const de = {
     signOut: "Abmelden",
     errorInvalid: "E-Mail oder Passwort ist falsch.",
     errorGeneric: "Anmeldung fehlgeschlagen. Bitte versuche es erneut.",
+    tooManyRequests: "Zu viele Versuche. Bitte warte einen Moment und versuche es erneut.",
     errorTaken: "Diese E-Mail ist bereits registriert.",
     passwordHint: "Mindestens 8 Zeichen.",
     checkEmail: "Bitte bestätige deine E-Mail-Adresse über den Link, den wir dir geschickt haben.",
     registrationClosed: "Die Registrierung ist derzeit geschlossen.",
+    forgotPassword: "Passwort vergessen?",
+    resetTitle: "Passwort zurücksetzen",
+    resetIntro:
+      "Gib deine E-Mail-Adresse ein – wir senden dir einen Link, mit dem du ein neues Passwort vergeben kannst.",
+    resetSubmit: "Link senden",
+    resetSent:
+      "Wenn ein Konto mit dieser E-Mail existiert, haben wir dir einen Link zum Zurücksetzen geschickt. Sieh in deinem Postfach nach.",
+    backToLogin: "Zur Anmeldung",
+    newPasswordTitle: "Neues Passwort",
+    newPasswordIntro: "Vergib jetzt ein neues Passwort für dein Konto.",
+    newPassword: "Neues Passwort",
+    newPasswordSubmit: "Passwort speichern",
+    newPasswordSaved: "Passwort aktualisiert.",
+    newPasswordContinue: "Weiter zu TippKeks",
+    newPasswordError:
+      "Passwort konnte nicht gespeichert werden. Fordere bei Bedarf einen neuen Link an.",
+    newPasswordNoSession: "Dieser Link ist ungültig oder abgelaufen. Bitte fordere einen neuen an.",
+    requestNewLink: "Neuen Link anfordern",
   },
   groups: {
     title: "Meine Gruppen",
@@ -68,6 +86,7 @@ export const de = {
     name: "Gruppenname",
     slug: "Kürzel (für die URL)",
     slugHint: "Nur Kleinbuchstaben, Zahlen und Bindestriche.",
+    slugPlaceholder: "z-b-bueroliga",
     code: "Einladungscode",
     createSubmit: "Gruppe anlegen",
     joinSubmit: "Beitreten",
@@ -76,6 +95,25 @@ export const de = {
     createError: "Gruppe konnte nicht erstellt werden. Ist das Kürzel schon vergeben?",
     createDisabled: "Das Erstellen neuer Gruppen ist derzeit deaktiviert.",
     joinError: "Beitritt fehlgeschlagen. Prüfe den Einladungscode.",
+  },
+  invite: {
+    welcomeTitle: "Du bist eingeladen 🎉",
+    welcomeBody:
+      "Jemand holt dich in sein WM-Tippspiel auf TippKeks. Erstelle ein Konto oder melde dich an – danach bist du sofort in der Gruppe.",
+    createAccount: "Konto erstellen & beitreten",
+    haveAccount: "Ich habe schon ein Konto",
+    confirmTitle: "Gruppe beitreten",
+    confirmBody: "Du bist angemeldet. Tritt der Gruppe mit einem Klick bei.",
+    accept: "Jetzt beitreten",
+    invalidBody:
+      "Dieser Einladungslink ist ungültig, abgelaufen oder schon aufgebraucht. Bitte die Person, die dich eingeladen hat, um einen neuen Link.",
+    // Admin sharing
+    shareHint: "Teile den Link – ein Klick und ein Konto genügen zum Beitreten.",
+    copy: "Link kopieren",
+    copied: "Kopiert!",
+    whatsapp: "WhatsApp",
+    share: "Teilen",
+    shareMessage: "Komm in unser WM-Tippspiel auf TippKeks! Tritt hier bei:",
   },
   fixtures: {
     title: "Spiele",
@@ -247,6 +285,120 @@ export const de = {
     tournamentStarts: "Das Turnier startet am 11.06.2026.",
     noFixtures: "Es sind noch keine Spiele vorhanden.",
     noOpenTips: "Du hast aktuell keine offenen Tipps.",
+  },
+  legal: {
+    backHome: "Zur Startseite",
+    lastUpdated: "Stand: Mai 2026",
+    footerNav: {
+      info: "Über TippKeks",
+      privacy: "Datenschutz",
+      impressum: "Impressum",
+    },
+    operator: {
+      name: "Fabian Witt",
+      street: "Straße und Hausnummer",
+      city: "PLZ Ort",
+      country: "Deutschland",
+      emailLabel: "E-Mail",
+      email: "mail@fabianwitt.de",
+    },
+    impressum: {
+      title: "Impressum",
+      providerHeading: "Angaben gemäß § 5 DDG",
+      contactHeading: "Kontakt",
+      responsibleHeading: "Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV",
+      natureHeading: "Hinweis zum Angebot",
+      nature:
+        "TippKeks ist ein privates, nicht-kommerzielles Freizeitprojekt und richtet sich ausschließlich an einen geschlossenen Freundeskreis. Es wird kein Geldeinsatz erhoben und es werden keine Gewinne ausgespielt.",
+      liabilityContentHeading: "Haftung für Inhalte",
+      liabilityContent:
+        "Als Diensteanbieter sind wir für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Wir sind jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen. Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen bleiben hiervon unberührt.",
+      liabilityLinksHeading: "Haftung für Links",
+      liabilityLinks:
+        "Unser Angebot kann Links zu externen Websites Dritter enthalten, auf deren Inhalte wir keinen Einfluss haben. Für diese fremden Inhalte können wir keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber verantwortlich. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links umgehend entfernen.",
+      copyrightHeading: "Urheberrecht",
+      copyright:
+        "Die durch den Betreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Spielpläne, Ergebnisse und damit verbundene Daten werden von football-data.org bezogen; die Rechte hieran liegen bei den jeweiligen Rechteinhabern.",
+      disputeHeading: "Verbraucherstreitbeilegung",
+      dispute:
+        "Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.",
+    },
+    privacy: {
+      title: "Datenschutzerklärung",
+      intro:
+        "Der Schutz deiner personenbezogenen Daten ist uns wichtig. Diese Erklärung informiert dich darüber, welche Daten wir im Rahmen von TippKeks verarbeiten, zu welchem Zweck und auf welcher Rechtsgrundlage. TippKeks ist ein privates, nicht-kommerzielles Tippspiel für einen geschlossenen Freundeskreis.",
+      controllerHeading: "Verantwortlicher im Sinne der DSGVO",
+      dataHeading: "Welche Daten wir verarbeiten",
+      dataAccountHeading: "Konto-Daten",
+      dataAccount:
+        "E-Mail-Adresse, Passwort (ausschließlich verschlüsselt bzw. als Hash gespeichert) und dein Anzeigename. Diese Daten sind für Registrierung und Anmeldung erforderlich.",
+      dataGameHeading: "Spiel-Daten",
+      dataGame:
+        "Deine abgegebenen Tipps, die daraus berechneten Punkte sowie deine Mitgliedschaft in Tippgruppen.",
+      dataLogHeading: "Server-Logfiles",
+      dataLog:
+        "Beim Aufruf der Anwendung werden technisch notwendige Zugriffsdaten verarbeitet (z. B. gekürzte IP-Adresse, Datum und Uhrzeit des Zugriffs, abgerufene Ressource, Browsertyp). Sie dienen der Sicherstellung des technischen Betriebs und der Fehleranalyse.",
+      dataCookiesHeading: "Cookies",
+      dataCookies:
+        "TippKeks verwendet ausschließlich technisch notwendige Cookies, um deine Anmeldesitzung aufrechtzuerhalten. Es findet kein Tracking und keine Analyse deines Verhaltens statt; es werden keine Cookies zu Werbezwecken eingesetzt.",
+      purposeHeading: "Zwecke und Rechtsgrundlagen",
+      purposeItems: [
+        "Bereitstellung des Tippspiels und Verwaltung deines Kontos: Art. 6 Abs. 1 lit. b DSGVO (Erfüllung des Nutzungsverhältnisses).",
+        "Technischer Betrieb, Sicherheit und Fehleranalyse: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse am stabilen und sicheren Betrieb).",
+      ],
+      hostingHeading: "Hosting",
+      hosting:
+        "Die Anwendung wird bei der Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, betrieben. Die Server stehen in Deutschland. Mit Hetzner besteht ein Vertrag zur Auftragsverarbeitung gemäß Art. 28 DSGVO.",
+      recipientsHeading: "Empfänger und Auftragsverarbeiter",
+      recipientsSupabase:
+        "Für Datenbank und Authentifizierung setzen wir den Dienst Supabase ein. Die personenbezogenen Daten werden in einem Rechenzentrum innerhalb der Europäischen Union gespeichert. Es besteht ein Auftragsverarbeitungsvertrag; soweit eine Übermittlung in ein Drittland nicht ausgeschlossen werden kann, erfolgt diese auf Grundlage geeigneter Garantien (insbesondere EU-Standardvertragsklauseln).",
+      recipientsEmail:
+        "Für den Versand von System-E-Mails (z. B. zur Bestätigung deiner E-Mail-Adresse, zum Zurücksetzen des Passworts oder zur Bestätigung einer E-Mail-Änderung) setzen wir den Dienst Resend (betrieben von Plus Five Five, Inc., 2261 Market Street #5039, San Francisco, CA 94114, USA) ein. Hierzu wird deine E-Mail-Adresse an den Dienst übermittelt. Es besteht ein Auftragsverarbeitungsvertrag. Die mit der Übermittlung in die USA verbundene Verarbeitung stützt sich auf geeignete Garantien: Der Anbieter ist unter dem EU-US Data Privacy Framework zertifiziert; ergänzend gelten die EU-Standardvertragsklauseln gemäß Art. 46 DSGVO.",
+      gameDataHeading: "Spieldaten von Dritten",
+      gameData:
+        "Spielpläne und Ergebnisse beziehen wir vom Dienst football-data.org. Dabei werden ausschließlich Sportdaten abgerufen — es werden keine personenbezogenen Daten unserer Nutzer an diesen Dienst übermittelt.",
+      retentionHeading: "Speicherdauer",
+      retention:
+        "Wir speichern deine personenbezogenen Daten, solange dein Konto besteht bzw. solange dies für den Betrieb des Tippspiels erforderlich ist. Server-Logfiles werden nach kurzer Zeit automatisch gelöscht. Löschst du dein Konto, werden deine personenbezogenen Daten und deine Tipps gelöscht, soweit keine gesetzlichen Aufbewahrungspflichten entgegenstehen.",
+      rightsHeading: "Deine Rechte",
+      rights:
+        "Du hast jederzeit das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) sowie ein Widerspruchsrecht (Art. 21 DSGVO). Wende dich dazu an die oben genannten Kontaktdaten.",
+      accountDeletionHeading: "Konto selbst löschen",
+      accountDeletion:
+        "Du kannst dein Konto jederzeit selbst über „Profil → Konto löschen“ dauerhaft entfernen.",
+      complaintHeading: "Beschwerderecht",
+      complaint:
+        "Dir steht ein Beschwerderecht bei einer Datenschutz-Aufsichtsbehörde zu. Für uns zuständig ist das Bayerische Landesamt für Datenschutzaufsicht (BayLDA), Promenade 18, 91522 Ansbach.",
+      automatedHeading: "Keine automatisierte Entscheidungsfindung",
+      automated:
+        "Eine automatisierte Entscheidungsfindung oder ein Profiling im Sinne des Art. 22 DSGVO findet nicht statt.",
+      changesHeading: "Änderungen dieser Erklärung",
+      changes:
+        "Wir passen diese Datenschutzerklärung an, wenn sich die Anwendung oder die Rechtslage ändert. Es gilt die jeweils hier veröffentlichte Fassung.",
+    },
+    info: {
+      title: "Über TippKeks",
+      lead: "TippKeks ist ein privates Tippspiel für Freundesgruppen — pünktlich zur FIFA Fußball-Weltmeisterschaft 2026. Werbefrei, nicht-kommerziell und nur für deine Crew.",
+      howHeading: "So funktioniert's",
+      howSteps: [
+        "Gründe eine Gruppe oder tritt per Einladungscode der Gruppe deiner Freunde bei.",
+        "Tippe vor dem Anpfiff jedes Spiels dein Ergebnis.",
+        "Sammle Punkte — je genauer dein Tipp, desto mehr.",
+        "Miss dich in der Rangliste mit deiner Crew.",
+      ],
+      scoringHeading: "Punkte",
+      scoring:
+        "Es gibt Punkte für die exakte Vorhersage, die richtige Tordifferenz und die richtige Tendenz (den Sieger). In der K.-o.-Phase gibt es zusätzlich einen Bonus für das richtige weiterkommende Team.",
+      fairnessHeading: "Fair für alle",
+      fairness:
+        "Tipps sind nur bis zum Anpfiff möglich und für andere erst nach Anpfiff sichtbar — so tippt jeder unbeeinflusst. Maßgeblich ist immer die Uhrzeit auf dem Server, nicht im Browser.",
+      privacyHeading: "Datenschutz",
+      privacy:
+        "TippKeks ist werbefrei und verzichtet bewusst auf Tracking. Wir verarbeiten nur die Daten, die der Betrieb des Tippspiels erfordert.",
+      privacyLink: "Details in der Datenschutzerklärung",
+      contactHeading: "Kontakt",
+      contact: "Fragen oder Feedback? Schreib uns:",
+    },
   },
   common: {
     cancel: "Abbrechen",

@@ -1,6 +1,8 @@
+import { cached } from "@/lib/cache/cache";
 import type { ScoreCategory, StageKind } from "@/lib/scoring/engine";
 import type { FixtureStatus } from "@/lib/providers/types";
 import type { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -32,10 +34,41 @@ export interface FixtureVM {
 }
 
 /**
+ * Global tournament data (fixtures + teams) for a set of seasons. Identical for
+ * every user, so it is cached under tag "tournament" (invalidated by the sync
+ * job and admin result overrides) and read with the service role — there is
+ * nothing user-scoped here. NEVER add predictions/scores to this function: that
+ * would put per-user data behind a shared key.
+ */
+async function getTournamentData(seasonIds: number[]) {
+  const key = `tournament:${[...seasonIds].sort((a, b) => a - b).join(",")}`;
+  return cached({ key, ttlSeconds: 60, tags: ["tournament"] }, async () => {
+    const service = createServiceClient();
+    const [{ data: fixtures }, { data: teams }] = await Promise.all([
+      service
+        .from("fixture")
+        .select(
+          "id, kickoff_at, status, matchday, regular_home, regular_away, after_extra_time, penalty_home, penalty_away, home_team_id, away_team_id, stage:stage_id(kind, name)",
+        )
+        .in("season_id", seasonIds)
+        .order("kickoff_at", { ascending: true }),
+      service.from("team").select("id, name, short_name, crest_url"),
+    ]);
+    const teamList: TeamLite[] = (teams ?? []).map((t) => ({
+      id: t.id,
+      name: t.name,
+      shortName: t.short_name,
+      crestUrl: t.crest_url,
+    }));
+    return { fixtures: fixtures ?? [], teams: teamList };
+  });
+}
+
+/**
  * Build the tipping board for a tenant member: every fixture in the tenant's
- * subscribed seasons, joined with the caller's own prediction and score. Teams
- * are fetched once into a map (the tournament has few) to avoid ambiguous
- * multi-FK embeds. RLS already scopes predictions/scores to the caller.
+ * subscribed seasons, joined with the caller's own prediction and score. The
+ * global fixtures/teams come from the cache; predictions/scores are read live
+ * through the caller's RLS-scoped client and merged in.
  */
 export async function getFixtureBoard(
   supabase: ServerClient,
@@ -49,34 +82,21 @@ export async function getFixtureBoard(
   const seasonIds = (subscriptions ?? []).map((s) => s.season_id);
   if (seasonIds.length === 0) return [];
 
-  const [{ data: fixtures }, { data: teams }, { data: predictions }, { data: scores }] =
-    await Promise.all([
-      supabase
-        .from("fixture")
-        .select(
-          "id, kickoff_at, status, matchday, regular_home, regular_away, after_extra_time, penalty_home, penalty_away, home_team_id, away_team_id, stage:stage_id(kind, name)",
-        )
-        .in("season_id", seasonIds)
-        .order("kickoff_at", { ascending: true }),
-      supabase.from("team").select("id, name, short_name, crest_url"),
-      supabase
-        .from("prediction")
-        .select("fixture_id, home_goals, away_goals, advancing_team_id")
-        .eq("tenant_id", tenantId)
-        .eq("user_id", userId),
-      supabase
-        .from("prediction_score")
-        .select("fixture_id, points, category")
-        .eq("tenant_id", tenantId)
-        .eq("user_id", userId),
-    ]);
+  const [{ fixtures, teams }, { data: predictions }, { data: scores }] = await Promise.all([
+    getTournamentData(seasonIds),
+    supabase
+      .from("prediction")
+      .select("fixture_id, home_goals, away_goals, advancing_team_id")
+      .eq("tenant_id", tenantId)
+      .eq("user_id", userId),
+    supabase
+      .from("prediction_score")
+      .select("fixture_id, points, category")
+      .eq("tenant_id", tenantId)
+      .eq("user_id", userId),
+  ]);
 
-  const teamById = new Map<number, TeamLite>(
-    (teams ?? []).map((t) => [
-      t.id,
-      { id: t.id, name: t.name, shortName: t.short_name, crestUrl: t.crest_url },
-    ]),
-  );
+  const teamById = new Map<number, TeamLite>(teams.map((t) => [t.id, t]));
   const predByFixture = new Map((predictions ?? []).map((p) => [p.fixture_id, p]));
   const scoreByFixture = new Map((scores ?? []).map((s) => [s.fixture_id, s]));
   const now = Date.now();

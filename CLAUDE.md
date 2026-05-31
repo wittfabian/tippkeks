@@ -59,6 +59,8 @@ pnpm db:start       # supabase start
 pnpm db:stop
 pnpm db:reset       # rebuild local DB from migrations + seed.sql
 pnpm db:types       # regenerate src/lib/supabase/database.types.ts (run after any schema change)
+
+podman compose up -d   # local Valkey for the cache + rate limiting (docker-compose.yml); then set REDIS_URL
 ```
 
 ### Local Supabase on Podman
@@ -143,15 +145,26 @@ timer hitting the secret-protected `POST /api/cron/sync` (Bearer `CRON_SECRET`) 
 call the provider from request handlers. Local dev/tests use the **openfootball seed**
 (`provider = "openfootball"`); production uses the live sync (`provider = "football-data"`).
 
+**Caching & rate limiting** (`src/lib/cache/`, optional — backed by Valkey via `REDIS_URL`; see
+`docs/caching.md`): an application-level read-through cache for **global / tenant-uniform** data only
+(tournament fixtures+teams, `app_setting`, per-tenant leaderboard), invalidated by tags from the sync
+job + admin actions. **Never cache an RLS-scoped/per-user read** — the key has no user in it, so it
+would leak across tenants and defeat RLS; cached global reads use the service role deliberately.
+Invalidation is application-level (not `revalidateTag`) because the sync also runs as a separate CLI
+process. Same store rate-limits `signInAction` + `requestPasswordResetAction`. Absent `REDIS_URL`,
+the cache no-ops and limits fail open. Local: `podman compose up -d` (`docker-compose.yml`).
+
 ## Source layout
 
 ```
 src/proxy.ts                       # Next 16 proxy: session refresh + auth redirect
 src/app/(public)/{login,register}  # auth pages; (public) layout redirects logged-in users home
-src/app/(app)/page.tsx             # tenant chooser (create / join)
-src/app/(app)/[tenantSlug]/…       # dashboard, spiele (tipping), spiel/[id], rangliste, profil, admin
+src/app/(reset)/{passwort-vergessen,passwort-neu}  # password recovery; (reset) layout does NOT redirect (recovery link signs the user in first)
+src/app/(app)/gruppen/page.tsx     # tenant chooser / "Meine Gruppen" (create / join)
+src/app/(app)/profil/page.tsx      # account-wide settings (NOT tenant-scoped); reached from the header user icon
+src/app/(app)/[tenantSlug]/…       # dashboard, spiele (tipping), spiel/[id], rangliste, admin
 src/app/api/cron/sync/route.ts     # secret-protected sync trigger
-src/app/datenschutz/page.tsx       # DSGVO notice (placeholder — complete before launch)
+src/app/(legal)/{info,datenschutz,impressum}  # public legal/info pages (own chrome; reachable signed-in + out)
 src/actions/                       # "use server" mutations (auth, tenant, predictions, profile, admin)
 src/components/{ui,...}            # shadcn primitives + feature components
 src/lib/{supabase,auth,data,providers,sync,scoring,domain,i18n}/
