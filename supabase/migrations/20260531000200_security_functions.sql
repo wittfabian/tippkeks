@@ -109,6 +109,7 @@ to authenticated;
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
   new.updated_at := now();
@@ -229,3 +230,19 @@ $$;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- ---------------------------------------------------------------------------
+-- Keep trigger functions off the PostgREST RPC surface.
+--
+-- CREATE FUNCTION grants EXECUTE to PUBLIC by default, which lets PostgREST
+-- expose these as /rest/v1/rpc/<name> to the anon/authenticated roles. They are
+-- only ever meant to fire as triggers, and EXECUTE on a trigger function is
+-- checked at CREATE TRIGGER time, not when the trigger fires — so revoking it
+-- does NOT break the triggers, it just removes them from the callable API
+-- (clearing the anon_/authenticated_security_definer_function_executable lints).
+-- The three SECURITY DEFINER ones would otherwise run with owner rights and
+-- bypass RLS; set_updated_at is INVOKER but equally has no business as an RPC.
+revoke all on function public.enforce_prediction_deadline() from public, anon, authenticated;
+revoke all on function public.enforce_min_one_admin() from public, anon, authenticated;
+revoke all on function public.handle_new_user() from public, anon, authenticated;
+revoke all on function public.set_updated_at() from public, anon, authenticated;

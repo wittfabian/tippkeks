@@ -1,4 +1,4 @@
-import type { StageKind } from "@/lib/scoring/engine";
+import type { ScoreCategory, StageKind } from "@/lib/scoring/engine";
 import type { FixtureStatus } from "@/lib/providers/types";
 import type { createClient } from "@/lib/supabase/server";
 
@@ -27,6 +27,7 @@ export interface FixtureVM {
   penaltyAway: number | null;
   myPrediction: { homeGoals: number; awayGoals: number; advancingTeamId: number | null } | null;
   myPoints: number | null;
+  myCategory: ScoreCategory | null;
   locked: boolean;
 }
 
@@ -65,7 +66,7 @@ export async function getFixtureBoard(
         .eq("user_id", userId),
       supabase
         .from("prediction_score")
-        .select("fixture_id, points")
+        .select("fixture_id, points, category")
         .eq("tenant_id", tenantId)
         .eq("user_id", userId),
     ]);
@@ -77,11 +78,12 @@ export async function getFixtureBoard(
     ]),
   );
   const predByFixture = new Map((predictions ?? []).map((p) => [p.fixture_id, p]));
-  const scoreByFixture = new Map((scores ?? []).map((s) => [s.fixture_id, s.points]));
+  const scoreByFixture = new Map((scores ?? []).map((s) => [s.fixture_id, s]));
   const now = Date.now();
 
   return (fixtures ?? []).map((f) => {
     const pred = predByFixture.get(f.id);
+    const score = scoreByFixture.get(f.id);
     return {
       id: f.id,
       kickoffAt: f.kickoff_at,
@@ -103,7 +105,8 @@ export async function getFixtureBoard(
             advancingTeamId: pred.advancing_team_id,
           }
         : null,
-      myPoints: scoreByFixture.get(f.id) ?? null,
+      myPoints: score?.points ?? null,
+      myCategory: (score?.category ?? null) as ScoreCategory | null,
       locked: new Date(f.kickoff_at).getTime() <= now,
     };
   });

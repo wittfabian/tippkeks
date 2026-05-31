@@ -25,6 +25,7 @@ create or replace function public.score_prediction(
 returns public.score_outcome
 language plpgsql
 immutable
+set search_path = ''
 as $$
 declare
   v_pdiff integer;

@@ -39,9 +39,9 @@ export interface ScoreOutcome {
 }
 
 export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
-  exact: 4,
-  goal_diff: 3,
-  tendency: 2,
+  exact: 3,
+  goal_diff: 2,
+  tendency: 1,
   advance_bonus: 2,
   stage_multipliers: {},
 };

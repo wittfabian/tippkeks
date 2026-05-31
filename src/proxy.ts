@@ -10,6 +10,8 @@ import { updateSession } from "@/lib/supabase/session";
 const PUBLIC_PREFIXES = ["/login", "/register", "/auth", "/datenschutz"];
 
 function isPublic(pathname: string): boolean {
+  // The marketing landing page lives at the root and must be reachable signed-out.
+  if (pathname === "/") return true;
   return PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 

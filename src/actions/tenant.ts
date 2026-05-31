@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { isSiteAdmin } from "@/lib/auth/membership";
+import { getAppSettings } from "@/lib/data/settings";
 import { createClient } from "@/lib/supabase/server";
 import { de } from "@/messages/de";
 import type { ActionState } from "@/actions/types";
@@ -27,6 +29,14 @@ export async function createGroupAction(
   if (!parsed.success) return { error: de.groups.createError };
 
   const supabase = await createClient();
+
+  // Honour the global toggle; site admins always bypass it. The create_group
+  // RPC enforces this again as the non-bypassable gate.
+  const { groupCreationEnabled } = await getAppSettings(supabase);
+  if (!groupCreationEnabled && !(await isSiteAdmin(supabase))) {
+    return { error: de.groups.createDisabled };
+  }
+
   const { data, error } = await supabase.rpc("create_group", {
     p_name: parsed.data.name,
     p_slug: parsed.data.slug,

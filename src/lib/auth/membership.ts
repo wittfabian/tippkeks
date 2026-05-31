@@ -32,6 +32,8 @@ export type Membership = {
   slug: string;
   role: MemberRole;
   userId: string;
+  /** Whether members may submit their own predictions (admins always may). */
+  memberTippingEnabled: boolean;
   /** The cookie-aware client, reused so callers avoid creating another. */
   supabase: Awaited<ReturnType<typeof createClient>>;
 };
@@ -49,7 +51,7 @@ export async function requireMembership(slug: string): Promise<Membership> {
 
   const { data: tenant } = await supabase
     .from("tenant")
-    .select("id, name, slug")
+    .select("id, name, slug, member_tipping_enabled")
     .eq("slug", slug)
     .maybeSingle();
   if (!tenant) notFound();
@@ -68,6 +70,7 @@ export async function requireMembership(slug: string): Promise<Membership> {
     slug: tenant.slug,
     role: member.role,
     userId,
+    memberTippingEnabled: tenant.member_tipping_enabled,
     supabase,
   };
 }
@@ -77,4 +80,32 @@ export async function requireAdmin(slug: string): Promise<Membership> {
   const membership = await requireMembership(slug);
   if (membership.role !== "admin") notFound();
   return membership;
+}
+
+/**
+ * True if the current user is a site admin (operator of the whole installation).
+ * RLS lets a user read only their own site_admin row, so this is the user's own
+ * answer to "am I a site admin?". Site admins are provisioned out-of-band via
+ * scripts/set-site-admin.ts, never self-service.
+ */
+export async function isSiteAdmin(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<boolean> {
+  const { data } = await supabase.from("site_admin").select("user_id").limit(1).maybeSingle();
+  return Boolean(data);
+}
+
+export type SiteAdmin = {
+  userId: string;
+  supabase: Awaited<ReturnType<typeof createClient>>;
+};
+
+/** Require site-admin rights; redirects unauthenticated, 404s non-site-admins. */
+export async function requireSiteAdmin(): Promise<SiteAdmin> {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const userId = data?.claims?.sub;
+  if (!userId) redirect("/login");
+  if (!(await isSiteAdmin(supabase))) notFound();
+  return { userId, supabase };
 }

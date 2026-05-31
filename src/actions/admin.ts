@@ -6,22 +6,53 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { de } from "@/messages/de";
-import type { ActionState } from "@/actions/types";
+import { logActionError, type ActionState } from "@/actions/types";
 
 const tenantField = z.object({ tenantId: z.string().uuid(), slug: z.string().min(1) });
+
+/** Postgres SQLSTATE for a CHECK/`check_violation` raise (e.g. the min-one-admin trigger). */
+const CHECK_VIOLATION = "23514";
 
 /** Generate a short, readable invite code. */
 function generateInviteCode(): string {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase();
 }
 
+/**
+ * Re-resolve that the current user is an admin of the tenant (defense-in-depth
+ * layer 2 — RLS is still the final gate). Returns the userId when admin, else null.
+ */
+async function adminUserId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tenantId: string,
+): Promise<string | null> {
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return null;
+  const { data } = await supabase
+    .from("tenant_member")
+    .select("role")
+    .eq("tenant_id", tenantId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data?.role === "admin" ? userId : null;
+}
+
+const createInviteSchema = tenantField.extend({
+  // Empty input → undefined → unlimited uses.
+  maxUses: z.coerce.number().int().positive().max(100_000).optional(),
+  asAdmin: z.coerce.boolean().optional(),
+});
+
 export async function createInviteAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const parsed = tenantField.safeParse({
+  const parsed = createInviteSchema.safeParse({
     tenantId: formData.get("tenantId"),
     slug: formData.get("slug"),
+    maxUses: formData.get("maxUses") || undefined,
+    asAdmin: formData.get("asAdmin") === "on",
   });
   if (!parsed.success) return { error: de.auth.errorGeneric };
 
@@ -34,7 +65,8 @@ export async function createInviteAction(
   const { error } = await supabase.from("tenant_invite").insert({
     tenant_id: parsed.data.tenantId,
     code: generateInviteCode(),
-    role: "member",
+    role: parsed.data.asAdmin ? "admin" : "member",
+    max_uses: parsed.data.maxUses ?? null,
     created_by: userId,
   });
   if (error) return { error: de.auth.errorGeneric };
@@ -47,6 +79,144 @@ export async function createInviteAction(
 
   revalidatePath(`/${parsed.data.slug}/admin`);
   return { error: null, info: de.admin.inviteCreated };
+}
+
+const deleteInviteSchema = tenantField.extend({ code: z.string().min(1).max(64) });
+
+export async function deleteInviteAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = deleteInviteSchema.safeParse({
+    tenantId: formData.get("tenantId"),
+    slug: formData.get("slug"),
+    code: formData.get("code"),
+  });
+  if (!parsed.success) return { error: de.auth.errorGeneric };
+
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return { error: de.auth.errorGeneric };
+
+  // RLS only lets a tenant admin delete here.
+  const { error } = await supabase
+    .from("tenant_invite")
+    .delete()
+    .eq("tenant_id", parsed.data.tenantId)
+    .eq("code", parsed.data.code);
+  if (error) return { error: de.auth.errorGeneric };
+
+  revalidatePath(`/${parsed.data.slug}/admin`);
+  return { error: null, info: de.admin.inviteDeleted };
+}
+
+const memberTippingSchema = tenantField.extend({ enabled: z.boolean() });
+
+/** Toggle whether members may submit their own predictions (admins always can). */
+export async function setMemberTippingAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = memberTippingSchema.safeParse({
+    tenantId: formData.get("tenantId"),
+    slug: formData.get("slug"),
+    enabled: formData.get("enabled") === "on",
+  });
+  if (!parsed.success) return { error: de.auth.errorGeneric };
+
+  const supabase = await createClient();
+  if (!(await adminUserId(supabase, parsed.data.tenantId))) return { error: de.auth.errorGeneric };
+
+  // RLS also enforces that only a tenant admin may update the tenant row.
+  const { error } = await supabase
+    .from("tenant")
+    .update({ member_tipping_enabled: parsed.data.enabled })
+    .eq("id", parsed.data.tenantId);
+  if (error) {
+    logActionError("setMemberTipping", error);
+    return { error: de.auth.errorGeneric };
+  }
+
+  revalidatePath(`/${parsed.data.slug}/admin`);
+  revalidatePath(`/${parsed.data.slug}/spiele`);
+  return { error: null, info: de.admin.memberTippingSaved };
+}
+
+const memberTipsSchema = tenantField.extend({
+  fixtureId: z.coerce.number().int().positive(),
+  userIds: z.string().min(1),
+});
+
+/**
+ * Bulk-enter predictions for members of a fixture (one row per member in the
+ * admin table). Empty rows are skipped; a half-filled row is rejected. The
+ * deadline trigger and RLS (admin-writes-for-members) remain the real gates.
+ * advancing_team_id is intentionally omitted so an existing knockout pick is
+ * preserved on update.
+ */
+export async function saveMemberTipsAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = memberTipsSchema.safeParse({
+    tenantId: formData.get("tenantId"),
+    slug: formData.get("slug"),
+    fixtureId: formData.get("fixtureId"),
+    userIds: formData.get("userIds"),
+  });
+  if (!parsed.success) return { error: de.admin.tipsError };
+
+  const supabase = await createClient();
+  if (!(await adminUserId(supabase, parsed.data.tenantId))) return { error: de.admin.tipsError };
+
+  // userIds is a client-supplied hidden field — validate each is a real UUID
+  // before trusting it (RLS still rejects non-members, this fails fast/clearer).
+  const uuidSchema = z.string().uuid();
+  const userIds = parsed.data.userIds.split(",").filter(Boolean);
+  if (!userIds.every((u) => uuidSchema.safeParse(u).success)) return { error: de.admin.tipsError };
+
+  const rowSchema = z.coerce.number().int().min(0).max(99);
+  const rows: {
+    tenant_id: string;
+    user_id: string;
+    fixture_id: number;
+    home_goals: number;
+    away_goals: number;
+  }[] = [];
+
+  for (const uid of userIds) {
+    const homeRaw = (formData.get(`home_${uid}`) ?? "").toString().trim();
+    const awayRaw = (formData.get(`away_${uid}`) ?? "").toString().trim();
+    if (homeRaw === "" && awayRaw === "") continue; // untouched row
+    const home = rowSchema.safeParse(homeRaw);
+    const away = rowSchema.safeParse(awayRaw);
+    if (!home.success || !away.success) return { error: de.admin.tipsError };
+    rows.push({
+      tenant_id: parsed.data.tenantId,
+      user_id: uid,
+      fixture_id: parsed.data.fixtureId,
+      home_goals: home.data,
+      away_goals: away.data,
+    });
+  }
+
+  if (rows.length === 0) return { error: null, info: de.admin.tipsSaved(0) };
+
+  // RLS lets an admin write for any member; the deadline trigger still applies.
+  // The upsert is one statement: if any row trips the deadline, the whole batch
+  // fails (acceptable — every row shares the same fixture/kickoff).
+  const { error } = await supabase
+    .from("prediction")
+    .upsert(rows, { onConflict: "tenant_id,user_id,fixture_id" });
+  if (error) {
+    logActionError("saveMemberTips", error);
+    return { error: de.admin.tipsError };
+  }
+
+  revalidatePath(`/${parsed.data.slug}/admin`);
+  revalidatePath(`/${parsed.data.slug}/spiele`);
+  return { error: null, info: de.admin.tipsSaved(rows.length) };
 }
 
 const roleSchema = tenantField.extend({
@@ -77,7 +247,10 @@ export async function setMemberRoleAction(
     .eq("tenant_id", parsed.data.tenantId)
     .eq("user_id", parsed.data.targetUserId);
   if (error) {
-    return { error: /Admin/.test(error.message) ? de.admin.lastAdminError : de.auth.errorGeneric };
+    // The min-one-admin trigger raises check_violation (23514); other errors are generic.
+    if (error.code === CHECK_VIOLATION) return { error: de.admin.lastAdminError };
+    logActionError("setMemberRole", error);
+    return { error: de.auth.errorGeneric };
   }
 
   await supabase.from("admin_audit_log").insert({
@@ -117,7 +290,9 @@ export async function removeMemberAction(
     .eq("tenant_id", parsed.data.tenantId)
     .eq("user_id", parsed.data.targetUserId);
   if (error) {
-    return { error: /Admin/.test(error.message) ? de.admin.lastAdminError : de.auth.errorGeneric };
+    if (error.code === CHECK_VIOLATION) return { error: de.admin.lastAdminError };
+    logActionError("removeMember", error);
+    return { error: de.auth.errorGeneric };
   }
 
   await supabase.from("admin_audit_log").insert({
@@ -193,6 +368,11 @@ const resultSchema = tenantField.extend({
   fixtureId: z.coerce.number().int().positive(),
   homeGoals: z.coerce.number().int().min(0).max(99),
   awayGoals: z.coerce.number().int().min(0).max(99),
+  // Knockout extras: who advanced when 90' was level, and the optional shootout score.
+  afterExtraTime: z.coerce.boolean().optional(),
+  winnerSide: z.enum(["home", "away", "none"]).optional(),
+  penaltyHome: z.coerce.number().int().min(0).max(99).optional(),
+  penaltyAway: z.coerce.number().int().min(0).max(99).optional(),
 });
 
 /**
@@ -212,6 +392,10 @@ export async function overrideResultAction(
     fixtureId: formData.get("fixtureId"),
     homeGoals: formData.get("homeGoals"),
     awayGoals: formData.get("awayGoals"),
+    afterExtraTime: formData.get("afterExtraTime") === "on",
+    winnerSide: formData.get("winnerSide") ?? "none",
+    penaltyHome: formData.get("penaltyHome") || undefined,
+    penaltyAway: formData.get("penaltyAway") || undefined,
   });
   if (!parsed.success) return { error: de.admin.resultError };
 
@@ -245,12 +429,14 @@ export async function overrideResultAction(
     .maybeSingle();
   if (!subscribed) return { error: de.admin.resultError };
 
-  const winnerTeamId =
-    parsed.data.homeGoals > parsed.data.awayGoals
-      ? fixture.home_team_id
-      : parsed.data.awayGoals > parsed.data.homeGoals
-        ? fixture.away_team_id
-        : null;
+  // Winner from the 90' result; if level (a knockout), use the admin's pick so the
+  // advancing bonus is correct (the previous 90'-only derivation was the bug).
+  let winnerTeamId: number | null;
+  if (parsed.data.homeGoals > parsed.data.awayGoals) winnerTeamId = fixture.home_team_id;
+  else if (parsed.data.awayGoals > parsed.data.homeGoals) winnerTeamId = fixture.away_team_id;
+  else if (parsed.data.winnerSide === "home") winnerTeamId = fixture.home_team_id;
+  else if (parsed.data.winnerSide === "away") winnerTeamId = fixture.away_team_id;
+  else winnerTeamId = null;
 
   // Privileged write: fixtures have no authenticated write policy by design.
   const service = createServiceClient();
@@ -260,7 +446,9 @@ export async function overrideResultAction(
       regular_home: parsed.data.homeGoals,
       regular_away: parsed.data.awayGoals,
       status: "finished",
-      after_extra_time: false,
+      after_extra_time: parsed.data.afterExtraTime ?? false,
+      penalty_home: parsed.data.penaltyHome ?? null,
+      penalty_away: parsed.data.penaltyAway ?? null,
       winner_team_id: winnerTeamId,
     })
     .eq("id", parsed.data.fixtureId);

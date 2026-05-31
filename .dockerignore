@@ -1,0 +1,30 @@
+# Keep the build context small and free of secrets / dev-only material.
+.git
+.github
+node_modules
+.next
+out
+build
+coverage
+
+# Secrets & local env — never bake into an image.
+.env
+.env.*
+!.env.example
+
+# Dev / ops material the runtime image doesn't need.
+tests
+scripts
+supabase
+data
+.claude
+.vscode
+.idea
+
+# Noise
+*.log
+npm-debug.log*
+.DS_Store
+README.md
+*.md
+.prettiercache

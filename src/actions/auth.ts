@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { getAppSettings } from "@/lib/data/settings";
 import { createClient } from "@/lib/supabase/server";
 import { de } from "@/messages/de";
 import type { ActionState } from "@/actions/types";
@@ -27,7 +28,7 @@ export async function signInAction(_prev: ActionState, formData: FormData): Prom
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) return { error: de.auth.errorInvalid };
 
-  redirect("/");
+  redirect("/gruppen");
 }
 
 export async function signUpAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -42,6 +43,11 @@ export async function signUpAction(_prev: ActionState, formData: FormData): Prom
   }
 
   const supabase = await createClient();
+
+  // Re-check the global toggle server-side — the trust boundary, not the page.
+  const { registrationEnabled } = await getAppSettings(supabase);
+  if (!registrationEnabled) return { error: de.auth.registrationClosed };
+
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
@@ -56,7 +62,7 @@ export async function signUpAction(_prev: ActionState, formData: FormData): Prom
   // When email confirmation is enabled (production) there is no session yet.
   if (!data.session) return { error: null, info: de.auth.checkEmail };
 
-  redirect("/");
+  redirect("/gruppen");
 }
 
 export async function signOutAction(): Promise<void> {

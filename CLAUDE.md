@@ -30,6 +30,7 @@ shadcn/ui (Base UI preset; components are generated into `src/components/ui/`, e
 Supabase (Postgres + Auth, email+password) · Podman as the local/prod container runtime.
 
 > **Next 16 gotchas (differ from Next 15 / training data):**
+>
 > - **Middleware is renamed to Proxy.** The session-refresh file is `src/proxy.ts` exporting
 >   `proxy(request)`, not `middleware.ts`. Same `NextRequest`/`NextResponse` API; Node.js runtime.
 > - Request APIs are async: `await cookies()`, and `params`/`searchParams` are Promises (`await params`).
@@ -50,6 +51,8 @@ pnpm format         # prettier --write .
 
 pnpm sync                       # run the football-data.org sync once (needs FOOTBALL_DATA_API_TOKEN)
 pnpm tsx scripts/generate-seed.ts   # regenerate supabase/seed.sql from data/openfootball/
+pnpm tsx scripts/set-site-admin.ts <email> [--revoke]  # grant/revoke site-admin (service role)
+pnpm tsx scripts/seed-mock.ts [group-slug]   # DEV-ONLY: mock players + tips + finished results → leaderboard
 
 # Supabase (CLI is a dev dependency → use `pnpm exec supabase`/the db:* scripts)
 pnpm db:start       # supabase start
@@ -94,6 +97,7 @@ Tenancy: `tenant`, `tenant_member` (per-tenant `role` admin|member), `tenant_sea
 the `leaderboard` view (`security_invoker`), and `admin_audit_log`.
 
 **RLS & DB invariants** (the footgun-heavy core, in `supabase/migrations/`):
+
 - Authorization helpers `private.is_member/is_admin/shares_tenant/fixture_in_tenant` live in a
   non-exposed `private` schema and are **`SECURITY DEFINER` + `LANGUAGE plpgsql`** (a `LANGUAGE sql`
   helper gets inlined → reintroduces RLS recursion). Policies wrap calls in `(select …)` for
@@ -105,6 +109,27 @@ the `leaderboard` view (`security_invoker`), and `admin_audit_log`.
   deleted (so cascade deletes work).
 - Tenant creation and invite redemption run via `SECURITY DEFINER` RPCs (`create_group`,
   `redeem_invite`) to solve the membership chicken-and-egg.
+- **Site admins** (operators of the whole install, distinct from per-tenant admins) live in the
+  `site_admin` table, checked via `private.is_site_admin()`. Granted only out-of-band by
+  `scripts/set-site-admin.ts` (no self-service path). Global feature toggles live in `app_setting`
+  (`registration_enabled`, `group_creation_enabled`); the two public keys are readable by anon (the
+  register page needs them pre-session), other keys are authenticated-only, and writes are
+  site-admin only. Site settings UI: `/(app)/einstellungen`.
+  - `group_creation_enabled` is a **hard gate**: `create_group` (the only way to insert a tenant —
+    no INSERT policy exists on `tenant`) re-checks it under definer rights.
+  - `registration_enabled` is **best-effort only**: it is enforced in the register page + the
+    `signUpAction`, but a client could call `supabase.auth.signUp` directly with the anon key
+    (GoTrue does not consult `app_setting`). For a hard gate, disable signups at the Supabase
+    project level or add a GoTrue _before-user-created_ Auth Hook. Do NOT add a blunt `auth.users`
+    INSERT trigger — it would also block admin/service-role user provisioning (seed + set-site-admin).
+- **Per-tenant `member_tipping_enabled`** (on `tenant`): when false, members are view-only — the
+  `prediction` INSERT/UPDATE policies block their own writes while still letting an admin write for
+  any member (`private.is_member_of` + `is_admin`). There is intentionally **no `prediction` DELETE
+  policy** (nobody retracts tips via the app; deletes are service-role only).
+- **Account deletion** is the `delete_own_account()` definer RPC: in one transaction it blocks a sole
+  admin of a group that still has other members (raises `SOLE_ADMIN`), deletes groups where the
+  caller is the only member, then deletes the `auth.users` row (FKs cascade the rest). No service
+  role needed — keep it atomic; do not reintroduce a multi-step cookie-client + admin-API deletion.
 
 **Scoring** is server-authoritative and stored. The SQL function `score_prediction(...)` is the
 single source of truth; `score_fixture(fixture_id)` (service_role only) recomputes a fixture's

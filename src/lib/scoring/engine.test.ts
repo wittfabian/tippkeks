@@ -30,19 +30,19 @@ function score(
 
 describe("scorePrediction", () => {
   it("awards exact points for a perfect score", () => {
-    expect(score(2, 1, 2, 1)).toEqual({ points: 4, category: "exact" });
+    expect(score(2, 1, 2, 1)).toEqual({ points: 3, category: "exact" });
   });
 
   it("awards goal-difference points for the right margin", () => {
-    expect(score(3, 1, 2, 0)).toEqual({ points: 3, category: "goal_diff" });
+    expect(score(3, 1, 2, 0)).toEqual({ points: 2, category: "goal_diff" });
   });
 
   it("treats a wrong-but-drawn prediction as goal difference", () => {
-    expect(score(2, 2, 1, 1)).toEqual({ points: 3, category: "goal_diff" });
+    expect(score(2, 2, 1, 1)).toEqual({ points: 2, category: "goal_diff" });
   });
 
   it("awards tendency points for the right winner only", () => {
-    expect(score(1, 0, 3, 1)).toEqual({ points: 2, category: "tendency" });
+    expect(score(1, 0, 3, 1)).toEqual({ points: 1, category: "tendency" });
   });
 
   it("awards nothing for the wrong tendency", () => {
@@ -50,7 +50,7 @@ describe("scorePrediction", () => {
   });
 
   it("applies the per-stage multiplier", () => {
-    expect(score(2, 1, 2, 1, "final")).toEqual({ points: 8, category: "exact" });
+    expect(score(2, 1, 2, 1, "final")).toEqual({ points: 6, category: "exact" });
   });
 
   it("returns miss when the result is unknown", () => {
@@ -68,8 +68,8 @@ describe("scorePrediction", () => {
       stage: "final",
       config,
     });
-    // 1:1 vs 1:1 is exact (4) x2 (final) + advance bonus (2) = 10.
-    expect(outcome).toEqual({ points: 10, category: "exact" });
+    // 1:1 vs 1:1 is exact (3) x2 (final) + advance bonus (2) = 8.
+    expect(outcome).toEqual({ points: 8, category: "exact" });
   });
 
   it("does not add the bonus when the advancing prediction is wrong", () => {
@@ -83,6 +83,6 @@ describe("scorePrediction", () => {
       stage: "group",
       config,
     });
-    expect(outcome).toEqual({ points: 4, category: "exact" });
+    expect(outcome).toEqual({ points: 3, category: "exact" });
   });
 });

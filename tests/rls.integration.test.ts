@@ -24,19 +24,28 @@ suite("RLS, deadline and scoring (integration)", () => {
   let tenantId: string;
   let futureFixtureId: number;
   let pastFixtureId: number;
+  let tippingFixtureId: number;
 
   async function cleanup() {
-    await admin.from("tenant").delete().eq("slug", SLUG);
+    await admin.from("tenant").delete().in("slug", [SLUG, "itest-solo"]);
     await admin.from("fixture").delete().eq("provider", FIXTURE_PROVIDER);
     await Promise.all([
       deleteUserByEmail(EMAILS.a),
       deleteUserByEmail(EMAILS.b),
       deleteUserByEmail(EMAILS.c),
+      deleteUserByEmail("itest_solo@example.com"),
     ]);
   }
 
   beforeAll(async () => {
     await cleanup();
+
+    // create_group honours the global group-creation toggle; ensure it is on so
+    // this suite is independent of whatever the ambient app setting happens to be.
+    await admin
+      .from("app_setting")
+      .update({ value: { enabled: true } })
+      .eq("key", "group_creation_enabled");
 
     ({ client: cA, userId: uidA } = await createSignedInUser(EMAILS.a, "password123"));
     ({ client: cB, userId: uidB } = await createSignedInUser(EMAILS.b, "password123"));
@@ -83,6 +92,12 @@ suite("RLS, deadline and scoring (integration)", () => {
       .select("id")
       .single();
     pastFixtureId = pf!.id;
+    const { data: tf } = await admin
+      .from("fixture")
+      .insert({ ...baseFixture, kickoff_at: future, external_id: "itest-tipping" })
+      .select("id")
+      .single();
+    tippingFixtureId = tf!.id;
 
     await cA
       .from("tenant_invite")
@@ -91,24 +106,20 @@ suite("RLS, deadline and scoring (integration)", () => {
     if (joinError) throw joinError;
 
     // Predictions on the FUTURE fixture (before kickoff — allowed).
-    await cA
-      .from("prediction")
-      .insert({
-        tenant_id: tenantId,
-        user_id: uidA,
-        fixture_id: futureFixtureId,
-        home_goals: 2,
-        away_goals: 1,
-      });
-    await cB
-      .from("prediction")
-      .insert({
-        tenant_id: tenantId,
-        user_id: uidB,
-        fixture_id: futureFixtureId,
-        home_goals: 1,
-        away_goals: 1,
-      });
+    await cA.from("prediction").insert({
+      tenant_id: tenantId,
+      user_id: uidA,
+      fixture_id: futureFixtureId,
+      home_goals: 2,
+      away_goals: 1,
+    });
+    await cB.from("prediction").insert({
+      tenant_id: tenantId,
+      user_id: uidB,
+      fixture_id: futureFixtureId,
+      home_goals: 1,
+      away_goals: 1,
+    });
   }, 30_000);
 
   afterAll(cleanup);
@@ -194,7 +205,8 @@ suite("RLS, deadline and scoring (integration)", () => {
       .select("user_id, points, category")
       .eq("fixture_id", futureFixtureId);
     const byUser = new Map((scores ?? []).map((s) => [s.user_id, s]));
-    expect(byUser.get(uidA)).toMatchObject({ points: 4, category: "exact" });
+    // Default rules: exact = 3 (see migration 600).
+    expect(byUser.get(uidA)).toMatchObject({ points: 3, category: "exact" });
     expect(byUser.get(uidB)).toMatchObject({ points: 0, category: "miss" });
 
     const { data: leaderboard } = await cA
@@ -202,7 +214,7 @@ suite("RLS, deadline and scoring (integration)", () => {
       .select("user_id, total_points, rank")
       .eq("tenant_id", tenantId)
       .order("rank", { ascending: true });
-    expect(leaderboard?.[0]).toMatchObject({ user_id: uidA, total_points: 4, rank: 1 });
+    expect(leaderboard?.[0]).toMatchObject({ user_id: uidA, total_points: 3, rank: 1 });
   });
 
   it("matches the SQL scoring function to the TypeScript mirror (rpc parity)", async () => {
@@ -218,5 +230,79 @@ suite("RLS, deadline and scoring (integration)", () => {
       p_config: config,
     });
     expect(data).toMatchObject({ points: 3, category: "goal_diff" });
+  });
+
+  it("view-only mode blocks members but lets admins enter tips for them", async () => {
+    // Switch the group to view-only.
+    await admin.from("tenant").update({ member_tipping_enabled: false }).eq("id", tenantId);
+
+    // The member can no longer write their own prediction.
+    const { error: memberError } = await cB.from("prediction").upsert(
+      {
+        tenant_id: tenantId,
+        user_id: uidB,
+        fixture_id: tippingFixtureId,
+        home_goals: 1,
+        away_goals: 0,
+      },
+      { onConflict: "tenant_id,user_id,fixture_id" },
+    );
+    expect(memberError).not.toBeNull();
+
+    // The admin may enter a prediction on the member's behalf.
+    const { error: adminError } = await cA.from("prediction").upsert(
+      {
+        tenant_id: tenantId,
+        user_id: uidB,
+        fixture_id: tippingFixtureId,
+        home_goals: 3,
+        away_goals: 2,
+      },
+      { onConflict: "tenant_id,user_id,fixture_id" },
+    );
+    expect(adminError).toBeNull();
+
+    // Re-enabling tipping lets the member write again.
+    await admin.from("tenant").update({ member_tipping_enabled: true }).eq("id", tenantId);
+    const { error: reenabledError } = await cB.from("prediction").upsert(
+      {
+        tenant_id: tenantId,
+        user_id: uidB,
+        fixture_id: tippingFixtureId,
+        home_goals: 0,
+        away_goals: 0,
+      },
+      { onConflict: "tenant_id,user_id,fixture_id" },
+    );
+    expect(reenabledError).toBeNull();
+  });
+
+  it("delete_own_account blocks a sole admin with members, but deletes a solo owner + their group", async () => {
+    // cA is the only admin of the itest group and cB is a member → must be blocked.
+    const { error: blocked } = await cA.rpc("delete_own_account");
+    expect(blocked).not.toBeNull();
+    expect(blocked?.message).toContain("SOLE_ADMIN");
+    // cA still exists.
+    const { data: stillThere } = await admin.auth.admin.listUsers();
+    expect(stillThere.users.some((u) => u.id === uidA)).toBe(true);
+
+    // A fresh user who owns only their own group can delete; the group goes with them.
+    const { client: cD, userId: uidD } = await createSignedInUser(
+      "itest_solo@example.com",
+      "password123",
+    );
+    const { error: createErr } = await cD.rpc("create_group", {
+      p_name: "Solo",
+      p_slug: "itest-solo",
+    });
+    expect(createErr).toBeNull();
+
+    const { error: delErr } = await cD.rpc("delete_own_account");
+    expect(delErr).toBeNull();
+
+    const { data: goneTenant } = await admin.from("tenant").select("id").eq("slug", "itest-solo");
+    expect(goneTenant).toEqual([]);
+    const { data: afterUsers } = await admin.auth.admin.listUsers();
+    expect(afterUsers.users.some((u) => u.id === uidD)).toBe(false);
   });
 });

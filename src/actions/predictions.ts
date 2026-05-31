@@ -41,6 +41,25 @@ export async function submitPredictionAction(
   const userId = claims?.claims?.sub;
   if (!userId) return { error: de.fixtures.saveError };
 
+  // View-only mode: members can't tip when the group has it disabled (admins
+  // always can). RLS enforces this too; this returns a friendlier message.
+  const [{ data: tenant }, { data: member }] = await Promise.all([
+    supabase
+      .from("tenant")
+      .select("member_tipping_enabled")
+      .eq("id", parsed.data.tenantId)
+      .maybeSingle(),
+    supabase
+      .from("tenant_member")
+      .select("role")
+      .eq("tenant_id", parsed.data.tenantId)
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
+  if (member?.role !== "admin" && tenant && !tenant.member_tipping_enabled) {
+    return { error: de.fixtures.tippingDisabled };
+  }
+
   const { error } = await supabase.from("prediction").upsert(
     {
       tenant_id: parsed.data.tenantId,

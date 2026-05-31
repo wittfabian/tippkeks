@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AuthForm } from "@/components/auth/auth-form";
+import { Wordmark } from "@/components/brand/logo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { de } from "@/messages/de";
 
@@ -10,7 +11,7 @@ export default function LoginPage() {
   return (
     <Card>
       <CardHeader>
-        <p className="text-muted-foreground text-sm">{de.app.name}</p>
+        <Wordmark size={32} className="mb-1" />
         <CardTitle>{de.auth.loginTitle}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

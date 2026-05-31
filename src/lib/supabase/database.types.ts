@@ -75,6 +75,27 @@ export type Database = {
           },
         ]
       }
+      app_setting: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       competition: {
         Row: {
           created_at: string
@@ -426,6 +447,21 @@ export type Database = {
           },
         ]
       }
+      site_admin: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sport: {
         Row: {
           id: number
@@ -514,6 +550,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          member_tipping_enabled: boolean
           name: string
           slug: string
         }
@@ -521,6 +558,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          member_tipping_enabled?: boolean
           name: string
           slug: string
         }
@@ -528,6 +566,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          member_tipping_enabled?: boolean
           name?: string
           slug?: string
         }
@@ -667,6 +706,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          member_tipping_enabled: boolean
           name: string
           slug: string
         }
@@ -677,6 +717,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_own_account: { Args: never; Returns: undefined }
       recompute_tenant: { Args: { p_tenant: string }; Returns: undefined }
       redeem_invite: {
         Args: { p_code: string }
@@ -684,6 +725,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          member_tipping_enabled: boolean
           name: string
           slug: string
         }

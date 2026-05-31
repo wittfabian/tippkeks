@@ -1,0 +1,135 @@
+import Link from "next/link";
+
+import { CategoryChip } from "@/components/match/category-chip";
+import { LockCountdown } from "@/components/match/lock-countdown";
+import { TeamIdentity } from "@/components/match/team-identity";
+import { PredictionForm } from "@/components/predictions/prediction-form";
+import { Card, CardContent } from "@/components/ui/card";
+import { isKnockoutStage } from "@/lib/domain/stages";
+import type { FixtureVM } from "@/lib/data/fixtures";
+import { formatTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { de } from "@/messages/de";
+
+function resultLabel(f: FixtureVM): string {
+  if (f.regularHome == null || f.regularAway == null) return "–:–";
+  const et = f.afterExtraTime ? " n.V." : "";
+  const pens =
+    f.penaltyHome != null && f.penaltyAway != null
+      ? ` (${f.penaltyHome}:${f.penaltyAway} i.E.)`
+      : "";
+  return `${f.regularHome}:${f.regularAway}${et}${pens}`;
+}
+
+// Coloured left edge: category colour once graded, ice-blue while live.
+function edgeClass(f: FixtureVM): string {
+  if (f.status === "live") return "border-l-4 border-l-live";
+  if (f.myCategory === "exact") return "border-l-4 border-l-chart-1";
+  if (f.myCategory === "goal_diff") return "border-l-4 border-l-chart-2";
+  if (f.myCategory === "tendency") return "border-l-4 border-l-chart-3";
+  if (f.status === "finished") return "border-l-4 border-l-border";
+  return "";
+}
+
+export function MatchCard({
+  fixture: f,
+  tenantId,
+  slug,
+  canTip,
+}: {
+  fixture: FixtureVM;
+  tenantId: string;
+  slug: string;
+  /** Whether the current user may submit a tip (members in view-only mode can't). */
+  canTip: boolean;
+}) {
+  const hasResult = f.regularHome != null && f.regularAway != null;
+  const isLive = f.status === "live";
+
+  return (
+    <Card className={cn("overflow-hidden", edgeClass(f))}>
+      <CardContent className="space-y-2 py-3">
+        {/* Band 1: stage + matchday · status/time */}
+        <div className="text-muted-foreground flex items-center justify-between gap-2 text-xs">
+          <span className="truncate">
+            {f.stageName}
+            {f.matchday ? ` · ST ${f.matchday}` : ""}
+          </span>
+          {isLive ? (
+            <span className="text-live inline-flex items-center gap-1 font-semibold">
+              <span
+                className="bg-destructive size-1.5 rounded-full motion-safe:animate-pulse"
+                aria-hidden
+              />
+              {de.status.live}
+            </span>
+          ) : f.status === "finished" ? (
+            <span>{de.status.finished}</span>
+          ) : f.locked ? (
+            <span>{formatTime(f.kickoffAt)} Uhr</span>
+          ) : (
+            <span className="inline-flex items-center gap-1">{formatTime(f.kickoffAt)} Uhr</span>
+          )}
+        </div>
+
+        {/* Band 2: matchup + score/kickoff */}
+        <div className="flex items-center gap-2">
+          <TeamIdentity team={f.home} className="flex-1" />
+          <span className="font-heading shrink-0 px-1 text-center text-lg font-bold tabular-nums">
+            {hasResult || isLive ? resultLabel(f) : formatTime(f.kickoffAt)}
+          </span>
+          <TeamIdentity team={f.away} align="end" className="flex-1" />
+        </div>
+
+        {/* Band 3: action (open) or your-tip summary (locked) */}
+        {f.locked ? (
+          <div className="text-muted-foreground flex items-center justify-between gap-2 text-xs">
+            <span className="flex items-center gap-2">
+              <span>
+                {de.fixtures.yourTip}:{" "}
+                <span className="text-foreground tabular-nums">
+                  {f.myPrediction ? `${f.myPrediction.homeGoals}:${f.myPrediction.awayGoals}` : "–"}
+                </span>
+              </span>
+              {f.myCategory && <CategoryChip category={f.myCategory} points={f.myPoints} />}
+            </span>
+            <Link href={`/${slug}/spiel/${f.id}`} className="hover:text-foreground underline">
+              {de.fixtures.viewAll}
+            </Link>
+          </div>
+        ) : canTip ? (
+          <>
+            <div className="text-muted-foreground flex items-center justify-center gap-1 text-xs">
+              <span>{de.fixtures.closesIn}</span>
+              <LockCountdown target={f.kickoffAt} className="text-foreground tabular-nums" />
+            </div>
+            <PredictionForm
+              tenantId={tenantId}
+              slug={slug}
+              fixtureId={f.id}
+              homeName={f.home?.name ?? "?"}
+              awayName={f.away?.name ?? "?"}
+              homeCode={f.home?.shortName ?? null}
+              awayCode={f.away?.shortName ?? null}
+              knockout={isKnockoutStage(f.stageKind)}
+              homeTeamId={f.home?.id ?? null}
+              awayTeamId={f.away?.id ?? null}
+              initial={f.myPrediction}
+            />
+          </>
+        ) : (
+          // View-only mode: members can't tip, but see any admin-entered tip.
+          <div className="text-muted-foreground flex items-center justify-between gap-2 text-xs">
+            <span>
+              {de.fixtures.yourTip}:{" "}
+              <span className="text-foreground tabular-nums">
+                {f.myPrediction ? `${f.myPrediction.homeGoals}:${f.myPrediction.awayGoals}` : "–"}
+              </span>
+            </span>
+            <span>{de.fixtures.tippingDisabledShort}</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

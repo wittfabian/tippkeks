@@ -9,7 +9,10 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-archivo);
+  --color-reward: var(--reward);
+  --color-reward-foreground: var(--reward-foreground);
+  --color-live: var(--live);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,73 +51,87 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+ * "Anstoß" palette (executed restrained). Two-colour logic:
+ *   --primary (pitch green) = an action you can take
+ *   --reward  (Tor-Gold)    = something you earned (podium, exact-hit)
+ * --live (ice-blue, = --chart-5) is kept distinct from the miss-red.
+ * Chart scale doubles as the score-category colours: green=Exakt, blue=Tordifferenz,
+ * gold=Tendenz, red=Daneben, ice-blue=Live. Neutrals are faintly green-tinted, not pure gray.
+ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: oklch(0.985 0.006 160);
+  --foreground: oklch(0.17 0.02 165);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.17 0.02 165);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.17 0.02 165);
+  --primary: oklch(0.58 0.16 150);
+  --primary-foreground: oklch(0.99 0.01 150);
+  --secondary: oklch(0.95 0.02 160);
+  --secondary-foreground: oklch(0.3 0.05 160);
+  --muted: oklch(0.955 0.012 160);
+  --muted-foreground: oklch(0.48 0.02 165);
+  --accent: oklch(0.93 0.03 155);
+  --accent-foreground: oklch(0.3 0.06 155);
+  --reward: oklch(0.8 0.13 85);
+  --reward-foreground: oklch(0.27 0.06 70);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --border: oklch(0.9 0.008 160);
+  --input: oklch(0.9 0.008 160);
+  --ring: oklch(0.58 0.16 150);
+  --chart-1: oklch(0.58 0.16 150);
+  --chart-2: oklch(0.62 0.13 250);
+  --chart-3: oklch(0.74 0.13 85);
+  --chart-4: oklch(0.62 0.2 27);
+  --chart-5: oklch(0.72 0.14 215);
+  --live: var(--chart-5);
+  --radius: 0.7rem;
+  --sidebar: oklch(0.985 0.006 160);
+  --sidebar-foreground: oklch(0.17 0.02 165);
+  --sidebar-primary: oklch(0.58 0.16 150);
+  --sidebar-primary-foreground: oklch(0.99 0.01 150);
+  --sidebar-accent: oklch(0.93 0.03 155);
+  --sidebar-accent-foreground: oklch(0.3 0.06 155);
+  --sidebar-border: oklch(0.9 0.008 160);
+  --sidebar-ring: oklch(0.58 0.16 150);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: oklch(0.16 0.018 165);
+  --foreground: oklch(0.97 0.005 160);
+  --card: oklch(0.215 0.02 165);
+  --card-foreground: oklch(0.97 0.005 160);
+  --popover: oklch(0.215 0.02 165);
+  --popover-foreground: oklch(0.97 0.005 160);
+  --primary: oklch(0.7 0.17 150);
+  --primary-foreground: oklch(0.16 0.03 160);
+  --secondary: oklch(0.27 0.025 165);
+  --secondary-foreground: oklch(0.95 0.01 160);
+  --muted: oklch(0.27 0.02 165);
+  --muted-foreground: oklch(0.72 0.015 165);
+  --accent: oklch(0.3 0.03 155);
+  --accent-foreground: oklch(0.95 0.01 160);
+  --reward: oklch(0.8 0.14 85);
+  --reward-foreground: oklch(0.2 0.05 70);
+  --destructive: oklch(0.7 0.19 22);
+  --border: oklch(0.99 0.01 160 / 12%);
+  --input: oklch(0.99 0.01 160 / 16%);
+  --ring: oklch(0.7 0.17 150);
+  --chart-1: oklch(0.66 0.16 150);
+  --chart-2: oklch(0.68 0.13 250);
+  --chart-3: oklch(0.8 0.13 85);
+  --chart-4: oklch(0.68 0.19 27);
+  --chart-5: oklch(0.76 0.14 215);
+  --live: var(--chart-5);
+  --sidebar: oklch(0.215 0.02 165);
+  --sidebar-foreground: oklch(0.97 0.005 160);
+  --sidebar-primary: oklch(0.7 0.17 150);
+  --sidebar-primary-foreground: oklch(0.16 0.03 160);
+  --sidebar-accent: oklch(0.3 0.03 155);
+  --sidebar-accent-foreground: oklch(0.95 0.01 160);
+  --sidebar-border: oklch(0.99 0.01 160 / 12%);
+  --sidebar-ring: oklch(0.7 0.17 150);
 }
 
 @layer base {
@@ -126,5 +143,45 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/*
+ * Landing-page motion. Decorative only — the hero stays fully legible and the
+ * CTA fully usable without any of it, and all of it is disabled under
+ * prefers-reduced-motion below.
+ */
+@keyframes tk-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-16px);
+  }
+}
+@keyframes tk-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes tk-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-tk-anim] {
+    animation: none !important;
   }
 }

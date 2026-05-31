@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Archivo, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+import { ThemeProvider } from "@/components/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
@@ -14,12 +15,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Display font for headings, scorelines and ranks — the single "fancy" type lever.
+const archivo = Archivo({
+  variable: "--font-archivo",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+});
+
 export const metadata: Metadata = {
   title: {
-    default: "Tippspiel",
-    template: "%s · Tippspiel",
+    default: "TippKeks",
+    template: "%s · TippKeks",
   },
-  description: "Privates Tippspiel für Freundesgruppen – WM 2026.",
+  description: "TippKeks – privates Fußball-Tippspiel für Freundesgruppen zur WM 2026.",
 };
 
 export default function RootLayout({
@@ -28,10 +36,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="de" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang="de"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} ${archivo.variable} h-full antialiased`}
+    >
       <body className="flex min-h-full flex-col">
-        {children}
-        <Toaster position="top-center" />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+          <Toaster position="top-center" />
+        </ThemeProvider>
       </body>
     </html>
   );
