@@ -329,7 +329,7 @@ export const de = {
   },
   legal: {
     backHome: "Zur Startseite",
-    lastUpdated: "Stand: Mai 2026",
+    lastUpdated: "Stand: Juni 2026",
     footerNav: {
       info: "Über TippKeks",
       privacy: "Datenschutz",
@@ -372,13 +372,13 @@ export const de = {
       dataHeading: "Welche Daten wir verarbeiten",
       dataAccountHeading: "Konto-Daten",
       dataAccount:
-        "E-Mail-Adresse, Passwort (ausschließlich verschlüsselt bzw. als Hash gespeichert) und dein Anzeigename. Diese Daten sind für Registrierung und Anmeldung erforderlich.",
+        "E-Mail-Adresse, Passwort (ausschließlich verschlüsselt bzw. als Hash gespeichert) und dein Anzeigename. Diese Daten sind für Registrierung und Anmeldung erforderlich. Optional kannst du eine Zwei-Faktor-Authentifizierung (TOTP) aktivieren; dabei wird das zugehörige Geheimnis sicher bei unserem Authentifizierungs-Dienstleister gespeichert.",
       dataGameHeading: "Spiel-Daten",
       dataGame:
-        "Deine abgegebenen Tipps, die daraus berechneten Punkte sowie deine Mitgliedschaft in Tippgruppen.",
+        "Deine abgegebenen Tipps, die daraus berechneten Punkte sowie deine Mitgliedschaft in Tippgruppen. Gruppen-Administratoren können zudem Mitglieder mit einem Anzeigenamen anlegen und für diese Tipps eintragen (etwa für Teilnehmende, die die App nicht selbst nutzen).",
       dataLogHeading: "Server-Logfiles",
       dataLog:
-        "Beim Aufruf der Anwendung werden technisch notwendige Zugriffsdaten verarbeitet (z. B. gekürzte IP-Adresse, Datum und Uhrzeit des Zugriffs, abgerufene Ressource, Browsertyp). Sie dienen der Sicherstellung des technischen Betriebs und der Fehleranalyse.",
+        "Beim Aufruf der Anwendung werden technisch notwendige Zugriffsdaten verarbeitet (z. B. gekürzte IP-Adresse, Datum und Uhrzeit des Zugriffs, abgerufene Ressource, Browsertyp). Sie dienen der Sicherstellung des technischen Betriebs und der Fehleranalyse. Zum Schutz vor missbräuchlichen Anmelde- und Passwort-Zurücksetzen-Versuchen begrenzen wir die Häufigkeit solcher Anfragen; hierfür wird die IP-Adresse kurzzeitig verarbeitet.",
       dataCookiesHeading: "Cookies",
       dataCookies:
         "TippKeks verwendet ausschließlich technisch notwendige Cookies, um deine Anmeldesitzung aufrechtzuerhalten. Es findet kein Tracking und keine Analyse deines Verhaltens statt; es werden keine Cookies zu Werbezwecken eingesetzt.",
@@ -392,9 +392,9 @@ export const de = {
         "Die Anwendung wird bei der Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, betrieben. Die Server stehen in Deutschland. Mit Hetzner besteht ein Vertrag zur Auftragsverarbeitung gemäß Art. 28 DSGVO.",
       recipientsHeading: "Empfänger und Auftragsverarbeiter",
       recipientsSupabase:
-        "Für Datenbank und Authentifizierung setzen wir den Dienst Supabase ein. Die personenbezogenen Daten werden in einem Rechenzentrum innerhalb der Europäischen Union gespeichert. Es besteht ein Auftragsverarbeitungsvertrag; soweit eine Übermittlung in ein Drittland nicht ausgeschlossen werden kann, erfolgt diese auf Grundlage geeigneter Garantien (insbesondere EU-Standardvertragsklauseln).",
+        "Für Datenbank und Authentifizierung setzen wir den Dienst Supabase ein. Die personenbezogenen Daten werden in einem Rechenzentrum in Frankfurt am Main (Deutschland, EU) gespeichert. Es besteht ein Auftragsverarbeitungsvertrag; soweit eine Übermittlung in ein Drittland nicht ausgeschlossen werden kann (etwa durch den US-Mutterkonzern), erfolgt diese auf Grundlage geeigneter Garantien (insbesondere EU-Standardvertragsklauseln).",
       recipientsEmail:
-        "Für den Versand von System-E-Mails (z. B. zur Bestätigung deiner E-Mail-Adresse, zum Zurücksetzen des Passworts oder zur Bestätigung einer E-Mail-Änderung) setzen wir den Dienst Resend (betrieben von Plus Five Five, Inc., 2261 Market Street #5039, San Francisco, CA 94114, USA) ein. Hierzu wird deine E-Mail-Adresse an den Dienst übermittelt. Es besteht ein Auftragsverarbeitungsvertrag. Die mit der Übermittlung in die USA verbundene Verarbeitung stützt sich auf geeignete Garantien: Der Anbieter ist unter dem EU-US Data Privacy Framework zertifiziert; ergänzend gelten die EU-Standardvertragsklauseln gemäß Art. 46 DSGVO.",
+        "Für den Versand von System-E-Mails (z. B. zur Bestätigung deiner E-Mail-Adresse, zum Zurücksetzen des Passworts oder zur Bestätigung einer E-Mail-Änderung) setzen wir den Dienst Resend (betrieben von Plus Five Five, Inc., 2261 Market Street #5039, San Francisco, CA 94114, USA) ein. Hierzu wird deine E-Mail-Adresse an den Dienst übermittelt; die Verarbeitung erfolgt über die EU-Infrastruktur des Anbieters (Rechenzentrum in der EU). Es besteht ein Auftragsverarbeitungsvertrag. Soweit eine Übermittlung in die USA nicht ausgeschlossen werden kann (etwa durch den US-Anbieter), stützt sich diese auf geeignete Garantien: Der Anbieter ist unter dem EU-US Data Privacy Framework zertifiziert; ergänzend gelten die EU-Standardvertragsklauseln gemäß Art. 46 DSGVO.",
       gameDataHeading: "Spieldaten von Dritten",
       gameData:
         "Spielpläne und Ergebnisse beziehen wir vom Dienst football-data.org. Dabei werden ausschließlich Sportdaten abgerufen — es werden keine personenbezogenen Daten unserer Nutzer an diesen Dienst übermittelt.",
