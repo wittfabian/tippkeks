@@ -44,10 +44,14 @@ ships to browsers), so they live as Variables, not Secrets:
 
 **Secrets** tab:
 
-| Name                                 | Used by                        | Value                                                                                                                                                                                                                  |
-| ------------------------------------ | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SUPABASE_SERVICE_ROLE_KEY`          | CI build (env validation only) | Any non-empty value. The build only Zod-validates that it is present — it never contacts Supabase — so a dummy works; storing the real key is also fine.                                                               |
-| `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | Release build (embedded)       | `openssl rand -base64 32`. `next build` embeds it into the image (and compiles it into any Edge bundle, where runtime can't override it). Keep it **stable across releases** and inject the **same** value at runtime. |
+| Name                                 | Used by                  | Value                                                                                                                                                                                                                  |
+| ------------------------------------ | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | Release build (embedded) | `openssl rand -base64 32`. `next build` embeds it into the image (and compiles it into any Edge bundle, where runtime can't override it). Keep it **stable across releases** and inject the **same** value at runtime. |
+
+> `SUPABASE_SERVICE_ROLE_KEY` is **not** a CI secret: it is only needed at runtime
+> (asserted in `createServiceClient`), so the build never sees it. Keeping it out
+> of CI removes any chance of the production service-role key leaking into a build
+> log or artifact. Inject it only into the running container/deployment.
 
 > The repo's built-in `GITHUB_TOKEN` is used to push images to GHCR — no PAT needed. Just allow
 > Actions to write packages: Settings → Actions → General → Workflow permissions.
@@ -56,9 +60,9 @@ ships to browsers), so they live as Variables, not Secrets:
 
 Steps: install → `typecheck` → `lint` → `format:check` → `test` → `build`.
 
-- The **build** step pulls `NEXT_PUBLIC_*` from the repo Variables and `SUPABASE_SERVICE_ROLE_KEY`
-  from the repo Secret above (Zod validates env at build time — they must be present, but the build
-  does not reach Supabase).
+- The **build** step pulls only `NEXT_PUBLIC_*` from the repo Variables (they are inlined into the
+  client bundle, so they must be present). It needs no Supabase secret — `next build` validates env
+  but never reaches Supabase, and the service-role key is asserted lazily at runtime.
 - The **integration tests** (`tests/*.integration.test.ts`) self-skip when the Supabase keys are
   absent (`tests/helpers.ts` → `hasSupabase === false → describe.skip`), so CI runs the unit tests
   only and needs no live database.

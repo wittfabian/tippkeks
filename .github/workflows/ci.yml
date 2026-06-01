@@ -42,16 +42,16 @@ jobs:
       - name: Test
         run: pnpm test
 
-      # Build env comes from repo Variables/Secrets (not hardcoded). NEXT_PUBLIC_*
-      # are inlined at build time and Zod-validated, so they must be present; the
-      # service-role key is only validated for presence here (the build never
-      # contacts Supabase). Configure under Settings → Secrets and variables →
-      # Actions: Variables NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      # Secret SUPABASE_SERVICE_ROLE_KEY. See README → Continuous integration.
+      # Build env comes from repo Variables (not hardcoded). NEXT_PUBLIC_* are
+      # inlined into the client bundle at build time and Zod-validated, so they
+      # must be present. The service-role key is deliberately NOT provided: it is
+      # only needed at runtime (createServiceClient asserts it then), so keeping
+      # the secret out of CI removes any chance of it leaking into a build artifact
+      # or log. Configure under Settings → Secrets and variables → Actions:
+      # Variables NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY.
       - name: Build
         run: pnpm build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           NEXT_TELEMETRY_DISABLED: "1"
