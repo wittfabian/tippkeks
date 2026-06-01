@@ -9,7 +9,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { de } from "@/messages/de";
 import { logActionError, type ActionState } from "@/actions/types";
 
-const tenantField = z.object({ tenantId: z.string().uuid(), slug: z.string().min(1) });
+const tenantField = z.object({ tenantId: z.string().uuid() });
 
 /** Postgres SQLSTATE for a CHECK/`check_violation` raise (e.g. the min-one-admin trigger). */
 const CHECK_VIOLATION = "23514";
@@ -51,7 +51,6 @@ export async function createInviteAction(
 ): Promise<ActionState> {
   const parsed = createInviteSchema.safeParse({
     tenantId: formData.get("tenantId"),
-    slug: formData.get("slug"),
     maxUses: formData.get("maxUses") || undefined,
     asAdmin: formData.get("asAdmin") === "on",
   });
@@ -78,7 +77,7 @@ export async function createInviteAction(
     action: "invite_create",
   });
 
-  revalidatePath(`/${parsed.data.slug}/admin`);
+  revalidatePath(`/${parsed.data.tenantId}/admin`);
   return { error: null, info: de.admin.inviteCreated };
 }
 
@@ -90,7 +89,6 @@ export async function deleteInviteAction(
 ): Promise<ActionState> {
   const parsed = deleteInviteSchema.safeParse({
     tenantId: formData.get("tenantId"),
-    slug: formData.get("slug"),
     code: formData.get("code"),
   });
   if (!parsed.success) return { error: de.auth.errorGeneric };
@@ -108,7 +106,7 @@ export async function deleteInviteAction(
     .eq("code", parsed.data.code);
   if (error) return { error: de.auth.errorGeneric };
 
-  revalidatePath(`/${parsed.data.slug}/admin`);
+  revalidatePath(`/${parsed.data.tenantId}/admin`);
   return { error: null, info: de.admin.inviteDeleted };
 }
 
@@ -121,7 +119,6 @@ export async function setMemberTippingAction(
 ): Promise<ActionState> {
   const parsed = memberTippingSchema.safeParse({
     tenantId: formData.get("tenantId"),
-    slug: formData.get("slug"),
     enabled: formData.get("enabled") === "on",
   });
   if (!parsed.success) return { error: de.auth.errorGeneric };
@@ -139,13 +136,13 @@ export async function setMemberTippingAction(
     return { error: de.auth.errorGeneric };
   }
 
-  revalidatePath(`/${parsed.data.slug}/admin`);
-  revalidatePath(`/${parsed.data.slug}/spiele`);
+  revalidatePath(`/${parsed.data.tenantId}/admin`);
+  revalidatePath(`/${parsed.data.tenantId}/spiele`);
   return { error: null, info: de.admin.memberTippingSaved };
 }
 
 const memberTipsSchema = tenantField.extend({
-  fixtureId: z.coerce.number().int().positive(),
+  fixtureId: z.string().uuid(),
   userIds: z.string().min(1),
 });
 
@@ -162,7 +159,6 @@ export async function saveMemberTipsAction(
 ): Promise<ActionState> {
   const parsed = memberTipsSchema.safeParse({
     tenantId: formData.get("tenantId"),
-    slug: formData.get("slug"),
     fixtureId: formData.get("fixtureId"),
     userIds: formData.get("userIds"),
   });
@@ -181,7 +177,7 @@ export async function saveMemberTipsAction(
   const rows: {
     tenant_id: string;
     user_id: string;
-    fixture_id: number;
+    fixture_id: string;
     home_goals: number;
     away_goals: number;
   }[] = [];
@@ -215,8 +211,8 @@ export async function saveMemberTipsAction(
     return { error: de.admin.tipsError };
   }
 
-  revalidatePath(`/${parsed.data.slug}/admin`);
-  revalidatePath(`/${parsed.data.slug}/spiele`);
+  revalidatePath(`/${parsed.data.tenantId}/admin`);
+  revalidatePath(`/${parsed.data.tenantId}/spiele`);
   return { error: null, info: de.admin.tipsSaved(rows.length) };
 }
 
@@ -231,7 +227,6 @@ export async function setMemberRoleAction(
 ): Promise<ActionState> {
   const parsed = roleSchema.safeParse({
     tenantId: formData.get("tenantId"),
-    slug: formData.get("slug"),
     targetUserId: formData.get("targetUserId"),
     role: formData.get("role"),
   });
@@ -263,7 +258,7 @@ export async function setMemberRoleAction(
     detail: { role: parsed.data.role },
   });
 
-  revalidatePath(`/${parsed.data.slug}/admin`);
+  revalidatePath(`/${parsed.data.tenantId}/admin`);
   return { error: null, info: null };
 }
 
@@ -275,7 +270,6 @@ export async function removeMemberAction(
 ): Promise<ActionState> {
   const parsed = removeSchema.safeParse({
     tenantId: formData.get("tenantId"),
-    slug: formData.get("slug"),
     targetUserId: formData.get("targetUserId"),
   });
   if (!parsed.success) return { error: de.auth.errorGeneric };
@@ -304,7 +298,7 @@ export async function removeMemberAction(
     target_id: parsed.data.targetUserId,
   });
 
-  revalidatePath(`/${parsed.data.slug}/admin`);
+  revalidatePath(`/${parsed.data.tenantId}/admin`);
   return { error: null, info: null };
 }
 
@@ -321,7 +315,6 @@ export async function saveScoringAction(
 ): Promise<ActionState> {
   const parsed = scoringSchema.safeParse({
     tenantId: formData.get("tenantId"),
-    slug: formData.get("slug"),
     exact: formData.get("exact"),
     goalDiff: formData.get("goalDiff"),
     tendency: formData.get("tendency"),
@@ -364,12 +357,12 @@ export async function saveScoringAction(
   // Recompute only touched this tenant's scores.
   await invalidateTags(`leaderboard:${parsed.data.tenantId}`);
 
-  revalidatePath(`/${parsed.data.slug}`);
+  revalidatePath(`/${parsed.data.tenantId}`);
   return { error: null, info: de.admin.scoringSaved };
 }
 
 const resultSchema = tenantField.extend({
-  fixtureId: z.coerce.number().int().positive(),
+  fixtureId: z.string().uuid(),
   homeGoals: z.coerce.number().int().min(0).max(99),
   awayGoals: z.coerce.number().int().min(0).max(99),
   // Knockout extras: who advanced when 90' was level, and the optional shootout score.
@@ -392,7 +385,6 @@ export async function overrideResultAction(
 ): Promise<ActionState> {
   const parsed = resultSchema.safeParse({
     tenantId: formData.get("tenantId"),
-    slug: formData.get("slug"),
     fixtureId: formData.get("fixtureId"),
     homeGoals: formData.get("homeGoals"),
     awayGoals: formData.get("awayGoals"),
@@ -435,7 +427,7 @@ export async function overrideResultAction(
 
   // Winner from the 90' result; if level (a knockout), use the admin's pick so the
   // advancing bonus is correct (the previous 90'-only derivation was the bug).
-  let winnerTeamId: number | null;
+  let winnerTeamId: string | null;
   if (parsed.data.homeGoals > parsed.data.awayGoals) winnerTeamId = fixture.home_team_id;
   else if (parsed.data.awayGoals > parsed.data.homeGoals) winnerTeamId = fixture.away_team_id;
   else if (parsed.data.winnerSide === "home") winnerTeamId = fixture.home_team_id;
@@ -471,10 +463,10 @@ export async function overrideResultAction(
     actor_id: userId,
     action: "result_override",
     target_type: "fixture",
-    target_id: String(parsed.data.fixtureId),
+    target_id: parsed.data.fixtureId,
     detail: { home: parsed.data.homeGoals, away: parsed.data.awayGoals },
   });
 
-  revalidatePath(`/${parsed.data.slug}`);
+  revalidatePath(`/${parsed.data.tenantId}`);
   return { error: null, info: de.admin.resultSaved };
 }

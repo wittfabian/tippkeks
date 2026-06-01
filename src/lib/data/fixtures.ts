@@ -7,14 +7,14 @@ import { createServiceClient } from "@/lib/supabase/service";
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
 
 export interface TeamLite {
-  id: number;
+  id: string;
   name: string;
   shortName: string | null;
   crestUrl: string | null;
 }
 
 export interface FixtureVM {
-  id: number;
+  id: string;
   kickoffAt: string;
   status: FixtureStatus;
   stageKind: StageKind;
@@ -27,7 +27,7 @@ export interface FixtureVM {
   afterExtraTime: boolean;
   penaltyHome: number | null;
   penaltyAway: number | null;
-  myPrediction: { homeGoals: number; awayGoals: number; advancingTeamId: number | null } | null;
+  myPrediction: { homeGoals: number; awayGoals: number; advancingTeamId: string | null } | null;
   myPoints: number | null;
   myCategory: ScoreCategory | null;
   locked: boolean;
@@ -40,8 +40,8 @@ export interface FixtureVM {
  * nothing user-scoped here. NEVER add predictions/scores to this function: that
  * would put per-user data behind a shared key.
  */
-async function getTournamentData(seasonIds: number[]) {
-  const key = `tournament:${[...seasonIds].sort((a, b) => a - b).join(",")}`;
+async function getTournamentData(seasonIds: string[]) {
+  const key = `tournament:${[...seasonIds].sort().join(",")}`;
   return cached({ key, ttlSeconds: 60, tags: ["tournament"] }, async () => {
     const service = createServiceClient();
     const [{ data: fixtures }, { data: teams }] = await Promise.all([
@@ -96,7 +96,7 @@ export async function getFixtureBoard(
       .eq("user_id", userId),
   ]);
 
-  const teamById = new Map<number, TeamLite>(teams.map((t) => [t.id, t]));
+  const teamById = new Map<string, TeamLite>(teams.map((t) => [t.id, t]));
   const predByFixture = new Map((predictions ?? []).map((p) => [p.fixture_id, p]));
   const scoreByFixture = new Map((scores ?? []).map((s) => [s.fixture_id, s]));
   const now = Date.now();

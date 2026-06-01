@@ -15,10 +15,10 @@ create type public.score_outcome as (points integer, category public.score_categ
 create or replace function public.score_prediction(
   p_home integer,
   p_away integer,
-  p_advancing bigint,
+  p_advancing uuid,
   f_home integer,
   f_away integer,
-  f_winner bigint,
+  f_winner uuid,
   p_stage public.stage_kind,
   p_config jsonb
 )
@@ -69,10 +69,10 @@ end;
 $$;
 
 revoke all on function
-  public.score_prediction(integer, integer, bigint, integer, integer, bigint, public.stage_kind, jsonb)
+  public.score_prediction(integer, integer, uuid, integer, integer, uuid, public.stage_kind, jsonb)
 from public;
 grant execute on function
-  public.score_prediction(integer, integer, bigint, integer, integer, bigint, public.stage_kind, jsonb)
+  public.score_prediction(integer, integer, uuid, integer, integer, uuid, public.stage_kind, jsonb)
 to authenticated, service_role;
 
 -- Recompute and persist scores for every prediction on a fixture, each against
@@ -80,7 +80,7 @@ to authenticated, service_role;
 -- result simply overwrites. A non-finished / result-less fixture clears scores
 -- (postponed/abandoned excluded, not zeroed). SECURITY DEFINER + service_role
 -- only — the client can never influence points.
-create or replace function public.score_fixture(p_fixture bigint)
+create or replace function public.score_fixture(p_fixture uuid)
 returns void
 language plpgsql
 security definer
@@ -144,8 +144,8 @@ begin
 end;
 $$;
 
-revoke all on function public.score_fixture(bigint) from public, anon, authenticated;
-grant execute on function public.score_fixture(bigint) to service_role;
+revoke all on function public.score_fixture(uuid) from public, anon, authenticated;
+grant execute on function public.score_fixture(uuid) to service_role;
 
 -- Admin-triggered full recompute for a tenant (e.g. after a rule change).
 -- SECURITY DEFINER so it may call score_fixture; re-checks admin via auth.uid().
@@ -156,7 +156,7 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_fixture_id bigint;
+  v_fixture_id uuid;
 begin
   if not private.is_admin(p_tenant) then
     raise exception 'Nur Admins dürfen Punkte neu berechnen'
@@ -186,7 +186,7 @@ grant execute on function public.recompute_tenant(uuid) to authenticated;
 
 -- Create a tenant, make the caller its admin, seed a default rule set and
 -- subscribe it to every seeded season (v1: only WC2026 exists).
-create or replace function public.create_group(p_name text, p_slug text)
+create or replace function public.create_group(p_name text)
 returns public.tenant
 language plpgsql
 security definer
@@ -200,8 +200,8 @@ begin
     raise exception 'Nicht angemeldet' using errcode = 'insufficient_privilege';
   end if;
 
-  insert into public.tenant (name, slug, created_by)
-  values (p_name, lower(p_slug), v_uid)
+  insert into public.tenant (name, created_by)
+  values (p_name, v_uid)
   returning * into v_tenant;
 
   insert into public.tenant_member (tenant_id, user_id, role)
@@ -225,8 +225,8 @@ begin
 end;
 $$;
 
-revoke all on function public.create_group(text, text) from public, anon;
-grant execute on function public.create_group(text, text) to authenticated;
+revoke all on function public.create_group(text) from public, anon;
+grant execute on function public.create_group(text) to authenticated;
 
 -- Redeem an invite code: validate, add the caller as a member, count the use.
 create or replace function public.redeem_invite(p_code text)

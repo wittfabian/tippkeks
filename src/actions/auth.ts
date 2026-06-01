@@ -39,7 +39,7 @@ async function postAuthDestination(
   const code = typeof rawInvite === "string" ? rawInvite.trim().toUpperCase() : "";
   if (!code) return "/gruppen";
   const { data } = await supabase.rpc("redeem_invite", { p_code: code });
-  return data?.slug ? `/${data.slug}` : "/gruppen";
+  return data?.id ? `/${data.id}` : "/gruppen";
 }
 
 export async function signInAction(_prev: ActionState, formData: FormData): Promise<ActionState> {

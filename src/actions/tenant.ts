@@ -11,11 +11,6 @@ import type { ActionState } from "@/actions/types";
 
 const createSchema = z.object({
   name: z.string().trim().min(2).max(80),
-  slug: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .regex(/^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/),
 });
 
 export async function createGroupAction(
@@ -24,7 +19,6 @@ export async function createGroupAction(
 ): Promise<ActionState> {
   const parsed = createSchema.safeParse({
     name: formData.get("name"),
-    slug: formData.get("slug"),
   });
   if (!parsed.success) return { error: de.groups.createError };
 
@@ -39,11 +33,10 @@ export async function createGroupAction(
 
   const { data, error } = await supabase.rpc("create_group", {
     p_name: parsed.data.name,
-    p_slug: parsed.data.slug,
   });
   if (error || !data) return { error: de.groups.createError };
 
-  redirect(`/${data.slug}`);
+  redirect(`/${data.id}`);
 }
 
 const joinSchema = z.object({ code: z.string().trim().min(1).max(64) });
@@ -59,5 +52,5 @@ export async function joinGroupAction(
   const { data, error } = await supabase.rpc("redeem_invite", { p_code: parsed.data.code });
   if (error || !data) return { error: de.groups.joinError };
 
-  redirect(`/${data.slug}`);
+  redirect(`/${data.id}`);
 }

@@ -50,14 +50,14 @@ create type audit_action as enum (
 -- ---------------------------------------------------------------------------
 
 create table public.sport (
-  id smallint generated always as identity primary key,
+  id uuid primary key default gen_random_uuid(),
   key text not null unique,
   name text not null
 );
 
 create table public.competition (
-  id bigint generated always as identity primary key,
-  sport_id smallint not null references public.sport (id),
+  id uuid primary key default gen_random_uuid(),
+  sport_id uuid not null references public.sport (id),
   name text not null,
   provider text not null,
   external_id text not null,
@@ -66,8 +66,8 @@ create table public.competition (
 );
 
 create table public.season (
-  id bigint generated always as identity primary key,
-  competition_id bigint not null references public.competition (id) on delete cascade,
+  id uuid primary key default gen_random_uuid(),
+  competition_id uuid not null references public.competition (id) on delete cascade,
   label text not null,
   starts_on date,
   ends_on date,
@@ -78,8 +78,8 @@ create table public.season (
 );
 
 create table public.stage (
-  id bigint generated always as identity primary key,
-  season_id bigint not null references public.season (id) on delete cascade,
+  id uuid primary key default gen_random_uuid(),
+  season_id uuid not null references public.season (id) on delete cascade,
   kind stage_kind not null,
   name text not null,
   ordinal smallint not null,
@@ -87,7 +87,7 @@ create table public.stage (
 );
 
 create table public.team (
-  id bigint generated always as identity primary key,
+  id uuid primary key default gen_random_uuid(),
   name text not null,
   short_name text,
   country_code text,
@@ -102,12 +102,12 @@ create table public.team (
 -- on penalties can still be scored against the 90' (regulation) result, while
 -- winner_team_id captures who actually advanced.
 create table public.fixture (
-  id bigint generated always as identity primary key,
-  season_id bigint not null references public.season (id) on delete cascade,
-  stage_id bigint references public.stage (id) on delete set null,
+  id uuid primary key default gen_random_uuid(),
+  season_id uuid not null references public.season (id) on delete cascade,
+  stage_id uuid references public.stage (id) on delete set null,
   matchday smallint,
-  home_team_id bigint references public.team (id),
-  away_team_id bigint references public.team (id),
+  home_team_id uuid references public.team (id),
+  away_team_id uuid references public.team (id),
   kickoff_at timestamptz not null,
   status fixture_status not null default 'scheduled',
   -- Regulation (90') result — the basis for score predictions.
@@ -117,7 +117,7 @@ create table public.fixture (
   after_extra_time boolean not null default false,
   penalty_home smallint,
   penalty_away smallint,
-  winner_team_id bigint references public.team (id),
+  winner_team_id uuid references public.team (id),
   provider text not null,
   external_id text not null,
   created_at timestamptz not null default now(),
@@ -153,11 +153,9 @@ create table public.profile (
 create table public.tenant (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  slug text not null unique,
   created_by uuid references auth.users (id) on delete set null,
   created_at timestamptz not null default now(),
-  constraint tenant_name_len check (char_length(name) between 2 and 80),
-  constraint tenant_slug_format check (slug ~ '^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$')
+  constraint tenant_name_len check (char_length(name) between 2 and 80)
 );
 
 create table public.tenant_member (
@@ -174,7 +172,7 @@ create index tenant_member_tenant_role_idx on public.tenant_member (tenant_id, r
 
 create table public.tenant_season (
   tenant_id uuid not null references public.tenant (id) on delete cascade,
-  season_id bigint not null references public.season (id) on delete cascade,
+  season_id uuid not null references public.season (id) on delete cascade,
   primary key (tenant_id, season_id)
 );
 
@@ -220,10 +218,10 @@ create table public.prediction (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenant (id) on delete cascade,
   user_id uuid not null references auth.users (id) on delete cascade,
-  fixture_id bigint not null references public.fixture (id) on delete cascade,
+  fixture_id uuid not null references public.fixture (id) on delete cascade,
   home_goals smallint not null,
   away_goals smallint not null,
-  advancing_team_id bigint references public.team (id),
+  advancing_team_id uuid references public.team (id),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (tenant_id, user_id, fixture_id),
@@ -242,7 +240,7 @@ create table public.prediction_score (
   prediction_id uuid primary key references public.prediction (id) on delete cascade,
   tenant_id uuid not null references public.tenant (id) on delete cascade,
   user_id uuid not null references auth.users (id) on delete cascade,
-  fixture_id bigint not null references public.fixture (id) on delete cascade,
+  fixture_id uuid not null references public.fixture (id) on delete cascade,
   rule_set_id uuid not null references public.scoring_rule_set (id) on delete cascade,
   points integer not null,
   category score_category not null,
@@ -257,7 +255,7 @@ create index prediction_score_fixture_idx on public.prediction_score (fixture_id
 -- ---------------------------------------------------------------------------
 
 create table public.admin_audit_log (
-  id bigint generated always as identity primary key,
+  id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenant (id) on delete cascade,
   actor_id uuid references auth.users (id) on delete set null,
   action audit_action not null,

@@ -34,12 +34,12 @@ export default async function LeaderboardPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ tenantSlug: string }>;
+  params: Promise<{ tenantId: string }>;
   searchParams: Promise<{ sort?: string }>;
 }) {
-  const { tenantSlug } = await params;
+  const { tenantId } = await params;
   const { sort = "rank" } = await searchParams;
-  const membership = await requireMembership(tenantSlug);
+  const membership = await requireMembership(tenantId);
 
   const rows = await getLeaderboard(membership.tenantId);
 
@@ -57,7 +57,7 @@ export default async function LeaderboardPage({
   else if (sort === "hits") sorted.sort((a, b) => b.hit_count - a.hit_count);
 
   const podium = rows.slice(0, 3);
-  const base = `/${tenantSlug}/rangliste`;
+  const base = `/${tenantId}/rangliste`;
 
   return (
     <div className="space-y-4">

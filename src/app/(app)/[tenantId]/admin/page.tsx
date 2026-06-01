@@ -32,17 +32,17 @@ export default async function AdminPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ tenantSlug: string }>;
+  params: Promise<{ tenantId: string }>;
   searchParams: Promise<{ tab?: string; q?: string; page?: string }>;
 }) {
-  const { tenantSlug } = await params;
+  const { tenantId } = await params;
   const sp = await searchParams;
   const tab: Tab = TABS.includes(sp.tab as Tab) ? (sp.tab as Tab) : "members";
   const query = (sp.q ?? "").trim();
 
-  const membership = await requireAdmin(tenantSlug);
-  const { supabase, tenantId } = membership;
-  const base = `/${tenantSlug}/admin`;
+  const membership = await requireAdmin(tenantId);
+  const { supabase } = membership;
+  const base = `/${tenantId}/admin`;
 
   return (
     <div className="space-y-4">
@@ -67,25 +67,16 @@ export default async function AdminPage({
         <MembersTab
           supabase={supabase}
           tenantId={tenantId}
-          slug={tenantSlug}
           query={query}
           page={Number(sp.page) || 1}
           base={base}
         />
       )}
-      {tab === "invites" && (
-        <InvitesTab supabase={supabase} tenantId={tenantId} slug={tenantSlug} />
-      )}
-      {tab === "scoring" && (
-        <ScoringTab supabase={supabase} tenantId={tenantId} slug={tenantSlug} />
-      )}
+      {tab === "invites" && <InvitesTab supabase={supabase} tenantId={tenantId} />}
+      {tab === "scoring" && <ScoringTab supabase={supabase} tenantId={tenantId} />}
       {tab === "settings" && (
         <div className="rounded-md border p-4">
-          <MemberTippingForm
-            tenantId={tenantId}
-            slug={tenantSlug}
-            enabled={membership.memberTippingEnabled}
-          />
+          <MemberTippingForm tenantId={tenantId} enabled={membership.memberTippingEnabled} />
         </div>
       )}
     </div>
@@ -97,14 +88,12 @@ type SupabaseClient = Awaited<ReturnType<typeof requireAdmin>>["supabase"];
 async function MembersTab({
   supabase,
   tenantId,
-  slug,
   query,
   page,
   base,
 }: {
   supabase: SupabaseClient;
   tenantId: string;
-  slug: string;
   query: string;
   page: number;
   base: string;
@@ -169,12 +158,7 @@ async function MembersTab({
                   {de.groups.role[m.role]}
                 </Badge>
               </span>
-              <MemberRowActions
-                tenantId={tenantId}
-                slug={slug}
-                targetUserId={m.user_id}
-                role={m.role}
-              />
+              <MemberRowActions tenantId={tenantId} targetUserId={m.user_id} role={m.role} />
             </li>
           ))}
         </ul>
@@ -208,11 +192,9 @@ async function MembersTab({
 async function InvitesTab({
   supabase,
   tenantId,
-  slug,
 }: {
   supabase: SupabaseClient;
   tenantId: string;
-  slug: string;
 }) {
   const { data: invites } = await supabase
     .from("tenant_invite")
@@ -223,7 +205,7 @@ async function InvitesTab({
   return (
     <div className="space-y-4">
       <div className="rounded-md border p-3">
-        <CreateInviteForm tenantId={tenantId} slug={slug} />
+        <CreateInviteForm tenantId={tenantId} />
       </div>
       {(invites ?? []).length === 0 ? (
         <p className="text-muted-foreground text-sm">{de.admin.inviteEmpty}</p>
@@ -241,7 +223,7 @@ async function InvitesTab({
                     {de.admin.uses}: {inv.used_count}
                     {inv.max_uses != null ? `/${inv.max_uses}` : ` (${de.admin.inviteUnlimited})`}
                   </span>
-                  <DeleteInviteButton tenantId={tenantId} slug={slug} code={inv.code} />
+                  <DeleteInviteButton tenantId={tenantId} code={inv.code} />
                 </span>
               </div>
               <InviteShare code={inv.code} />
@@ -256,11 +238,9 @@ async function InvitesTab({
 async function ScoringTab({
   supabase,
   tenantId,
-  slug,
 }: {
   supabase: SupabaseClient;
   tenantId: string;
-  slug: string;
 }) {
   const { data: ruleSet } = await supabase
     .from("scoring_rule_set")
@@ -278,7 +258,7 @@ async function ScoringTab({
 
   return (
     <div className="rounded-md border p-4">
-      <ScoringForm tenantId={tenantId} slug={slug} values={scoringValues} />
+      <ScoringForm tenantId={tenantId} values={scoringValues} />
     </div>
   );
 }

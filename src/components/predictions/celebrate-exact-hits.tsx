@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 
 export interface ExactHit {
-  id: number;
+  id: string;
   label: string;
   points: number;
 }
@@ -18,7 +18,7 @@ export function CelebrateExactHits({ hits }: { hits: ExactHit[] }) {
   useEffect(() => {
     if (hits.length === 0) return;
     const key = "tippspiel:celebrated-exact";
-    let seen: number[] = [];
+    let seen: string[] = [];
     try {
       seen = JSON.parse(localStorage.getItem(key) ?? "[]");
     } catch {

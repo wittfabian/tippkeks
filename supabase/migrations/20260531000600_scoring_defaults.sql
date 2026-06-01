@@ -8,7 +8,7 @@
 
 -- New groups get the new defaults. Body otherwise matches migration 500
 -- (the group-creation toggle check must be preserved on create-or-replace).
-create or replace function public.create_group(p_name text, p_slug text)
+create or replace function public.create_group(p_name text)
 returns public.tenant
 language plpgsql
 security definer
@@ -34,8 +34,8 @@ begin
     end if;
   end if;
 
-  insert into public.tenant (name, slug, created_by)
-  values (p_name, lower(p_slug), v_uid)
+  insert into public.tenant (name, created_by)
+  values (p_name, v_uid)
   returning * into v_tenant;
 
   insert into public.tenant_member (tenant_id, user_id, role)
@@ -59,8 +59,8 @@ begin
 end;
 $$;
 
-revoke all on function public.create_group(text, text) from public, anon;
-grant execute on function public.create_group(text, text) to authenticated;
+revoke all on function public.create_group(text) from public, anon;
+grant execute on function public.create_group(text) to authenticated;
 
 -- One-time data fix: bring existing groups that are still on the OLD defaults
 -- (4/3/2) onto the new scheme, preserving any advance_bonus / stage_multipliers,
@@ -68,7 +68,7 @@ grant execute on function public.create_group(text, text) to authenticated;
 -- Groups whose admins customised their rules are left untouched.
 do $$
 declare
-  v_fixture_id bigint;
+  v_fixture_id uuid;
 begin
   update public.scoring_rule_set
   set config = config || '{"exact": 3, "goal_diff": 2, "tendency": 1}'::jsonb

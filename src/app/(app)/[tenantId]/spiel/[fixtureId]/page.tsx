@@ -20,14 +20,13 @@ import { de } from "@/messages/de";
 export default async function FixtureDetailPage({
   params,
 }: {
-  params: Promise<{ tenantSlug: string; fixtureId: string }>;
+  params: Promise<{ tenantId: string; fixtureId: string }>;
 }) {
-  const { tenantSlug, fixtureId } = await params;
-  const membership = await requireMembership(tenantSlug);
-  const id = Number(fixtureId);
-  if (!Number.isInteger(id)) notFound();
+  const { tenantId: tenantIdParam, fixtureId } = await params;
+  const membership = await requireMembership(tenantIdParam);
 
   const { supabase, tenantId, userId } = membership;
+  const id = fixtureId;
 
   const { data: fixture } = await supabase
     .from("fixture")
@@ -39,7 +38,7 @@ export default async function FixtureDetailPage({
   if (!fixture) notFound();
 
   const teamIds = [fixture.home_team_id, fixture.away_team_id].filter(
-    (x): x is number => x != null,
+    (x): x is string => x != null,
   );
   const { data: teams } = teamIds.length
     ? await supabase.from("team").select("id, name, short_name").in("id", teamIds)

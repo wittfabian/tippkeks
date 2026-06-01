@@ -70,7 +70,7 @@ $$;
 
 -- True if the fixture belongs to a season the tenant is subscribed to. Prevents
 -- members from predicting fixtures of competitions their group does not play.
-create or replace function private.fixture_in_tenant(p_tenant uuid, p_fixture bigint)
+create or replace function private.fixture_in_tenant(p_tenant uuid, p_fixture uuid)
 returns boolean
 language plpgsql
 stable
@@ -92,14 +92,14 @@ revoke all on function
   private.is_member(uuid),
   private.is_admin(uuid),
   private.shares_tenant(uuid),
-  private.fixture_in_tenant(uuid, bigint)
+  private.fixture_in_tenant(uuid, uuid)
 from public, anon;
 
 grant execute on function
   private.is_member(uuid),
   private.is_admin(uuid),
   private.shares_tenant(uuid),
-  private.fixture_in_tenant(uuid, bigint)
+  private.fixture_in_tenant(uuid, uuid)
 to authenticated;
 
 -- ---------------------------------------------------------------------------

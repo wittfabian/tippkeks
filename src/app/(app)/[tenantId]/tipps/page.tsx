@@ -13,14 +13,14 @@ export default async function EnterTipsPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ tenantSlug: string }>;
+  params: Promise<{ tenantId: string }>;
   searchParams: Promise<{ fixture?: string }>;
 }) {
-  const { tenantSlug } = await params;
-  const fixtureParam = Number((await searchParams).fixture) || undefined;
-  const membership = await requireAdmin(tenantSlug);
-  const { supabase, tenantId, userId } = membership;
-  const base = `/${tenantSlug}/tipps`;
+  const { tenantId } = await params;
+  const fixtureParam = (await searchParams).fixture || undefined;
+  const membership = await requireAdmin(tenantId);
+  const { supabase, userId } = membership;
+  const base = `/${tenantId}/tipps`;
 
   const board = await getFixtureBoard(supabase, tenantId, userId);
   const upcoming = board.filter((f) => !f.locked && f.home && f.away);
@@ -83,7 +83,6 @@ export default async function EnterTipsPage({
           {selected && (
             <MemberTipTable
               tenantId={tenantId}
-              slug={tenantSlug}
               fixtureId={selected.id}
               homeName={selected.home?.name ?? "?"}
               awayName={selected.away?.name ?? "?"}

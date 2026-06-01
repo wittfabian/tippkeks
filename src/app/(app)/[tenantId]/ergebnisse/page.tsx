@@ -6,9 +6,9 @@ import { de } from "@/messages/de";
 
 export const metadata = { title: de.admin.results };
 
-export default async function ResultsPage({ params }: { params: Promise<{ tenantSlug: string }> }) {
-  const { tenantSlug } = await params;
-  const membership = await requireAdmin(tenantSlug);
+export default async function ResultsPage({ params }: { params: Promise<{ tenantId: string }> }) {
+  const { tenantId } = await params;
+  const membership = await requireAdmin(tenantId);
 
   const board = await getFixtureBoard(membership.supabase, membership.tenantId, membership.userId);
   const needsResult = board.filter((f) => f.locked && f.status !== "finished" && f.home && f.away);
@@ -29,7 +29,6 @@ export default async function ResultsPage({ params }: { params: Promise<{ tenant
               <p className="text-muted-foreground text-xs">{formatDateTime(f.kickoffAt)} Uhr</p>
               <ResultForm
                 tenantId={membership.tenantId}
-                slug={tenantSlug}
                 fixtureId={f.id}
                 homeName={f.home?.name ?? "?"}
                 awayName={f.away?.name ?? "?"}

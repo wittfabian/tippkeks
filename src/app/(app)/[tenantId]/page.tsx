@@ -13,10 +13,10 @@ import { de } from "@/messages/de";
 export default async function DashboardPage({
   params,
 }: {
-  params: Promise<{ tenantSlug: string }>;
+  params: Promise<{ tenantId: string }>;
 }) {
-  const { tenantSlug } = await params;
-  const membership = await requireMembership(tenantSlug);
+  const { tenantId } = await params;
+  const membership = await requireMembership(tenantId);
   const board = await getFixtureBoard(membership.supabase, membership.tenantId, membership.userId);
 
   if (board.length === 0) {
@@ -57,7 +57,7 @@ export default async function DashboardPage({
               <p className="text-muted-foreground text-xs">
                 {closesToday > 0 ? de.dashboard.closesToday(closesToday) : ""}
               </p>
-              <Link href={`/${tenantSlug}/spiele`} className={buttonVariants({ size: "sm" })}>
+              <Link href={`/${tenantId}/spiele`} className={buttonVariants({ size: "sm" })}>
                 {de.dashboard.tipNow}
               </Link>
             </div>

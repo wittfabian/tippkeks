@@ -83,7 +83,7 @@ create trigger app_setting_set_updated_at
 -- admins always bypass the toggle. Body is otherwise identical to migration 400.
 -- ---------------------------------------------------------------------------
 
-create or replace function public.create_group(p_name text, p_slug text)
+create or replace function public.create_group(p_name text)
 returns public.tenant
 language plpgsql
 security definer
@@ -109,8 +109,8 @@ begin
     end if;
   end if;
 
-  insert into public.tenant (name, slug, created_by)
-  values (p_name, lower(p_slug), v_uid)
+  insert into public.tenant (name, created_by)
+  values (p_name, v_uid)
   returning * into v_tenant;
 
   insert into public.tenant_member (tenant_id, user_id, role)
@@ -134,5 +134,5 @@ begin
 end;
 $$;
 
-revoke all on function public.create_group(text, text) from public, anon;
-grant execute on function public.create_group(text, text) to authenticated;
+revoke all on function public.create_group(text) from public, anon;
+grant execute on function public.create_group(text) to authenticated;

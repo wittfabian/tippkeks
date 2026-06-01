@@ -29,7 +29,6 @@ export async function requireUser(): Promise<CurrentUser> {
 export type Membership = {
   tenantId: string;
   tenantName: string;
-  slug: string;
   role: MemberRole;
   userId: string;
   /** Whether members may submit their own predictions (admins always may). */
@@ -39,11 +38,12 @@ export type Membership = {
 };
 
 /**
- * Resolve the current user's membership of the tenant identified by `slug`.
+ * Resolve the current user's membership of the tenant identified by its id.
  * Redirects to /login when unauthenticated and 404s when the tenant does not
  * exist or the user is not a member (RLS already hides non-member tenants).
+ * A malformed id (not a uuid) also 404s rather than erroring.
  */
-export async function requireMembership(slug: string): Promise<Membership> {
+export async function requireMembership(tenantId: string): Promise<Membership> {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const userId = data?.claims?.sub;
@@ -51,8 +51,8 @@ export async function requireMembership(slug: string): Promise<Membership> {
 
   const { data: tenant } = await supabase
     .from("tenant")
-    .select("id, name, slug, member_tipping_enabled")
-    .eq("slug", slug)
+    .select("id, name, member_tipping_enabled")
+    .eq("id", tenantId)
     .maybeSingle();
   if (!tenant) notFound();
 
@@ -67,7 +67,6 @@ export async function requireMembership(slug: string): Promise<Membership> {
   return {
     tenantId: tenant.id,
     tenantName: tenant.name,
-    slug: tenant.slug,
     role: member.role,
     userId,
     memberTippingEnabled: tenant.member_tipping_enabled,
@@ -76,8 +75,8 @@ export async function requireMembership(slug: string): Promise<Membership> {
 }
 
 /** Require admin role for a tenant; 404s for non-admins. */
-export async function requireAdmin(slug: string): Promise<Membership> {
-  const membership = await requireMembership(slug);
+export async function requireAdmin(tenantId: string): Promise<Membership> {
+  const membership = await requireMembership(tenantId);
   if (membership.role !== "admin") notFound();
   return membership;
 }

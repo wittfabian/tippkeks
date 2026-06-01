@@ -40,7 +40,7 @@ export type Database = {
           actor_id: string | null
           created_at: string
           detail: Json | null
-          id: number
+          id: string
           target_id: string | null
           target_type: string | null
           tenant_id: string
@@ -50,7 +50,7 @@ export type Database = {
           actor_id?: string | null
           created_at?: string
           detail?: Json | null
-          id?: never
+          id?: string
           target_id?: string | null
           target_type?: string | null
           tenant_id: string
@@ -60,7 +60,7 @@ export type Database = {
           actor_id?: string | null
           created_at?: string
           detail?: Json | null
-          id?: never
+          id?: string
           target_id?: string | null
           target_type?: string | null
           tenant_id?: string
@@ -100,26 +100,26 @@ export type Database = {
         Row: {
           created_at: string
           external_id: string
-          id: number
+          id: string
           name: string
           provider: string
-          sport_id: number
+          sport_id: string
         }
         Insert: {
           created_at?: string
           external_id: string
-          id?: never
+          id?: string
           name: string
           provider: string
-          sport_id: number
+          sport_id: string
         }
         Update: {
           created_at?: string
           external_id?: string
-          id?: never
+          id?: string
           name?: string
           provider?: string
-          sport_id?: number
+          sport_id?: string
         }
         Relationships: [
           {
@@ -134,11 +134,11 @@ export type Database = {
       fixture: {
         Row: {
           after_extra_time: boolean
-          away_team_id: number | null
+          away_team_id: string | null
           created_at: string
           external_id: string
-          home_team_id: number | null
-          id: number
+          home_team_id: string | null
+          id: string
           kickoff_at: string
           matchday: number | null
           penalty_away: number | null
@@ -146,19 +146,19 @@ export type Database = {
           provider: string
           regular_away: number | null
           regular_home: number | null
-          season_id: number
-          stage_id: number | null
+          season_id: string
+          stage_id: string | null
           status: Database["public"]["Enums"]["fixture_status"]
           updated_at: string
-          winner_team_id: number | null
+          winner_team_id: string | null
         }
         Insert: {
           after_extra_time?: boolean
-          away_team_id?: number | null
+          away_team_id?: string | null
           created_at?: string
           external_id: string
-          home_team_id?: number | null
-          id?: never
+          home_team_id?: string | null
+          id?: string
           kickoff_at: string
           matchday?: number | null
           penalty_away?: number | null
@@ -166,19 +166,19 @@ export type Database = {
           provider: string
           regular_away?: number | null
           regular_home?: number | null
-          season_id: number
-          stage_id?: number | null
+          season_id: string
+          stage_id?: string | null
           status?: Database["public"]["Enums"]["fixture_status"]
           updated_at?: string
-          winner_team_id?: number | null
+          winner_team_id?: string | null
         }
         Update: {
           after_extra_time?: boolean
-          away_team_id?: number | null
+          away_team_id?: string | null
           created_at?: string
           external_id?: string
-          home_team_id?: number | null
-          id?: never
+          home_team_id?: string | null
+          id?: string
           kickoff_at?: string
           matchday?: number | null
           penalty_away?: number | null
@@ -186,11 +186,11 @@ export type Database = {
           provider?: string
           regular_away?: number | null
           regular_home?: number | null
-          season_id?: number
-          stage_id?: number | null
+          season_id?: string
+          stage_id?: string | null
           status?: Database["public"]["Enums"]["fixture_status"]
           updated_at?: string
-          winner_team_id?: number | null
+          winner_team_id?: string | null
         }
         Relationships: [
           {
@@ -232,10 +232,10 @@ export type Database = {
       }
       prediction: {
         Row: {
-          advancing_team_id: number | null
+          advancing_team_id: string | null
           away_goals: number
           created_at: string
-          fixture_id: number
+          fixture_id: string
           home_goals: number
           id: string
           tenant_id: string
@@ -243,10 +243,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          advancing_team_id?: number | null
+          advancing_team_id?: string | null
           away_goals: number
           created_at?: string
-          fixture_id: number
+          fixture_id: string
           home_goals: number
           id?: string
           tenant_id: string
@@ -254,10 +254,10 @@ export type Database = {
           user_id: string
         }
         Update: {
-          advancing_team_id?: number | null
+          advancing_team_id?: string | null
           away_goals?: number
           created_at?: string
-          fixture_id?: number
+          fixture_id?: string
           home_goals?: number
           id?: string
           tenant_id?: string
@@ -292,7 +292,7 @@ export type Database = {
         Row: {
           category: Database["public"]["Enums"]["score_category"]
           computed_at: string
-          fixture_id: number
+          fixture_id: string
           points: number
           prediction_id: string
           rule_set_id: string
@@ -302,7 +302,7 @@ export type Database = {
         Insert: {
           category: Database["public"]["Enums"]["score_category"]
           computed_at?: string
-          fixture_id: number
+          fixture_id: string
           points: number
           prediction_id: string
           rule_set_id: string
@@ -312,7 +312,7 @@ export type Database = {
         Update: {
           category?: Database["public"]["Enums"]["score_category"]
           computed_at?: string
-          fixture_id?: number
+          fixture_id?: string
           points?: number
           prediction_id?: string
           rule_set_id?: string
@@ -408,31 +408,31 @@ export type Database = {
       }
       season: {
         Row: {
-          competition_id: number
+          competition_id: string
           created_at: string
           ends_on: string | null
           external_id: string
-          id: number
+          id: string
           label: string
           provider: string
           starts_on: string | null
         }
         Insert: {
-          competition_id: number
+          competition_id: string
           created_at?: string
           ends_on?: string | null
           external_id: string
-          id?: never
+          id?: string
           label: string
           provider: string
           starts_on?: string | null
         }
         Update: {
-          competition_id?: number
+          competition_id?: string
           created_at?: string
           ends_on?: string | null
           external_id?: string
-          id?: never
+          id?: string
           label?: string
           provider?: string
           starts_on?: string | null
@@ -464,17 +464,17 @@ export type Database = {
       }
       sport: {
         Row: {
-          id: number
+          id: string
           key: string
           name: string
         }
         Insert: {
-          id?: never
+          id?: string
           key: string
           name: string
         }
         Update: {
-          id?: never
+          id?: string
           key?: string
           name?: string
         }
@@ -482,25 +482,25 @@ export type Database = {
       }
       stage: {
         Row: {
-          id: number
+          id: string
           kind: Database["public"]["Enums"]["stage_kind"]
           name: string
           ordinal: number
-          season_id: number
+          season_id: string
         }
         Insert: {
-          id?: never
+          id?: string
           kind: Database["public"]["Enums"]["stage_kind"]
           name: string
           ordinal: number
-          season_id: number
+          season_id: string
         }
         Update: {
-          id?: never
+          id?: string
           kind?: Database["public"]["Enums"]["stage_kind"]
           name?: string
           ordinal?: number
-          season_id?: number
+          season_id?: string
         }
         Relationships: [
           {
@@ -518,7 +518,7 @@ export type Database = {
           created_at: string
           crest_url: string | null
           external_id: string
-          id: number
+          id: string
           name: string
           provider: string
           short_name: string | null
@@ -528,7 +528,7 @@ export type Database = {
           created_at?: string
           crest_url?: string | null
           external_id: string
-          id?: never
+          id?: string
           name: string
           provider: string
           short_name?: string | null
@@ -538,7 +538,7 @@ export type Database = {
           created_at?: string
           crest_url?: string | null
           external_id?: string
-          id?: never
+          id?: string
           name?: string
           provider?: string
           short_name?: string | null
@@ -552,7 +552,6 @@ export type Database = {
           id: string
           member_tipping_enabled: boolean
           name: string
-          slug: string
         }
         Insert: {
           created_at?: string
@@ -560,7 +559,6 @@ export type Database = {
           id?: string
           member_tipping_enabled?: boolean
           name: string
-          slug: string
         }
         Update: {
           created_at?: string
@@ -568,7 +566,6 @@ export type Database = {
           id?: string
           member_tipping_enabled?: boolean
           name?: string
-          slug?: string
         }
         Relationships: []
       }
@@ -647,15 +644,15 @@ export type Database = {
       }
       tenant_season: {
         Row: {
-          season_id: number
+          season_id: string
           tenant_id: string
         }
         Insert: {
-          season_id: number
+          season_id: string
           tenant_id: string
         }
         Update: {
-          season_id?: number
+          season_id?: string
           tenant_id?: string
         }
         Relationships: [
@@ -701,14 +698,13 @@ export type Database = {
     }
     Functions: {
       create_group: {
-        Args: { p_name: string; p_slug: string }
+        Args: { p_name: string }
         Returns: {
           created_at: string
           created_by: string | null
           id: string
           member_tipping_enabled: boolean
           name: string
-          slug: string
         }
         SetofOptions: {
           from: "*"
@@ -727,7 +723,6 @@ export type Database = {
           id: string
           member_tipping_enabled: boolean
           name: string
-          slug: string
         }
         SetofOptions: {
           from: "*"
@@ -736,13 +731,13 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      score_fixture: { Args: { p_fixture: number }; Returns: undefined }
+      score_fixture: { Args: { p_fixture: string }; Returns: undefined }
       score_prediction: {
         Args: {
           f_away: number
           f_home: number
-          f_winner: number
-          p_advancing: number
+          f_winner: string
+          p_advancing: string
           p_away: number
           p_config: Json
           p_home: number

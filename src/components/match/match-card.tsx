@@ -34,12 +34,10 @@ function edgeClass(f: FixtureVM): string {
 export function MatchCard({
   fixture: f,
   tenantId,
-  slug,
   canTip,
 }: {
   fixture: FixtureVM;
   tenantId: string;
-  slug: string;
   /** Whether the current user may submit a tip (members in view-only mode can't). */
   canTip: boolean;
 }) {
@@ -93,7 +91,7 @@ export function MatchCard({
               </span>
               {f.myCategory && <CategoryChip category={f.myCategory} points={f.myPoints} />}
             </span>
-            <Link href={`/${slug}/spiel/${f.id}`} className="hover:text-foreground underline">
+            <Link href={`/${tenantId}/spiel/${f.id}`} className="hover:text-foreground underline">
               {de.fixtures.viewAll}
             </Link>
           </div>
@@ -105,7 +103,6 @@ export function MatchCard({
             </div>
             <PredictionForm
               tenantId={tenantId}
-              slug={slug}
               fixtureId={f.id}
               homeName={f.home?.name ?? "?"}
               awayName={f.away?.name ?? "?"}

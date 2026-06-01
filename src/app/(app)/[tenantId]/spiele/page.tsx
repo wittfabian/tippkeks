@@ -29,12 +29,12 @@ export default async function FixturesPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ tenantSlug: string }>;
+  params: Promise<{ tenantId: string }>;
   searchParams: Promise<{ status?: string; stage?: string; team?: string }>;
 }) {
-  const { tenantSlug } = await params;
+  const { tenantId } = await params;
   const { status = "open", stage = "all", team = "all" } = await searchParams;
-  const membership = await requireMembership(tenantSlug);
+  const membership = await requireMembership(tenantId);
   const board = await getFixtureBoard(membership.supabase, membership.tenantId, membership.userId);
   const canTip = membership.role === "admin" || membership.memberTippingEnabled;
 
@@ -96,7 +96,7 @@ export default async function FixturesPage({
               : de.filters.noResults}
           </p>
           {board.length > 0 && (
-            <Link href={`/${tenantSlug}/spiele`} className="text-primary underline">
+            <Link href={`/${tenantId}/spiele`} className="text-primary underline">
               {de.filters.reset}
             </Link>
           )}
@@ -108,12 +108,7 @@ export default async function FixturesPage({
             <ul className="space-y-2">
               {group.items.map((f) => (
                 <li key={f.id}>
-                  <MatchCard
-                    fixture={f}
-                    tenantId={membership.tenantId}
-                    slug={tenantSlug}
-                    canTip={canTip}
-                  />
+                  <MatchCard fixture={f} tenantId={membership.tenantId} canTip={canTip} />
                 </li>
               ))}
             </ul>

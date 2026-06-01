@@ -13,16 +13,15 @@ import { de } from "@/messages/de";
 
 export interface PredictionFormProps {
   tenantId: string;
-  slug: string;
-  fixtureId: number;
+  fixtureId: string;
   homeName: string;
   awayName: string;
   homeCode: string | null;
   awayCode: string | null;
   knockout: boolean;
-  homeTeamId: number | null;
-  awayTeamId: number | null;
-  initial: { homeGoals: number; awayGoals: number; advancingTeamId: number | null } | null;
+  homeTeamId: string | null;
+  awayTeamId: string | null;
+  initial: { homeGoals: number; awayGoals: number; advancingTeamId: string | null } | null;
 }
 
 const QUICK_TIPS: [number, number][] = [
@@ -100,7 +99,6 @@ export function PredictionForm(props: PredictionFormProps) {
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="tenantId" value={props.tenantId} />
-      <input type="hidden" name="slug" value={props.slug} />
       <input type="hidden" name="fixtureId" value={props.fixtureId} />
       <input type="hidden" name="homeGoals" value={home} />
       <input type="hidden" name="awayGoals" value={away} />

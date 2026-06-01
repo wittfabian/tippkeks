@@ -52,7 +52,7 @@ pnpm format         # prettier --write .
 pnpm sync                       # run the football-data.org sync once (needs FOOTBALL_DATA_API_TOKEN)
 pnpm tsx scripts/generate-seed.ts   # regenerate supabase/seed.sql from data/openfootball/
 pnpm tsx scripts/set-site-admin.ts <email> [--revoke]  # grant/revoke site-admin (service role)
-pnpm tsx scripts/seed-mock.ts [group-slug]   # DEV-ONLY: mock players + tips + finished results → leaderboard
+pnpm tsx scripts/seed-mock.ts [group-id]   # DEV-ONLY: mock players + tips + finished results → leaderboard (defaults to newest group)
 
 # Supabase (CLI is a dev dependency → use `pnpm exec supabase`/the db:* scripts)
 pnpm db:start       # supabase start
@@ -83,7 +83,8 @@ then restart). After regenerating `database.types.ts`, run `pnpm typecheck`.
 **Auth is defense-in-depth across three layers:** (1) `src/proxy.ts` only refreshes the session
 cookie; (2) every protected page/layout + Server Action calls `supabase.auth.getClaims()` (never
 `getSession()` server-side) and re-resolves membership/role; (3) Postgres RLS is the final gate.
-Tenancy is path-scoped (`/(app)/[tenantSlug]/…`); `src/lib/auth/membership.ts` resolves
+Tenancy is path-scoped (`/(app)/[tenantId]/…`, the tenant's uuid — groups have no slug);
+`src/lib/auth/membership.ts` resolves
 `{tenantId, role, userId, supabase}` once per request.
 
 **Supabase clients** (`src/lib/supabase/`, keep separate): `client.ts` (browser), `server.ts`
@@ -162,7 +163,7 @@ src/app/(public)/{login,register}  # auth pages; (public) layout redirects logge
 src/app/(reset)/{passwort-vergessen,passwort-neu}  # password recovery; (reset) layout does NOT redirect (recovery link signs the user in first)
 src/app/(app)/gruppen/page.tsx     # tenant chooser / "Meine Gruppen" (create / join)
 src/app/(app)/profil/page.tsx      # account-wide settings (NOT tenant-scoped); reached from the header user icon
-src/app/(app)/[tenantSlug]/…       # dashboard, spiele (tipping), spiel/[id], rangliste, admin
+src/app/(app)/[tenantId]/…         # dashboard, spiele (tipping), spiel/[id], rangliste, admin
 src/app/api/cron/sync/route.ts     # secret-protected sync trigger
 src/app/(legal)/{info,datenschutz,impressum}  # public legal/info pages (own chrome; reachable signed-in + out)
 src/actions/                       # "use server" mutations (auth, tenant, predictions, profile, admin)

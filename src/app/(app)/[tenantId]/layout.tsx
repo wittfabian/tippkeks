@@ -6,15 +6,15 @@ export default async function TenantLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ tenantSlug: string }>;
+  params: Promise<{ tenantId: string }>;
 }) {
-  const { tenantSlug } = await params;
-  const membership = await requireMembership(tenantSlug);
+  const { tenantId } = await params;
+  const membership = await requireMembership(tenantId);
 
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">{membership.tenantName}</h1>
-      <TenantNav slug={membership.slug} isAdmin={membership.role === "admin"} />
+      <TenantNav tenantId={membership.tenantId} isAdmin={membership.role === "admin"} />
       {children}
     </div>
   );

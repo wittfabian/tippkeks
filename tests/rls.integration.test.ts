@@ -10,7 +10,8 @@ const EMAILS = {
   b: "itest_member@example.com",
   c: "itest_outsider@example.com",
 };
-const SLUG = "itest-group";
+const GROUP_NAME = "Integration Test";
+const SOLO_GROUP_NAME = "Solo";
 const INVITE_CODE = "ITESTCODE";
 const FIXTURE_PROVIDER = "itest";
 
@@ -22,12 +23,12 @@ suite("RLS, deadline and scoring (integration)", () => {
   let uidA: string;
   let uidB: string;
   let tenantId: string;
-  let futureFixtureId: number;
-  let pastFixtureId: number;
-  let tippingFixtureId: number;
+  let futureFixtureId: string;
+  let pastFixtureId: string;
+  let tippingFixtureId: string;
 
   async function cleanup() {
-    await admin.from("tenant").delete().in("slug", [SLUG, "itest-solo"]);
+    await admin.from("tenant").delete().in("name", [GROUP_NAME, SOLO_GROUP_NAME]);
     await admin.from("fixture").delete().eq("provider", FIXTURE_PROVIDER);
     await Promise.all([
       deleteUserByEmail(EMAILS.a),
@@ -52,8 +53,7 @@ suite("RLS, deadline and scoring (integration)", () => {
     ({ client: cC } = await createSignedInUser(EMAILS.c, "password123"));
 
     const { data: tenant, error } = await cA.rpc("create_group", {
-      p_name: "Integration Test",
-      p_slug: SLUG,
+      p_name: GROUP_NAME,
     });
     if (error) throw error;
     tenantId = tenant.id;
@@ -292,15 +292,17 @@ suite("RLS, deadline and scoring (integration)", () => {
       "password123",
     );
     const { error: createErr } = await cD.rpc("create_group", {
-      p_name: "Solo",
-      p_slug: "itest-solo",
+      p_name: SOLO_GROUP_NAME,
     });
     expect(createErr).toBeNull();
 
     const { error: delErr } = await cD.rpc("delete_own_account");
     expect(delErr).toBeNull();
 
-    const { data: goneTenant } = await admin.from("tenant").select("id").eq("slug", "itest-solo");
+    const { data: goneTenant } = await admin
+      .from("tenant")
+      .select("id")
+      .eq("name", SOLO_GROUP_NAME);
     expect(goneTenant).toEqual([]);
     const { data: afterUsers } = await admin.auth.admin.listUsers();
     expect(afterUsers.users.some((u) => u.id === uidD)).toBe(false);
