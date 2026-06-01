@@ -27,19 +27,19 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
 
       <footer className="text-muted-foreground border-t">
         <nav className="mx-auto flex w-full max-w-2xl flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 py-4 text-xs">
-          <Link href="/info" className="transition hover:text-foreground">
+          <Link href="/info" className="hover:text-foreground transition">
             {de.legal.footerNav.info}
           </Link>
           <span aria-hidden>·</span>
-          <Link href="/datenschutz" className="transition hover:text-foreground">
+          <Link href="/datenschutz" className="hover:text-foreground transition">
             {de.legal.footerNav.privacy}
           </Link>
           <span aria-hidden>·</span>
-          <Link href="/impressum" className="transition hover:text-foreground">
+          <Link href="/impressum" className="hover:text-foreground transition">
             {de.legal.footerNav.impressum}
           </Link>
           <span aria-hidden>·</span>
-          <Link href="/" className="transition hover:text-foreground">
+          <Link href="/" className="hover:text-foreground transition">
             {de.legal.backHome}
           </Link>
         </nav>

@@ -16,11 +16,7 @@ export const metadata = { title: de.invite.confirmTitle };
  * logged-out → register/login with the code threaded through so the auth action
  * redeems it on success and lands them directly in the group.
  */
-export default async function JoinByLinkPage({
-  params,
-}: {
-  params: Promise<{ code: string }>;
-}) {
+export default async function JoinByLinkPage({ params }: { params: Promise<{ code: string }> }) {
   const { code: raw } = await params;
   const code = raw.trim().toUpperCase();
   const user = await getCurrentUser();

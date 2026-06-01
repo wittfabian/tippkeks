@@ -8,7 +8,7 @@ only provide the two pages and the email template.
 
 1. **`/passwort-vergessen`** (signed-out): user enters their email →
    `requestPasswordResetAction` calls `supabase.auth.resetPasswordForEmail(email)`.
-   For enumeration protection the form *always* shows the same confirmation
+   For enumeration protection the form _always_ shows the same confirmation
    regardless of whether the address exists, and disables itself after sending.
 2. Supabase sends the recovery email. The link points at our existing
    **`/auth/confirm`** route (`verifyOtp`, already type-generic), which verifies
@@ -23,25 +23,25 @@ only provide the two pages and the email template.
 ### Why `(reset)` is its own route group
 
 `/passwort-neu` **cannot** live under `(public)`: the recovery link signs the
-user in *before* they reach the page, and the `(public)` layout redirects
+user in _before_ they reach the page, and the `(public)` layout redirects
 signed-in users to `/gruppen`. The `(reset)` layout is the same centred card
 chrome **without** that redirect. Both reset routes are listed in
 `PUBLIC_PREFIXES` in `src/proxy.ts` so the proxy never force-redirects them.
 
 ## Files
 
-| File | Role |
-| --- | --- |
-| `src/app/(reset)/layout.tsx` | Centred card chrome, no auth redirect |
-| `src/app/(reset)/passwort-vergessen/page.tsx` | Request page (signed-out) |
-| `src/app/(reset)/passwort-neu/page.tsx` | Set-new-password page (recovery session) |
-| `src/components/auth/reset-request-form.tsx` | Email form → `requestPasswordResetAction` |
-| `src/components/auth/new-password-form.tsx` | Password form → `setNewPasswordAction` |
-| `src/actions/auth.ts` | Both server actions (Zod-validated) |
-| `src/app/auth/confirm/route.ts` | Verifies the recovery `token_hash` (pre-existing) |
-| `supabase/config.toml` → `[auth.email.template.recovery]` | Local email template wiring |
-| `supabase/templates/recovery.html` | Local recovery email body (token_hash link) |
-| `src/messages/de.ts` → `auth.*` | All German UI strings |
+| File                                                      | Role                                              |
+| --------------------------------------------------------- | ------------------------------------------------- |
+| `src/app/(reset)/layout.tsx`                              | Centred card chrome, no auth redirect             |
+| `src/app/(reset)/passwort-vergessen/page.tsx`             | Request page (signed-out)                         |
+| `src/app/(reset)/passwort-neu/page.tsx`                   | Set-new-password page (recovery session)          |
+| `src/components/auth/reset-request-form.tsx`              | Email form → `requestPasswordResetAction`         |
+| `src/components/auth/new-password-form.tsx`               | Password form → `setNewPasswordAction`            |
+| `src/actions/auth.ts`                                     | Both server actions (Zod-validated)               |
+| `src/app/auth/confirm/route.ts`                           | Verifies the recovery `token_hash` (pre-existing) |
+| `supabase/config.toml` → `[auth.email.template.recovery]` | Local email template wiring                       |
+| `supabase/templates/recovery.html`                        | Local recovery email body (token_hash link)       |
+| `src/messages/de.ts` → `auth.*`                           | All German UI strings                             |
 
 ## Production setup (manual — config only, not code)
 
@@ -74,5 +74,5 @@ pnpm dev
    email.
 3. You land on `/passwort-neu` with an active session → set a new password.
 
-`enable_confirmations = false` locally only affects *signup* confirmation;
+`enable_confirmations = false` locally only affects _signup_ confirmation;
 recovery emails are sent regardless.

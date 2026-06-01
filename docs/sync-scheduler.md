@@ -44,12 +44,12 @@ not the full secret set the app gets.
 
 Environment variables on the `cron` service:
 
-| Var                          | Default                          | Meaning                              |
-| ---------------------------- | -------------------------------- | ------------------------------------ |
-| `SYNC_URL`                   | `http://app:3000/api/cron/sync`  | Endpoint on the internal network     |
-| `SYNC_INTERVAL_SECONDS`      | `120`                            | Seconds between runs                 |
-| `SYNC_STARTUP_DELAY_SECONDS` | `15`                             | Grace period for the app to boot     |
-| `CRON_SECRET`                | (from `.env.prod`)               | Must match the app's `CRON_SECRET`   |
+| Var                          | Default                         | Meaning                            |
+| ---------------------------- | ------------------------------- | ---------------------------------- |
+| `SYNC_URL`                   | `http://app:3000/api/cron/sync` | Endpoint on the internal network   |
+| `SYNC_INTERVAL_SECONDS`      | `120`                           | Seconds between runs               |
+| `SYNC_STARTUP_DELAY_SECONDS` | `15`                            | Grace period for the app to boot   |
+| `CRON_SECRET`                | (from `.env.prod`)              | Must match the app's `CRON_SECRET` |
 
 **Why 2 minutes?** The sync is idempotent and cheap, so a short interval is safe,
 but the football-data.org **free tier serves delayed data** — polling faster than

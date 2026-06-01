@@ -189,13 +189,7 @@ async function MembersTab({
   );
 }
 
-async function InvitesTab({
-  supabase,
-  tenantId,
-}: {
-  supabase: SupabaseClient;
-  tenantId: string;
-}) {
+async function InvitesTab({ supabase, tenantId }: { supabase: SupabaseClient; tenantId: string }) {
   const { data: invites } = await supabase
     .from("tenant_invite")
     .select("code, used_count, max_uses, role")
@@ -235,13 +229,7 @@ async function InvitesTab({
   );
 }
 
-async function ScoringTab({
-  supabase,
-  tenantId,
-}: {
-  supabase: SupabaseClient;
-  tenantId: string;
-}) {
+async function ScoringTab({ supabase, tenantId }: { supabase: SupabaseClient; tenantId: string }) {
   const { data: ruleSet } = await supabase
     .from("scoring_rule_set")
     .select("config")

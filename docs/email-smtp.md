@@ -59,12 +59,12 @@ mail either won't send or will be spam-filtered.
 
 Resend's SMTP credentials are fixed:
 
-| Field    | Value                                   |
-| -------- | --------------------------------------- |
-| Host     | `smtp.resend.com`                       |
-| Port     | `587` (STARTTLS) or `465` (SSL)         |
-| Username | `resend`                                |
-| Password | your Resend API key (`re_…`)            |
+| Field    | Value                                                                  |
+| -------- | ---------------------------------------------------------------------- |
+| Host     | `smtp.resend.com`                                                      |
+| Port     | `587` (STARTTLS) or `465` (SSL)                                        |
+| Username | `resend`                                                               |
+| Password | your Resend API key (`re_…`)                                           |
 | Sender   | an address **on the verified domain**, e.g. `noreply@mail.tippkeks.de` |
 
 Dashboard → **Authentication → Emails → SMTP Settings** → enable custom SMTP and
@@ -76,8 +76,8 @@ fill these in. Set the sender name to `TippKeks`.
 
 ### 3. Rate limit
 
-Dashboard → **Authentication → Rate Limits** → raise *"Rate limit for sending
-emails"* well above the default `2`/hour (e.g. `30`+). This is the hosted
+Dashboard → **Authentication → Rate Limits** → raise _"Rate limit for sending
+emails"_ well above the default `2`/hour (e.g. `30`+). This is the hosted
 equivalent of `auth.rate_limit.email_sent` in `config.toml`.
 
 ### 4. `config.toml` (local stack)

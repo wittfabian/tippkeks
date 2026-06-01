@@ -108,7 +108,7 @@ export function MemberRowActions({
       <div className="flex gap-2">
         <form action={roleAction}>
           <input type="hidden" name="tenantId" value={tenantId} />
-              <input type="hidden" name="targetUserId" value={targetUserId} />
+          <input type="hidden" name="targetUserId" value={targetUserId} />
           <input type="hidden" name="role" value={nextRole} />
           <Button type="submit" size="sm" variant="outline" disabled={rolePending}>
             {nextRole === "admin" ? de.admin.makeAdmin : de.admin.makeMember}
@@ -116,7 +116,7 @@ export function MemberRowActions({
         </form>
         <form action={removeAction}>
           <input type="hidden" name="tenantId" value={tenantId} />
-              <input type="hidden" name="targetUserId" value={targetUserId} />
+          <input type="hidden" name="targetUserId" value={targetUserId} />
           <Button type="submit" size="sm" variant="ghost" disabled={removePending}>
             {de.admin.remove}
           </Button>

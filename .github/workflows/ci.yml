@@ -42,13 +42,16 @@ jobs:
       - name: Test
         run: pnpm test
 
-      # Build with placeholder env: NEXT_PUBLIC_* are inlined at build time and
-      # Zod validates them, so they must be present (dummy values are fine for a
-      # build-only check — the real image is built in release.yml).
+      # Build env comes from repo Variables/Secrets (not hardcoded). NEXT_PUBLIC_*
+      # are inlined at build time and Zod-validated, so they must be present; the
+      # service-role key is only validated for presence here (the build never
+      # contacts Supabase). Configure under Settings → Secrets and variables →
+      # Actions: Variables NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      # Secret SUPABASE_SERVICE_ROLE_KEY. See README → Continuous integration.
       - name: Build
         run: pnpm build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
-          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-key
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           NEXT_TELEMETRY_DISABLED: "1"

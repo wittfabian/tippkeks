@@ -10,11 +10,7 @@ import { getFixtureBoard } from "@/lib/data/fixtures";
 import { berlinDayKey, formatDateTime } from "@/lib/format";
 import { de } from "@/messages/de";
 
-export default async function DashboardPage({
-  params,
-}: {
-  params: Promise<{ tenantId: string }>;
-}) {
+export default async function DashboardPage({ params }: { params: Promise<{ tenantId: string }> }) {
   const { tenantId } = await params;
   const membership = await requireMembership(tenantId);
   const board = await getFixtureBoard(membership.supabase, membership.tenantId, membership.userId);

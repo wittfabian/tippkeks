@@ -25,7 +25,7 @@ function remainingUntilKickoff(): Remaining | null {
 function Tile({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center">
-      <span className="font-heading min-w-[2.2ch] text-3xl font-extrabold tabular-nums text-white sm:text-4xl">
+      <span className="font-heading min-w-[2.2ch] text-3xl font-extrabold text-white tabular-nums sm:text-4xl">
         {value.toString().padStart(2, "0")}
       </span>
       <span className="mt-1 text-[0.65rem] font-medium tracking-[0.18em] text-white/45 uppercase">

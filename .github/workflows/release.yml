@@ -41,9 +41,13 @@ jobs:
           # NEXT_PUBLIC_* are inlined into the client bundle at build time. They
           # are not secret (the anon key ships to browsers), so store them as repo
           # *Variables* (Settings → Secrets and variables → Actions → Variables).
+          # NEXT_SERVER_ACTIONS_ENCRYPTION_KEY is consumed by `next build` and
+          # embedded into the output (build arg), so it must be set here — store it
+          # as a repo *Secret*. Pass the SAME value at runtime (see Summary below).
           build-args: |
             NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+            NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=${{ secrets.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -57,6 +61,6 @@ jobs:
           echo "  -e SUPABASE_SERVICE_ROLE_KEY=... \\" >> "$GITHUB_STEP_SUMMARY"
           echo "  -e CRON_SECRET=... \\" >> "$GITHUB_STEP_SUMMARY"
           echo "  -e FOOTBALL_DATA_API_TOKEN=... \\" >> "$GITHUB_STEP_SUMMARY"
-          echo "  -e NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=... \\  # openssl rand -base64 32; keep stable across deploys" >> "$GITHUB_STEP_SUMMARY"
+          echo "  -e NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=... \\  # SAME value as the build-arg secret; embedded at build, must match at runtime" >> "$GITHUB_STEP_SUMMARY"
           echo "  ${{ steps.img.outputs.name }}:${{ inputs.tag }}" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"

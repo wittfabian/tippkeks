@@ -23,20 +23,20 @@ inside the cache fetcher, because the data is non-sensitive and not user-scoped.
 
 ## What is cached
 
-| Data | Where | Key | TTL | Tags |
-| --- | --- | --- | --- | --- |
-| Fixtures + teams | `lib/data/fixtures.ts` | `tournament:<seasonIds>` | 60s | `tournament` |
-| App settings | `lib/data/settings.ts` | `app-settings` | 300s | `app-settings` |
-| Leaderboard | `lib/data/leaderboard.ts` | `leaderboard:<tenantId>` | 60s | `leaderboard`, `leaderboard:<tenantId>` |
+| Data             | Where                     | Key                      | TTL  | Tags                                    |
+| ---------------- | ------------------------- | ------------------------ | ---- | --------------------------------------- |
+| Fixtures + teams | `lib/data/fixtures.ts`    | `tournament:<seasonIds>` | 60s  | `tournament`                            |
+| App settings     | `lib/data/settings.ts`    | `app-settings`           | 300s | `app-settings`                          |
+| Leaderboard      | `lib/data/leaderboard.ts` | `leaderboard:<tenantId>` | 60s  | `leaderboard`, `leaderboard:<tenantId>` |
 
 TTL is a backstop; correctness comes from **tag invalidation**:
 
-| Trigger | Invalidates |
-| --- | --- |
-| Sync job (`lib/sync/run.ts`) | `tournament`, `leaderboard` |
-| Admin result override (`actions/admin.ts`) | `tournament`, `leaderboard` |
-| Scoring-rule recompute (`actions/admin.ts`) | `leaderboard:<tenantId>` |
-| Settings save (`actions/settings.ts`) | `app-settings` |
+| Trigger                                     | Invalidates                 |
+| ------------------------------------------- | --------------------------- |
+| Sync job (`lib/sync/run.ts`)                | `tournament`, `leaderboard` |
+| Admin result override (`actions/admin.ts`)  | `tournament`, `leaderboard` |
+| Scoring-rule recompute (`actions/admin.ts`) | `leaderboard:<tenantId>`    |
+| Settings save (`actions/settings.ts`)       | `app-settings`              |
 
 ### Why application-level, not Next's `revalidateTag`
 
@@ -53,9 +53,9 @@ Fixed-window limiter (`lib/cache/rate-limit.ts`), keyed by purpose + subject.
 Fails **open** when Valkey is down (availability first; Supabase Auth also limits
 server-side as a second layer).
 
-| Endpoint | Limit |
-| --- | --- |
-| `signInAction` | 20 / 5 min per IP |
+| Endpoint                     | Limit                                          |
+| ---------------------------- | ---------------------------------------------- |
+| `signInAction`               | 20 / 5 min per IP                              |
 | `requestPasswordResetAction` | 5 / 15 min per IP **and** 3 / 60 min per email |
 
 On a password-reset limit hit we silently skip the send but still return the
@@ -78,7 +78,7 @@ Pure cache: persistence is disabled (`--save "" --appendonly no`) since the data
 is rebuildable from Postgres. Inspect with `podman exec -it tippkeks-valkey valkey-cli`.
 
 > **Troubleshooting:** if `podman compose` errors with `docker-credential-desktop
-> ... not found`, it delegated to Docker's compose provider, whose credential
+... not found`, it delegated to Docker's compose provider, whose credential
 > helper is misconfigured. Either use `podman-compose up -d` (the Python
 > provider), or `podman pull docker.io/valkey/valkey:8-alpine` once and re-run,
 > or remove `"credsStore": "desktop"` from `~/.docker/config.json`. The image

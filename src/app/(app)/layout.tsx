@@ -52,15 +52,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">{children}</main>
       <footer className="text-muted-foreground border-t">
         <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-3 text-center text-xs">
-          <Link href="/info" className="transition hover:text-foreground">
+          <Link href="/info" className="hover:text-foreground transition">
             {de.legal.footerNav.info}
           </Link>
           <span aria-hidden>·</span>
-          <Link href="/datenschutz" className="transition hover:text-foreground">
+          <Link href="/datenschutz" className="hover:text-foreground transition">
             {de.legal.footerNav.privacy}
           </Link>
           <span aria-hidden>·</span>
-          <Link href="/impressum" className="transition hover:text-foreground">
+          <Link href="/impressum" className="hover:text-foreground transition">
             {de.legal.footerNav.impressum}
           </Link>
           <span aria-hidden>·</span>

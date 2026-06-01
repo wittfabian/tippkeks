@@ -11,10 +11,12 @@
 #    build-time Zod validation in src/lib/env.server.ts; pass the real values to
 #    `docker run -e ...` / your compose/quadlet unit.
 #  - NEXT_SERVER_ACTIONS_ENCRYPTION_KEY (base64 32 bytes, `openssl rand -base64 32`)
-#    is also a RUNTIME env. Next.js reads it on the running server to encrypt/
-#    decrypt Server Action arguments. Set it to keep the key stable across
-#    rebuilds and across replicas; if unset, Next.js generates a per-build key
-#    (fine for a single instance, but it rotates on every rebuild).
+#    encrypts Server Action arguments. `next build` consumes it and EMBEDS it into
+#    the build output (and compiles it into any Edge bundle, where it can NOT be
+#    overridden at runtime), so it is a BUILD ARG. If unset, next build generates a
+#    random per-build key that rotates on every rebuild. Pass the SAME value at
+#    runtime too: the Node server reads it at runtime and it must match across all
+#    replicas (otherwise "Failed to find Server Action" after a rebuild/rollout).
 
 FROM node:22-alpine AS base
 RUN apk add --no-cache libc6-compat
@@ -41,6 +43,11 @@ ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 # Server-only secret: placeholder only to pass build-time validation; the real
 # key is injected at runtime.
 ENV SUPABASE_SERVICE_ROLE_KEY=build-placeholder
+# Server Actions encryption key — embedded into the build output here. Provide a
+# stable value (and the SAME value at runtime); empty ⇒ Next generates a random
+# per-build key.
+ARG NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
+ENV NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
 
 RUN pnpm build
 

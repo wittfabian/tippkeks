@@ -44,7 +44,7 @@ function ScoreChip({
         >
           <div className="flex items-center gap-2.5">
             <span className="text-xl">{home}</span>
-            <span className="font-heading text-lg font-extrabold tabular-nums text-white">
+            <span className="font-heading text-lg font-extrabold text-white tabular-nums">
               {scoreHome}:{scoreAway}
             </span>
             <span className="text-xl">{away}</span>
@@ -88,8 +88,7 @@ function FlagMarquee() {
     <div
       className="relative w-full overflow-hidden py-6"
       style={{
-        maskImage:
-          "linear-gradient(to right, transparent, black 12%, black 88%, transparent)",
+        maskImage: "linear-gradient(to right, transparent, black 12%, black 88%, transparent)",
         WebkitMaskImage:
           "linear-gradient(to right, transparent, black 12%, black 88%, transparent)",
       }}
@@ -144,7 +143,7 @@ export function LandingPage() {
         />
         <div
           data-tk-anim
-          className="absolute -right-24 top-1/4 size-[30rem] rounded-full blur-3xl"
+          className="absolute top-1/4 -right-24 size-[30rem] rounded-full blur-3xl"
           style={{
             background: "radial-gradient(circle, oklch(0.82 0.14 85 / 0.22), transparent 65%)",
             animation: "tk-glow 11s ease-in-out 1s infinite",
@@ -168,7 +167,7 @@ export function LandingPage() {
         scoreHome={2}
         scoreAway={1}
         tag={de.landing.scoreTags.exact}
-        className="left-[7%] top-[24%]"
+        className="top-[24%] left-[7%]"
         rotate="-7deg"
         delay="0s"
       />
@@ -178,7 +177,7 @@ export function LandingPage() {
         scoreHome={3}
         scoreAway={2}
         tag={de.landing.scoreTags.tendency}
-        className="right-[8%] top-[30%]"
+        className="top-[30%] right-[8%]"
         rotate="6deg"
         delay="1.4s"
       />
@@ -188,7 +187,7 @@ export function LandingPage() {
         scoreHome={1}
         scoreAway={1}
         tag={de.landing.scoreTags.exact}
-        className="left-[12%] bottom-[20%]"
+        className="bottom-[20%] left-[12%]"
         rotate="5deg"
         delay="0.7s"
       />
@@ -233,8 +232,7 @@ export function LandingPage() {
           <span
             className="block bg-clip-text text-transparent"
             style={{
-              backgroundImage:
-                "linear-gradient(100deg, oklch(0.88 0.13 90), oklch(0.78 0.16 70))",
+              backgroundImage: "linear-gradient(100deg, oklch(0.88 0.13 90), oklch(0.78 0.16 70))",
             }}
           >
             {de.landing.headlineAccent}
