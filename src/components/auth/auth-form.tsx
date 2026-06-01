@@ -9,12 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { de } from "@/messages/de";
 
-export function AuthForm({ mode }: { mode: "login" | "register" }) {
+export function AuthForm({ mode, invite }: { mode: "login" | "register"; invite?: string }) {
   const action = mode === "login" ? signInAction : signUpAction;
   const [state, formAction, pending] = useActionState(action, initialActionState);
 
   return (
     <form action={formAction} className="space-y-4">
+      {invite && <input type="hidden" name="invite" value={invite} />}
       {mode === "register" && (
         <div className="space-y-2">
           <Label htmlFor="displayName">{de.auth.displayName}</Label>

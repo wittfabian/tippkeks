@@ -7,7 +7,18 @@ import { updateSession } from "@/lib/supabase/session";
 // guard — every protected layout/page and Server Action re-checks auth, and
 // Postgres RLS is the final gate (Server Actions are POSTs that the matcher
 // could otherwise skip).
-const PUBLIC_PREFIXES = ["/login", "/register", "/auth", "/datenschutz"];
+const PUBLIC_PREFIXES = [
+  "/login",
+  "/register",
+  "/auth",
+  "/passwort-vergessen",
+  "/passwort-neu",
+  "/datenschutz",
+  "/impressum",
+  "/info",
+  // Shared invite links must greet logged-out friends (they register from here).
+  "/beitreten",
+];
 
 function isPublic(pathname: string): boolean {
   // The marketing landing page lives at the root and must be reachable signed-out.

@@ -3,7 +3,9 @@
 import { useActionState } from "react";
 
 import {
+  convertManagedMemberAction,
   createInviteAction,
+  createManagedMemberAction,
   deleteInviteAction,
   overrideResultAction,
   removeMemberAction,
@@ -34,12 +36,11 @@ function Message({ error, info }: { error: string | null; info?: string | null }
   return null;
 }
 
-export function CreateInviteForm({ tenantId, slug }: { tenantId: string; slug: string }) {
+export function CreateInviteForm({ tenantId }: { tenantId: string }) {
   const [state, formAction, pending] = useActionState(createInviteAction, initialActionState);
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="tenantId" value={tenantId} />
-      <input type="hidden" name="slug" value={slug} />
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="maxUses">{de.admin.inviteMaxUses}</Label>
@@ -67,20 +68,11 @@ export function CreateInviteForm({ tenantId, slug }: { tenantId: string; slug: s
   );
 }
 
-export function DeleteInviteButton({
-  tenantId,
-  slug,
-  code,
-}: {
-  tenantId: string;
-  slug: string;
-  code: string;
-}) {
+export function DeleteInviteButton({ tenantId, code }: { tenantId: string; code: string }) {
   const [state, formAction, pending] = useActionState(deleteInviteAction, initialActionState);
   return (
     <form action={formAction} className="inline-flex flex-col items-end gap-0.5">
       <input type="hidden" name="tenantId" value={tenantId} />
-      <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="code" value={code} />
       <Button type="submit" size="xs" variant="ghost" disabled={pending}>
         {de.admin.inviteDelete}
@@ -94,16 +86,78 @@ export function DeleteInviteButton({
   );
 }
 
+export function CreateManagedMemberForm({ tenantId }: { tenantId: string }) {
+  const [state, formAction, pending] = useActionState(
+    createManagedMemberAction,
+    initialActionState,
+  );
+  return (
+    <form action={formAction} className="space-y-2">
+      <input type="hidden" name="tenantId" value={tenantId} />
+      <Label htmlFor="displayName" className="text-sm font-medium">
+        {de.admin.managedCreateTitle}
+      </Label>
+      <p className="text-muted-foreground text-xs">{de.admin.managedCreateHint}</p>
+      <div className="flex gap-2">
+        <Input
+          id="displayName"
+          name="displayName"
+          required
+          minLength={1}
+          maxLength={80}
+          placeholder={de.admin.managedNamePlaceholder}
+          className="max-w-xs"
+        />
+        <Button type="submit" size="sm" disabled={pending}>
+          {pending ? de.common.loading : de.admin.managedCreate}
+        </Button>
+      </div>
+      <Message error={state.error} info={state.info} />
+    </form>
+  );
+}
+
+function ConvertMemberForm({ tenantId, targetUserId }: { tenantId: string; targetUserId: string }) {
+  const [state, formAction, pending] = useActionState(
+    convertManagedMemberAction,
+    initialActionState,
+  );
+  return (
+    <details className="w-full">
+      <summary className="text-primary cursor-pointer text-xs">{de.admin.managedConvert}</summary>
+      <form action={formAction} className="mt-2 space-y-2">
+        <input type="hidden" name="tenantId" value={tenantId} />
+        <input type="hidden" name="targetUserId" value={targetUserId} />
+        <p className="text-muted-foreground text-xs">{de.admin.managedConvertHint}</p>
+        <div className="flex gap-2">
+          <Input
+            name="email"
+            type="email"
+            required
+            placeholder={de.admin.managedConvertEmailPlaceholder}
+            aria-label={de.admin.managedConvertEmailPlaceholder}
+            className="max-w-xs"
+          />
+          <Button type="submit" size="sm" variant="secondary" disabled={pending}>
+            {pending ? de.common.loading : de.admin.managedConvertSubmit}
+          </Button>
+        </div>
+        <Message error={state.error} info={state.info} />
+      </form>
+    </details>
+  );
+}
+
 export function MemberRowActions({
   tenantId,
-  slug,
   targetUserId,
   role,
+  managed = false,
 }: {
   tenantId: string;
-  slug: string;
   targetUserId: string;
   role: "admin" | "member";
+  managed?: boolean;
 }) {
   const [roleState, roleAction, rolePending] = useActionState(
     setMemberRoleAction,
@@ -120,7 +174,6 @@ export function MemberRowActions({
       <div className="flex gap-2">
         <form action={roleAction}>
           <input type="hidden" name="tenantId" value={tenantId} />
-          <input type="hidden" name="slug" value={slug} />
           <input type="hidden" name="targetUserId" value={targetUserId} />
           <input type="hidden" name="role" value={nextRole} />
           <Button type="submit" size="sm" variant="outline" disabled={rolePending}>
@@ -129,32 +182,23 @@ export function MemberRowActions({
         </form>
         <form action={removeAction}>
           <input type="hidden" name="tenantId" value={tenantId} />
-          <input type="hidden" name="slug" value={slug} />
           <input type="hidden" name="targetUserId" value={targetUserId} />
           <Button type="submit" size="sm" variant="ghost" disabled={removePending}>
             {de.admin.remove}
           </Button>
         </form>
       </div>
+      {managed && <ConvertMemberForm tenantId={tenantId} targetUserId={targetUserId} />}
       <Message error={roleState.error ?? removeState.error} />
     </div>
   );
 }
 
-export function MemberTippingForm({
-  tenantId,
-  slug,
-  enabled,
-}: {
-  tenantId: string;
-  slug: string;
-  enabled: boolean;
-}) {
+export function MemberTippingForm({ tenantId, enabled }: { tenantId: string; enabled: boolean }) {
   const [state, formAction, pending] = useActionState(setMemberTippingAction, initialActionState);
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="tenantId" value={tenantId} />
-      <input type="hidden" name="slug" value={slug} />
       <label className="flex cursor-pointer items-start gap-3">
         <input
           type="checkbox"
@@ -184,15 +228,13 @@ export interface MemberTipRow {
 
 export function MemberTipTable({
   tenantId,
-  slug,
   fixtureId,
   homeName,
   awayName,
   members,
 }: {
   tenantId: string;
-  slug: string;
-  fixtureId: number;
+  fixtureId: string;
   homeName: string;
   awayName: string;
   members: MemberTipRow[];
@@ -201,7 +243,6 @@ export function MemberTipTable({
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="tenantId" value={tenantId} />
-      <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="fixtureId" value={fixtureId} />
       <input type="hidden" name="userIds" value={members.map((m) => m.userId).join(",")} />
       <div className="overflow-x-auto rounded-md border">
@@ -267,15 +308,7 @@ export interface ScoringValues {
   advanceBonus: number;
 }
 
-export function ScoringForm({
-  tenantId,
-  slug,
-  values,
-}: {
-  tenantId: string;
-  slug: string;
-  values: ScoringValues;
-}) {
+export function ScoringForm({ tenantId, values }: { tenantId: string; values: ScoringValues }) {
   const [state, formAction, pending] = useActionState(saveScoringAction, initialActionState);
   const fields: { name: keyof ScoringValues; label: string }[] = [
     { name: "exact", label: de.admin.scoringExact },
@@ -286,7 +319,6 @@ export function ScoringForm({
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="tenantId" value={tenantId} />
-      <input type="hidden" name="slug" value={slug} />
       <div className="grid gap-3 sm:grid-cols-2">
         {fields.map((f) => (
           <div key={f.name} className="space-y-1.5">
@@ -313,14 +345,12 @@ export function ScoringForm({
 
 export function ResultForm({
   tenantId,
-  slug,
   fixtureId,
   homeName,
   awayName,
 }: {
   tenantId: string;
-  slug: string;
-  fixtureId: number;
+  fixtureId: string;
   homeName: string;
   awayName: string;
 }) {
@@ -328,7 +358,6 @@ export function ResultForm({
   return (
     <form action={formAction} className="flex flex-wrap items-center gap-2 text-sm">
       <input type="hidden" name="tenantId" value={tenantId} />
-      <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="fixtureId" value={fixtureId} />
       <span className="min-w-28 flex-1 truncate text-right">{homeName}</span>
       <Input

@@ -6,14 +6,13 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { de } from "@/messages/de";
 
-export function TenantNav({ slug, isAdmin }: { slug: string; isAdmin: boolean }) {
+export function TenantNav({ tenantId, isAdmin }: { tenantId: string; isAdmin: boolean }) {
   const pathname = usePathname();
-  const base = `/${slug}`;
+  const base = `/${tenantId}`;
   const items = [
     { href: base, label: de.nav.dashboard, exact: true },
     { href: `${base}/spiele`, label: de.nav.fixtures, exact: false },
     { href: `${base}/rangliste`, label: de.nav.leaderboard, exact: false },
-    { href: `${base}/profil`, label: de.nav.profile, exact: false },
     ...(isAdmin
       ? [
           { href: `${base}/tipps`, label: de.admin.enterTips, exact: false },

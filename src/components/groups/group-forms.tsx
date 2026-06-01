@@ -17,11 +17,6 @@ export function CreateGroupForm() {
         <Label htmlFor="name">{de.groups.name}</Label>
         <Input id="name" name="name" required minLength={2} maxLength={80} />
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="slug">{de.groups.slug}</Label>
-        <Input id="slug" name="slug" required pattern="[a-z0-9\-]+" placeholder="z-b-bueroliga" />
-        <p className="text-muted-foreground text-xs">{de.groups.slugHint}</p>
-      </div>
       {state.error && (
         <p role="alert" className="text-destructive text-sm">
           {state.error}

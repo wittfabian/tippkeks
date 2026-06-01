@@ -10,7 +10,7 @@ import { de } from "@/messages/de";
 
 type MembershipRow = {
   role: "admin" | "member";
-  tenant: { id: string; name: string; slug: string } | null;
+  tenant: { id: string; name: string } | null;
 };
 
 export default async function GroupsPage() {
@@ -24,7 +24,7 @@ export default async function GroupsPage() {
   const { data } = userId
     ? await supabase
         .from("tenant_member")
-        .select("role, tenant:tenant(id, name, slug)")
+        .select("role, tenant:tenant(id, name)")
         .eq("user_id", userId)
         .order("joined_at", { ascending: true })
     : { data: [] };
@@ -47,7 +47,7 @@ export default async function GroupsPage() {
                 m.tenant && (
                   <li key={m.tenant.id}>
                     <Link
-                      href={`/${m.tenant.slug}`}
+                      href={`/${m.tenant.id}`}
                       className="hover:bg-muted/50 flex items-center justify-between gap-3 px-3 py-2.5 text-sm"
                     >
                       <span className="flex min-w-0 items-center gap-2">

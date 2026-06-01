@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { invalidateTags } from "@/lib/cache/cache";
 import { isSiteAdmin } from "@/lib/auth/membership";
 import { createClient } from "@/lib/supabase/server";
 import { de } from "@/messages/de";
@@ -41,6 +42,7 @@ export async function updateAppSettingsAction(
     }
   }
 
+  await invalidateTags("app-settings");
   revalidatePath("/einstellungen");
   revalidatePath("/register");
   revalidatePath("/");

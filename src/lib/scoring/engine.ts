@@ -49,12 +49,12 @@ export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
 export interface ScoreInput {
   predHome: number | null;
   predAway: number | null;
-  predAdvancing: number | null;
+  predAdvancing: string | null;
   /** Regulation (90') result — the basis for score predictions. */
   resHome: number | null;
   resAway: number | null;
   /** Actual winner (post extra-time/penalties) for the advancing bonus. */
-  resWinner: number | null;
+  resWinner: string | null;
   stage: StageKind;
   config: ScoringConfig;
 }

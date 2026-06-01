@@ -9,11 +9,10 @@ import type { ActionState } from "@/actions/types";
 
 const schema = z.object({
   tenantId: z.string().uuid(),
-  slug: z.string().min(1),
-  fixtureId: z.coerce.number().int().positive(),
+  fixtureId: z.string().uuid(),
   homeGoals: z.coerce.number().int().min(0).max(99),
   awayGoals: z.coerce.number().int().min(0).max(99),
-  advancingTeamId: z.coerce.number().int().positive().optional(),
+  advancingTeamId: z.string().uuid().optional(),
 });
 
 /**
@@ -28,7 +27,6 @@ export async function submitPredictionAction(
   const advancingRaw = formData.get("advancingTeamId");
   const parsed = schema.safeParse({
     tenantId: formData.get("tenantId"),
-    slug: formData.get("slug"),
     fixtureId: formData.get("fixtureId"),
     homeGoals: formData.get("homeGoals"),
     awayGoals: formData.get("awayGoals"),
@@ -73,6 +71,6 @@ export async function submitPredictionAction(
   );
   if (error) return { error: de.fixtures.saveError };
 
-  revalidatePath(`/${parsed.data.slug}/spiele`);
+  revalidatePath(`/${parsed.data.tenantId}/spiele`);
   return { error: null, info: de.fixtures.saved };
 }

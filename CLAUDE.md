@@ -52,13 +52,15 @@ pnpm format         # prettier --write .
 pnpm sync                       # run the football-data.org sync once (needs FOOTBALL_DATA_API_TOKEN)
 pnpm tsx scripts/generate-seed.ts   # regenerate supabase/seed.sql from data/openfootball/
 pnpm tsx scripts/set-site-admin.ts <email> [--revoke]  # grant/revoke site-admin (service role)
-pnpm tsx scripts/seed-mock.ts [group-slug]   # DEV-ONLY: mock players + tips + finished results → leaderboard
+pnpm tsx scripts/seed-mock.ts [group-id]   # DEV-ONLY: mock players + tips + finished results → leaderboard (defaults to newest group)
 
 # Supabase (CLI is a dev dependency → use `pnpm exec supabase`/the db:* scripts)
 pnpm db:start       # supabase start
 pnpm db:stop
 pnpm db:reset       # rebuild local DB from migrations + seed.sql
 pnpm db:types       # regenerate src/lib/supabase/database.types.ts (run after any schema change)
+
+podman compose up -d   # local Valkey for the cache + rate limiting (docker-compose.yml); then set REDIS_URL
 ```
 
 ### Local Supabase on Podman
@@ -81,7 +83,8 @@ then restart). After regenerating `database.types.ts`, run `pnpm typecheck`.
 **Auth is defense-in-depth across three layers:** (1) `src/proxy.ts` only refreshes the session
 cookie; (2) every protected page/layout + Server Action calls `supabase.auth.getClaims()` (never
 `getSession()` server-side) and re-resolves membership/role; (3) Postgres RLS is the final gate.
-Tenancy is path-scoped (`/(app)/[tenantSlug]/…`); `src/lib/auth/membership.ts` resolves
+Tenancy is path-scoped (`/(app)/[tenantId]/…`, the tenant's uuid — groups have no slug);
+`src/lib/auth/membership.ts` resolves
 `{tenantId, role, userId, supabase}` once per request.
 
 **Supabase clients** (`src/lib/supabase/`, keep separate): `client.ts` (browser), `server.ts`
@@ -143,15 +146,26 @@ timer hitting the secret-protected `POST /api/cron/sync` (Bearer `CRON_SECRET`) 
 call the provider from request handlers. Local dev/tests use the **openfootball seed**
 (`provider = "openfootball"`); production uses the live sync (`provider = "football-data"`).
 
+**Caching & rate limiting** (`src/lib/cache/`, optional — backed by Valkey via `REDIS_URL`; see
+`docs/caching.md`): an application-level read-through cache for **global / tenant-uniform** data only
+(tournament fixtures+teams, `app_setting`, per-tenant leaderboard), invalidated by tags from the sync
+job + admin actions. **Never cache an RLS-scoped/per-user read** — the key has no user in it, so it
+would leak across tenants and defeat RLS; cached global reads use the service role deliberately.
+Invalidation is application-level (not `revalidateTag`) because the sync also runs as a separate CLI
+process. Same store rate-limits `signInAction` + `requestPasswordResetAction`. Absent `REDIS_URL`,
+the cache no-ops and limits fail open. Local: `podman compose up -d` (`docker-compose.yml`).
+
 ## Source layout
 
 ```
 src/proxy.ts                       # Next 16 proxy: session refresh + auth redirect
 src/app/(public)/{login,register}  # auth pages; (public) layout redirects logged-in users home
-src/app/(app)/page.tsx             # tenant chooser (create / join)
-src/app/(app)/[tenantSlug]/…       # dashboard, spiele (tipping), spiel/[id], rangliste, profil, admin
+src/app/(reset)/{passwort-vergessen,passwort-neu}  # password recovery; (reset) layout does NOT redirect (recovery link signs the user in first)
+src/app/(app)/gruppen/page.tsx     # tenant chooser / "Meine Gruppen" (create / join)
+src/app/(app)/profil/page.tsx      # account-wide settings (NOT tenant-scoped); reached from the header user icon
+src/app/(app)/[tenantId]/…         # dashboard, spiele (tipping), spiel/[id], rangliste, admin
 src/app/api/cron/sync/route.ts     # secret-protected sync trigger
-src/app/datenschutz/page.tsx       # DSGVO notice (placeholder — complete before launch)
+src/app/(legal)/{info,datenschutz,impressum}  # public legal/info pages (own chrome; reachable signed-in + out)
 src/actions/                       # "use server" mutations (auth, tenant, predictions, profile, admin)
 src/components/{ui,...}            # shadcn primitives + feature components
 src/lib/{supabase,auth,data,providers,sync,scoring,domain,i18n}/

@@ -1,5 +1,6 @@
-import { Settings } from "lucide-react";
+import { Settings, User } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { signOutAction } from "@/actions/auth";
 import { Wordmark } from "@/components/brand/logo";
@@ -12,6 +13,13 @@ import { de } from "@/messages/de";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   await requireUser(); // redirects to /login when unauthenticated
   const supabase = await createClient();
+
+  // MFA gate: a user with a verified second factor whose session is still aal1
+  // must pass the /mfa challenge before reaching any app page. Users without a
+  // factor have nextLevel === "aal1" and pass straight through.
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.currentLevel === "aal1" && aal.nextLevel === "aal2") redirect("/mfa");
+
   const siteAdmin = await isSiteAdmin(supabase);
 
   return (
@@ -22,6 +30,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Wordmark />
           </Link>
           <div className="flex items-center gap-1">
+            <Link
+              href="/profil"
+              aria-label={de.nav.profile}
+              title={de.nav.profile}
+              className={buttonVariants({ variant: "ghost", size: "icon" })}
+            >
+              <User className="size-4" />
+            </Link>
             {siteAdmin && (
               <Link
                 href="/einstellungen"
@@ -42,8 +58,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </header>
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">{children}</main>
-      <footer className="text-muted-foreground border-t px-4 py-3 text-center text-xs">
-        {de.common.poweredBy}
+      <footer className="text-muted-foreground border-t">
+        <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-3 text-center text-xs">
+          <Link href="/info" className="hover:text-foreground transition">
+            {de.legal.footerNav.info}
+          </Link>
+          <span aria-hidden>·</span>
+          <Link href="/datenschutz" className="hover:text-foreground transition">
+            {de.legal.footerNav.privacy}
+          </Link>
+          <span aria-hidden>·</span>
+          <Link href="/impressum" className="hover:text-foreground transition">
+            {de.legal.footerNav.impressum}
+          </Link>
+          <span aria-hidden>·</span>
+          <span>{de.common.poweredBy}</span>
+        </div>
       </footer>
     </div>
   );

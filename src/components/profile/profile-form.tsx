@@ -30,11 +30,10 @@ function Message({ error, info }: { error: string | null; info?: string | null }
   return null;
 }
 
-export function DisplayNameForm({ slug, displayName }: { slug: string; displayName: string }) {
+export function DisplayNameForm({ displayName }: { displayName: string }) {
   const [state, formAction, pending] = useActionState(updateDisplayNameAction, initialActionState);
   return (
     <form action={formAction} className="space-y-3">
-      <input type="hidden" name="slug" value={slug} />
       <div className="space-y-1.5">
         <Label htmlFor="displayName">{de.profile.displayName}</Label>
         <Input

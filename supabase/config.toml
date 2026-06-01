@@ -235,6 +235,50 @@ otp_length = 6
 # for email delivery while limiting the window a leaked link is usable.
 otp_expiry = 1800
 
+# Custom recovery (password-reset) email. Uses the token_hash flow so the link
+# hits our own /auth/confirm route (verifyOtp) and lands on /passwort-neu.
+# IMPORTANT: configure the SAME template in the hosted Supabase dashboard
+# (Authentication → Email Templates → Reset Password) — config.toml only applies
+# to the local stack.
+[auth.email.template.recovery]
+subject = "Passwort zurücksetzen – TippKeks"
+content_path = "./supabase/templates/recovery.html"
+
+# Confirm-signup email (token_hash flow -> /auth/confirm, lands on the dashboard).
+# Only sent when [auth.email] enable_confirmations = true. Mirror in the hosted
+# dashboard (Authentication -> Email Templates -> Confirm signup).
+[auth.email.template.confirmation]
+subject = "Willkommen bei TippKeks – bitte E-Mail bestätigen"
+content_path = "./supabase/templates/confirmation.html"
+
+# Email-change confirmation (token_hash flow -> /auth/confirm, lands on /profil).
+# Mirror in the hosted dashboard (Authentication -> Email Templates -> Change
+# Email Address).
+[auth.email.template.email_change]
+subject = "E-Mail-Adresse ändern – TippKeks"
+content_path = "./supabase/templates/email_change.html"
+
+# Invite-user email (admin/dashboard invites; in-app group invites use our own
+# tenant_invite flow). Mirror in the hosted dashboard (Authentication -> Email
+# Templates -> Invite user).
+[auth.email.template.invite]
+subject = "Du bist zu TippKeks eingeladen"
+content_path = "./supabase/templates/invite.html"
+
+# Magic-link / email-OTP sign-in. Only sent if a magic-link / email-OTP flow is
+# enabled (the app currently uses email + password). Mirror in the hosted
+# dashboard (Authentication -> Email Templates -> Magic Link).
+[auth.email.template.magic_link]
+subject = "Dein Anmeldelink für TippKeks"
+content_path = "./supabase/templates/magic_link.html"
+
+# Reauthentication code for sensitive actions (e.g. secure password change).
+# Mirror in the hosted dashboard (Authentication -> Email Templates ->
+# Reauthentication).
+[auth.email.template.reauthentication]
+subject = "Dein Bestätigungscode – TippKeks"
+content_path = "./supabase/templates/reauthentication.html"
+
 # Use a production-ready SMTP server
 # [auth.email.smtp]
 # enabled = true
@@ -295,15 +339,19 @@ message_service_sid = ""
 # DO NOT commit your Twilio auth token to git. Use environment variable substitution instead:
 auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
 
-# Multi-factor-authentication is available to Supabase Pro plan.
+# TOTP MFA is free on every plan (incl. self-hosted); only ORG-WIDE enforcement
+# of dashboard members is a paid feature, which is unrelated to our end-user app
+# MFA. App-level enforcement (the /mfa login challenge) is implemented in our own
+# code, so no plan upgrade is needed. Hosted projects have TOTP enabled by
+# default — this block governs the local stack.
 [auth.mfa]
 # Control how many MFA factors can be enrolled at once per user.
 max_enrolled_factors = 10
 
 # Control MFA via App Authenticator (TOTP)
 [auth.mfa.totp]
-enroll_enabled = false
-verify_enabled = false
+enroll_enabled = true
+verify_enabled = true
 
 # Configure MFA via Phone Messaging
 [auth.mfa.phone]

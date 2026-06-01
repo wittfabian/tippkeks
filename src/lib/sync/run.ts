@@ -1,5 +1,6 @@
 import "server-only";
 
+import { invalidateTags } from "@/lib/cache/cache";
 import { STAGE_META } from "@/lib/domain/stages";
 import type { FixtureProvider } from "@/lib/providers/types";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -141,6 +142,11 @@ export async function runSync(provider: FixtureProvider): Promise<SyncReport> {
     if (error) throw error;
     scoredFixtures += 1;
   }
+
+  // Fixtures/teams changed, and any scoring shifted every affected tenant's
+  // leaderboard. Invalidate via the shared store so it reaches the server
+  // process too (this may run in the standalone `pnpm sync` CLI).
+  await invalidateTags("tournament", "leaderboard");
 
   return {
     provider: provider.name,

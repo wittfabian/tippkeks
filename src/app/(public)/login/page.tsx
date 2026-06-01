@@ -7,7 +7,13 @@ import { de } from "@/messages/de";
 
 export const metadata = { title: de.auth.loginTitle };
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ invite?: string }>;
+}) {
+  const { invite } = await searchParams;
+  const registerHref = invite ? `/register?invite=${encodeURIComponent(invite)}` : "/register";
   return (
     <Card>
       <CardHeader>
@@ -15,13 +21,18 @@ export default function LoginPage() {
         <CardTitle>{de.auth.loginTitle}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <AuthForm mode="login" />
-        <Link
-          href="/register"
-          className="text-muted-foreground hover:text-foreground block text-center text-sm"
-        >
-          {de.auth.toRegister}
-        </Link>
+        <AuthForm mode="login" invite={invite} />
+        <div className="space-y-1 text-center text-sm">
+          <Link
+            href="/passwort-vergessen"
+            className="text-muted-foreground hover:text-foreground block"
+          >
+            {de.auth.forgotPassword}
+          </Link>
+          <Link href={registerHref} className="text-muted-foreground hover:text-foreground block">
+            {de.auth.toRegister}
+          </Link>
+        </div>
       </CardContent>
     </Card>
   );

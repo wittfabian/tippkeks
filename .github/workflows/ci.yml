@@ -42,13 +42,16 @@ jobs:
       - name: Test
         run: pnpm test
 
-      # Build with placeholder env: NEXT_PUBLIC_* are inlined at build time and
-      # Zod validates them, so they must be present (dummy values are fine for a
-      # build-only check — the real image is built in release.yml).
+      # Build env comes from repo Variables (not hardcoded). NEXT_PUBLIC_* are
+      # inlined into the client bundle at build time and Zod-validated, so they
+      # must be present. The service-role key is deliberately NOT provided: it is
+      # only needed at runtime (createServiceClient asserts it then), so keeping
+      # the secret out of CI removes any chance of it leaking into a build artifact
+      # or log. Configure under Settings → Secrets and variables → Actions:
+      # Variables NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY.
       - name: Build
         run: pnpm build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
-          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-key
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_TELEMETRY_DISABLED: "1"

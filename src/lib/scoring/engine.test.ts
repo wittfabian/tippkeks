@@ -61,10 +61,10 @@ describe("scorePrediction", () => {
     const outcome = scorePrediction({
       predHome: 1,
       predAway: 1,
-      predAdvancing: 5,
+      predAdvancing: "team-5",
       resHome: 1,
       resAway: 1,
-      resWinner: 5,
+      resWinner: "team-5",
       stage: "final",
       config,
     });
@@ -76,10 +76,10 @@ describe("scorePrediction", () => {
     const outcome = scorePrediction({
       predHome: 0,
       predAway: 0,
-      predAdvancing: 5,
+      predAdvancing: "team-5",
       resHome: 0,
       resAway: 0,
-      resWinner: 9,
+      resWinner: "team-9",
       stage: "group",
       config,
     });

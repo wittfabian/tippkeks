@@ -7,7 +7,8 @@
  * scores them — yielding a realistic ranking. DEV ONLY: refuses to run against
  * anything but a local Supabase, and creates throwaway @tippkeks.test users.
  *
- * Run: pnpm tsx scripts/seed-mock.ts [group-slug]   (default: fg-2026)
+ * Run: pnpm tsx scripts/seed-mock.ts [group-id]
+ * Without an id it targets the most recently created group.
  */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
@@ -33,7 +34,7 @@ function predict(rh: number, ra: number): [number, number] {
 }
 
 async function main() {
-  const slug = process.argv[2] ?? "fg-2026";
+  const groupId = process.argv[2];
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) {
@@ -51,14 +52,17 @@ async function main() {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  // Resolve the target group.
-  const { data: tenant } = await db
-    .from("tenant")
-    .select("id, name")
-    .eq("slug", slug)
-    .maybeSingle();
+  // Resolve the target group: the given id, or the most recently created group.
+  const query = db.from("tenant").select("id, name");
+  const { data: tenant } = groupId
+    ? await query.eq("id", groupId).maybeSingle()
+    : await query.order("created_at", { ascending: false }).limit(1).maybeSingle();
   if (!tenant) {
-    console.error(`Group "${slug}" not found. Create it in the app first.`);
+    console.error(
+      groupId
+        ? `Group "${groupId}" not found. Create it in the app first.`
+        : "No groups exist yet. Create one in the app first.",
+    );
     process.exitCode = 1;
     return;
   }

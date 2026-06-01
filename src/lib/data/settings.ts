@@ -1,3 +1,4 @@
+import { cached } from "@/lib/cache/cache";
 import type { Json } from "@/lib/supabase/database.types";
 import type { createClient } from "@/lib/supabase/server";
 
@@ -28,13 +29,21 @@ function readFlag(value: Json | undefined, fallback: boolean): boolean {
  * registration before any session exists) thanks to the app_setting RLS policy.
  */
 export async function getAppSettings(supabase: ServerClient): Promise<AppSettings> {
-  const { data } = await supabase.from("app_setting").select("key, value");
-  const byKey = new Map((data ?? []).map((row) => [row.key, row.value]));
-  return {
-    registrationEnabled: readFlag(byKey.get("registration_enabled"), DEFAULTS.registrationEnabled),
-    groupCreationEnabled: readFlag(
-      byKey.get("group_creation_enabled"),
-      DEFAULTS.groupCreationEnabled,
-    ),
-  };
+  // Two global flags, read on nearly every page (incl. anon /register). Cached
+  // under tag "app-settings", invalidated when an admin saves settings. The
+  // value is identical for everyone, so sharing one entry is correct.
+  return cached({ key: "app-settings", ttlSeconds: 300, tags: ["app-settings"] }, async () => {
+    const { data } = await supabase.from("app_setting").select("key, value");
+    const byKey = new Map((data ?? []).map((row) => [row.key, row.value]));
+    return {
+      registrationEnabled: readFlag(
+        byKey.get("registration_enabled"),
+        DEFAULTS.registrationEnabled,
+      ),
+      groupCreationEnabled: readFlag(
+        byKey.get("group_creation_enabled"),
+        DEFAULTS.groupCreationEnabled,
+      ),
+    };
+  });
 }

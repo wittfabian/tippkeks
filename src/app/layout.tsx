@@ -4,6 +4,7 @@ import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { de } from "@/messages/de";
 
 const geistSans = Geist({
   variable: "--font-sans",
@@ -24,10 +25,10 @@ const archivo = Archivo({
 
 export const metadata: Metadata = {
   title: {
-    default: "TippKeks",
-    template: "%s · TippKeks",
+    default: de.app.name,
+    template: `%s · ${de.app.name}`,
   },
-  description: "TippKeks – privates Fußball-Tippspiel für Freundesgruppen zur WM 2026.",
+  description: de.app.description,
 };
 
 export default function RootLayout({
