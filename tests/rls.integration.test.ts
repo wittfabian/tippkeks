@@ -16,7 +16,10 @@ const INVITE_CODE = "ITESTCODE";
 const FIXTURE_PROVIDER = "itest";
 
 suite("RLS, deadline and scoring (integration)", () => {
-  const admin = adminClient();
+  // Created in beforeAll, not here: describe.skip still runs this body, and
+  // adminClient() throws without Supabase env (CI), which would fail the suite
+  // instead of skipping it.
+  let admin: SupabaseClient;
   let cA: SupabaseClient;
   let cB: SupabaseClient;
   let cC: SupabaseClient;
@@ -39,6 +42,7 @@ suite("RLS, deadline and scoring (integration)", () => {
   }
 
   beforeAll(async () => {
+    admin = adminClient();
     await cleanup();
 
     // create_group honours the global group-creation toggle; ensure it is on so
