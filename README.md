@@ -93,7 +93,7 @@ image and never stored in GitHub Actions. When you `docker run` / deploy, provid
 
 | Variable                             | Purpose                                                                                                                                     |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SUPABASE_SERVICE_ROLE_KEY`          | Server-only; sync job + admin result overrides (bypasses RLS).                                                                              |
+| `SUPABASE_SERVICE_ROLE_KEY`          | Server-only; sync job + admin overrides + managed members (bypasses RLS). A Secret key (`sb_secret_…`, Dashboard → Settings → API Keys), or the legacy `service_role` key (valid until end of 2026). |
 | `CRON_SECRET`                        | Bearer token guarding `POST /api/cron/sync`. `openssl rand -hex 32`.                                                                        |
 | `FOOTBALL_DATA_API_TOKEN`            | football-data.org API token for the live result sync.                                                                                       |
 | `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | **Same value as the build Secret above** — embedded at build, the Node server re-reads it at runtime and it must match across all replicas. |
