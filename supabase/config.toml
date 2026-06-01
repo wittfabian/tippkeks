@@ -244,6 +244,41 @@ otp_expiry = 1800
 subject = "Passwort zurücksetzen – TippKeks"
 content_path = "./supabase/templates/recovery.html"
 
+# Confirm-signup email (token_hash flow -> /auth/confirm, lands on the dashboard).
+# Only sent when [auth.email] enable_confirmations = true. Mirror in the hosted
+# dashboard (Authentication -> Email Templates -> Confirm signup).
+[auth.email.template.confirmation]
+subject = "Willkommen bei TippKeks – bitte E-Mail bestätigen"
+content_path = "./supabase/templates/confirmation.html"
+
+# Email-change confirmation (token_hash flow -> /auth/confirm, lands on /profil).
+# Mirror in the hosted dashboard (Authentication -> Email Templates -> Change
+# Email Address).
+[auth.email.template.email_change]
+subject = "E-Mail-Adresse ändern – TippKeks"
+content_path = "./supabase/templates/email_change.html"
+
+# Invite-user email (admin/dashboard invites; in-app group invites use our own
+# tenant_invite flow). Mirror in the hosted dashboard (Authentication -> Email
+# Templates -> Invite user).
+[auth.email.template.invite]
+subject = "Du bist zu TippKeks eingeladen"
+content_path = "./supabase/templates/invite.html"
+
+# Magic-link / email-OTP sign-in. Only sent if a magic-link / email-OTP flow is
+# enabled (the app currently uses email + password). Mirror in the hosted
+# dashboard (Authentication -> Email Templates -> Magic Link).
+[auth.email.template.magic_link]
+subject = "Dein Anmeldelink für TippKeks"
+content_path = "./supabase/templates/magic_link.html"
+
+# Reauthentication code for sensitive actions (e.g. secure password change).
+# Mirror in the hosted dashboard (Authentication -> Email Templates ->
+# Reauthentication).
+[auth.email.template.reauthentication]
+subject = "Dein Bestätigungscode – TippKeks"
+content_path = "./supabase/templates/reauthentication.html"
+
 # Use a production-ready SMTP server
 # [auth.email.smtp]
 # enabled = true
