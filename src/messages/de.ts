@@ -297,7 +297,7 @@ export const de = {
       city: "PLZ Ort",
       country: "Deutschland",
       emailLabel: "E-Mail",
-      email: "mail@fabianwitt.de",
+      email: "kontakt@tippkeks.de",
     },
     impressum: {
       title: "Impressum",
