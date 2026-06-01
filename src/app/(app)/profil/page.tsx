@@ -1,3 +1,4 @@
+import { MfaSection } from "@/components/profile/mfa-section";
 import {
   DeleteAccountForm,
   DisplayNameForm,
@@ -47,6 +48,13 @@ export default async function ProfilePage() {
         <h2 className="text-muted-foreground text-sm font-medium">{de.profile.passwordTitle}</h2>
         <div className="rounded-md border p-4">
           <PasswordForm />
+        </div>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-muted-foreground text-sm font-medium">{de.profile.mfaTitle}</h2>
+        <div className="rounded-md border p-4">
+          <MfaSection />
         </div>
       </section>
 

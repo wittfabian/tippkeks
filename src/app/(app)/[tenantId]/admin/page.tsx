@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import {
   CreateInviteForm,
+  CreateManagedMemberForm,
   DeleteInviteButton,
   MemberRowActions,
   MemberTippingForm,
@@ -104,13 +105,20 @@ async function MembersTab({
     .eq("tenant_id", tenantId);
   const memberIds = (members ?? []).map((m) => m.user_id);
   const { data: profiles } = memberIds.length
-    ? await supabase.from("profile").select("user_id, display_name").in("user_id", memberIds)
+    ? await supabase
+        .from("profile")
+        .select("user_id, display_name, managed")
+        .in("user_id", memberIds)
     : { data: [] };
-  const nameById = new Map((profiles ?? []).map((p) => [p.user_id, p.display_name]));
+  const profileById = new Map((profiles ?? []).map((p) => [p.user_id, p]));
 
   // Admins first, then alphabetically by display name.
   const rows = (members ?? [])
-    .map((m) => ({ ...m, name: nameById.get(m.user_id) ?? "—" }))
+    .map((m) => ({
+      ...m,
+      name: profileById.get(m.user_id)?.display_name ?? "—",
+      managed: profileById.get(m.user_id)?.managed ?? false,
+    }))
     .filter((m) => (query ? m.name.toLowerCase().includes(query.toLowerCase()) : true))
     .sort((a, b) => {
       if (a.role !== b.role) return a.role === "admin" ? -1 : 1;
@@ -127,6 +135,9 @@ async function MembersTab({
 
   return (
     <div className="space-y-3">
+      <div className="rounded-md border p-3">
+        <CreateManagedMemberForm tenantId={tenantId} />
+      </div>
       <div className="flex items-center justify-between gap-3">
         <form method="get" className="flex flex-1 gap-2">
           <input type="hidden" name="tab" value="members" />
@@ -157,8 +168,14 @@ async function MembersTab({
                 <Badge variant={m.role === "admin" ? "default" : "secondary"}>
                   {de.groups.role[m.role]}
                 </Badge>
+                {m.managed && <Badge variant="outline">{de.admin.managedBadge}</Badge>}
               </span>
-              <MemberRowActions tenantId={tenantId} targetUserId={m.user_id} role={m.role} />
+              <MemberRowActions
+                tenantId={tenantId}
+                targetUserId={m.user_id}
+                role={m.role}
+                managed={m.managed}
+              />
             </li>
           ))}
         </ul>

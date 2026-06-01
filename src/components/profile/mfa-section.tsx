@@ -1,0 +1,245 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { createClient } from "@/lib/supabase/client";
+import { de } from "@/messages/de";
+
+type Enrolling = { factorId: string; qrCode: string; secret: string };
+
+/**
+ * Manage TOTP two-factor auth for the current account (browser-side, since the
+ * enrolment flow is interactive: show QR → enter code → verify). A verified
+ * factor makes the /mfa login challenge kick in (enforced by the (app) layout).
+ */
+export function MfaSection() {
+  const [loading, setLoading] = useState(true);
+  const [activeFactorId, setActiveFactorId] = useState<string | null>(null);
+  const [enrolling, setEnrolling] = useState<Enrolling | null>(null);
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+
+  // Reload the verified-factor state after an enrol/remove (event handlers only,
+  // never an effect — see the inlined initial load below).
+  async function refresh() {
+    const supabase = createClient();
+    const { data, error: listError } = await supabase.auth.mfa.listFactors();
+    if (listError) {
+      setError(de.profile.mfaError);
+      setLoading(false);
+      return;
+    }
+    const verified = (data?.all ?? []).find(
+      (f) => f.factor_type === "totp" && f.status === "verified",
+    );
+    setActiveFactorId(verified?.id ?? null);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data, error: listError } = await supabase.auth.mfa.listFactors();
+      if (cancelled) return;
+      if (listError) {
+        setError(de.profile.mfaError);
+        setLoading(false);
+        return;
+      }
+      const verified = (data?.all ?? []).find(
+        (f) => f.factor_type === "totp" && f.status === "verified",
+      );
+      setActiveFactorId(verified?.id ?? null);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function startEnroll() {
+    setBusy(true);
+    setError(null);
+    setInfo(null);
+    const supabase = createClient();
+
+    // Clear any stale unverified factors so re-enrolling never collides.
+    const { data: existing } = await supabase.auth.mfa.listFactors();
+    for (const f of existing?.all ?? []) {
+      if (f.status === "unverified") await supabase.auth.mfa.unenroll({ factorId: f.id });
+    }
+
+    const { data, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: "totp" });
+    if (enrollError || !data) {
+      setError(de.profile.mfaError);
+      setBusy(false);
+      return;
+    }
+    setEnrolling({ factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret });
+    setBusy(false);
+  }
+
+  async function confirmEnroll() {
+    if (!enrolling) return;
+    setBusy(true);
+    setError(null);
+    const supabase = createClient();
+    const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
+      factorId: enrolling.factorId,
+    });
+    if (challengeError || !challenge) {
+      setError(de.profile.mfaError);
+      setBusy(false);
+      return;
+    }
+    const { error: verifyError } = await supabase.auth.mfa.verify({
+      factorId: enrolling.factorId,
+      challengeId: challenge.id,
+      code: code.trim(),
+    });
+    if (verifyError) {
+      setError(de.profile.mfaCodeError);
+      setBusy(false);
+      return;
+    }
+    setEnrolling(null);
+    setCode("");
+    setBusy(false);
+    setInfo(de.profile.mfaEnabled);
+    await refresh();
+  }
+
+  async function cancelEnroll() {
+    setBusy(true);
+    if (enrolling) {
+      const supabase = createClient();
+      await supabase.auth.mfa.unenroll({ factorId: enrolling.factorId });
+    }
+    setEnrolling(null);
+    setCode("");
+    setError(null);
+    setBusy(false);
+  }
+
+  async function removeFactor() {
+    if (!activeFactorId) return;
+    setBusy(true);
+    setError(null);
+    setInfo(null);
+    const supabase = createClient();
+    const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId: activeFactorId });
+    if (unenrollError) {
+      setError(de.profile.mfaError);
+      setBusy(false);
+      return;
+    }
+    setBusy(false);
+    setInfo(de.profile.mfaRemoved);
+    await refresh();
+  }
+
+  if (loading) return <p className="text-muted-foreground text-sm">{de.common.loading}</p>;
+
+  // Mid-enrolment: show the QR + secret and ask for the first code.
+  if (enrolling) {
+    return (
+      <div className="space-y-3">
+        <p className="text-muted-foreground text-sm">{de.profile.mfaScanHint}</p>
+        {/* qr_code is an SVG data URI generated by Supabase. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={enrolling.qrCode}
+          alt={de.profile.mfaQrAlt}
+          className="bg-card size-44 rounded-md border p-2"
+        />
+        <p className="text-muted-foreground text-xs">
+          {de.profile.mfaSecretHint}{" "}
+          <code className="bg-muted rounded px-1 py-0.5 font-mono break-all">
+            {enrolling.secret}
+          </code>
+        </p>
+        <div className="space-y-1.5">
+          <Label htmlFor="mfaCode">{de.profile.mfaCodeLabel}</Label>
+          <Input
+            id="mfaCode"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            className="w-32 text-center tracking-widest tabular-nums"
+          />
+        </div>
+        {error && (
+          <p role="alert" className="text-destructive text-sm">
+            {error}
+          </p>
+        )}
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            size="sm"
+            onClick={confirmEnroll}
+            disabled={busy || code.length < 6}
+          >
+            {busy ? de.common.loading : de.profile.mfaConfirm}
+          </Button>
+          <Button type="button" size="sm" variant="ghost" onClick={cancelEnroll} disabled={busy}>
+            {de.common.cancel}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Active factor: show status + remove.
+  if (activeFactorId) {
+    return (
+      <div className="space-y-3">
+        <p className="text-sm">
+          <span className="font-medium text-emerald-600">{de.profile.mfaActive}</span>{" "}
+          <span className="text-muted-foreground">{de.profile.mfaActiveHint}</span>
+        </p>
+        {info && (
+          <p role="status" className="text-sm text-emerald-600">
+            {info}
+          </p>
+        )}
+        {error && (
+          <p role="alert" className="text-destructive text-sm">
+            {error}
+          </p>
+        )}
+        <Button type="button" size="sm" variant="outline" onClick={removeFactor} disabled={busy}>
+          {busy ? de.common.loading : de.profile.mfaRemove}
+        </Button>
+      </div>
+    );
+  }
+
+  // No factor yet: offer enrolment.
+  return (
+    <div className="space-y-3">
+      <p className="text-muted-foreground text-sm">{de.profile.mfaIntro}</p>
+      {info && (
+        <p role="status" className="text-sm text-emerald-600">
+          {info}
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="text-destructive text-sm">
+          {error}
+        </p>
+      )}
+      <Button type="button" size="sm" onClick={startEnroll} disabled={busy}>
+        {busy ? de.common.loading : de.profile.mfaEnable}
+      </Button>
+    </div>
+  );
+}

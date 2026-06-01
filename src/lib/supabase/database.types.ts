@@ -354,18 +354,21 @@ export type Database = {
         Row: {
           created_at: string
           display_name: string
+          managed: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           display_name: string
+          managed?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           display_name?: string
+          managed?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -762,6 +765,8 @@ export type Database = {
         | "result_override"
         | "invite_create"
         | "invite_redeem"
+        | "member_create_managed"
+        | "member_convert_managed"
       fixture_status:
         | "scheduled"
         | "live"
@@ -923,6 +928,8 @@ export const Constants = {
         "result_override",
         "invite_create",
         "invite_redeem",
+        "member_create_managed",
+        "member_convert_managed",
       ],
       fixture_status: [
         "scheduled",

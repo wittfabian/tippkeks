@@ -3,7 +3,9 @@
 import { useActionState } from "react";
 
 import {
+  convertManagedMemberAction,
   createInviteAction,
+  createManagedMemberAction,
   deleteInviteAction,
   overrideResultAction,
   removeMemberAction,
@@ -84,14 +86,78 @@ export function DeleteInviteButton({ tenantId, code }: { tenantId: string; code:
   );
 }
 
+export function CreateManagedMemberForm({ tenantId }: { tenantId: string }) {
+  const [state, formAction, pending] = useActionState(
+    createManagedMemberAction,
+    initialActionState,
+  );
+  return (
+    <form action={formAction} className="space-y-2">
+      <input type="hidden" name="tenantId" value={tenantId} />
+      <Label htmlFor="displayName" className="text-sm font-medium">
+        {de.admin.managedCreateTitle}
+      </Label>
+      <p className="text-muted-foreground text-xs">{de.admin.managedCreateHint}</p>
+      <div className="flex gap-2">
+        <Input
+          id="displayName"
+          name="displayName"
+          required
+          minLength={1}
+          maxLength={80}
+          placeholder={de.admin.managedNamePlaceholder}
+          className="max-w-xs"
+        />
+        <Button type="submit" size="sm" disabled={pending}>
+          {pending ? de.common.loading : de.admin.managedCreate}
+        </Button>
+      </div>
+      <Message error={state.error} info={state.info} />
+    </form>
+  );
+}
+
+function ConvertMemberForm({ tenantId, targetUserId }: { tenantId: string; targetUserId: string }) {
+  const [state, formAction, pending] = useActionState(
+    convertManagedMemberAction,
+    initialActionState,
+  );
+  return (
+    <details className="w-full">
+      <summary className="text-primary cursor-pointer text-xs">{de.admin.managedConvert}</summary>
+      <form action={formAction} className="mt-2 space-y-2">
+        <input type="hidden" name="tenantId" value={tenantId} />
+        <input type="hidden" name="targetUserId" value={targetUserId} />
+        <p className="text-muted-foreground text-xs">{de.admin.managedConvertHint}</p>
+        <div className="flex gap-2">
+          <Input
+            name="email"
+            type="email"
+            required
+            placeholder={de.admin.managedConvertEmailPlaceholder}
+            aria-label={de.admin.managedConvertEmailPlaceholder}
+            className="max-w-xs"
+          />
+          <Button type="submit" size="sm" variant="secondary" disabled={pending}>
+            {pending ? de.common.loading : de.admin.managedConvertSubmit}
+          </Button>
+        </div>
+        <Message error={state.error} info={state.info} />
+      </form>
+    </details>
+  );
+}
+
 export function MemberRowActions({
   tenantId,
   targetUserId,
   role,
+  managed = false,
 }: {
   tenantId: string;
   targetUserId: string;
   role: "admin" | "member";
+  managed?: boolean;
 }) {
   const [roleState, roleAction, rolePending] = useActionState(
     setMemberRoleAction,
@@ -122,6 +188,7 @@ export function MemberRowActions({
           </Button>
         </form>
       </div>
+      {managed && <ConvertMemberForm tenantId={tenantId} targetUserId={targetUserId} />}
       <Message error={roleState.error ?? removeState.error} />
     </div>
   );

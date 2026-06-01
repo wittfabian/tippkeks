@@ -57,6 +57,20 @@ export async function signInAction(_prev: ActionState, formData: FormData): Prom
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) return { error: de.auth.errorInvalid };
 
+  // If the account has a verified second factor, sign-in only reaches aal1 —
+  // send them to the /mfa challenge before resolving their destination. The
+  // (app) layout enforces the same gate for any other entry point. The invite,
+  // if any, is redeemed after the challenge (not here) so it is not consumed
+  // while MFA is still pending.
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.currentLevel === "aal1" && aal.nextLevel === "aal2") {
+    const invite = formData.get("invite");
+    const params = new URLSearchParams();
+    if (typeof invite === "string" && invite.trim()) params.set("invite", invite.trim());
+    const qs = params.toString();
+    redirect(qs ? `/mfa?${qs}` : "/mfa");
+  }
+
   redirect(await postAuthDestination(supabase, formData.get("invite")));
 }
 

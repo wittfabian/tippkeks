@@ -1,5 +1,6 @@
 import { Settings, User } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { signOutAction } from "@/actions/auth";
 import { Wordmark } from "@/components/brand/logo";
@@ -12,6 +13,13 @@ import { de } from "@/messages/de";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   await requireUser(); // redirects to /login when unauthenticated
   const supabase = await createClient();
+
+  // MFA gate: a user with a verified second factor whose session is still aal1
+  // must pass the /mfa challenge before reaching any app page. Users without a
+  // factor have nextLevel === "aal1" and pass straight through.
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.currentLevel === "aal1" && aal.nextLevel === "aal2") redirect("/mfa");
+
   const siteAdmin = await isSiteAdmin(supabase);
 
   return (

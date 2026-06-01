@@ -144,6 +144,20 @@
   html {
     @apply font-sans;
   }
+  /*
+   * Hide the browser's native number-input spin buttons everywhere: our inputs
+   * either ship their own +/- stepper (the tip form) or are plain typed fields,
+   * so the native arrows are redundant and clutter the layout.
+   */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
 }
 
 /*

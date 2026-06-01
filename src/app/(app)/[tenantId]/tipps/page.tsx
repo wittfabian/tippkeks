@@ -1,10 +1,8 @@
-import Link from "next/link";
-
 import { MemberTipTable, type MemberTipRow } from "@/components/admin/admin-forms";
+import { FixturePicker, type FixtureGroup } from "@/components/admin/fixture-picker";
 import { requireAdmin } from "@/lib/auth/membership";
 import { getFixtureBoard } from "@/lib/data/fixtures";
-import { formatDateTime } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { berlinDayKey, formatDayHeading, formatTime } from "@/lib/format";
 import { de } from "@/messages/de";
 
 export const metadata = { title: de.admin.enterTips };
@@ -54,6 +52,20 @@ export default async function EnterTipsPage({
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
 
+  // Group the (already chronological) upcoming fixtures by German calendar day
+  // for the picker's optgroups. No truncation — the full schedule is selectable.
+  const groups: FixtureGroup[] = [];
+  for (const f of upcoming) {
+    const heading = formatDayHeading(f.kickoffAt);
+    const label = `${formatTime(f.kickoffAt)} · ${f.home?.shortName ?? f.home?.name ?? "?"} – ${
+      f.away?.shortName ?? f.away?.name ?? "?"
+    }`;
+    const key = berlinDayKey(f.kickoffAt);
+    const last = groups.at(-1);
+    if (last && last.key === key) last.options.push({ id: f.id, label });
+    else groups.push({ key, heading, options: [{ id: f.id, label }] });
+  }
+
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">{de.admin.enterTips}</h2>
@@ -63,23 +75,7 @@ export default async function EnterTipsPage({
       ) : (
         <div className="space-y-3">
           <p className="text-muted-foreground text-sm">{de.admin.tipsPickFixture}</p>
-          <div className="flex flex-wrap gap-2">
-            {upcoming.slice(0, 30).map((f) => (
-              <Link
-                key={f.id}
-                href={`${base}?fixture=${f.id}`}
-                className={cn(
-                  "cursor-pointer rounded-md border px-2 py-1 text-xs whitespace-nowrap",
-                  selected?.id === f.id
-                    ? "border-primary bg-primary/10 font-medium"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {f.home?.shortName ?? f.home?.name ?? "?"} –{" "}
-                {f.away?.shortName ?? f.away?.name ?? "?"} · {formatDateTime(f.kickoffAt)}
-              </Link>
-            ))}
-          </div>
+          <FixturePicker base={base} selectedId={selected?.id ?? ""} groups={groups} />
           {selected && (
             <MemberTipTable
               tenantId={tenantId}
