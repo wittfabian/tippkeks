@@ -97,8 +97,10 @@ podman compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 
 `--env-file .env.prod` serves both roles: compose interpolates the build-time
 `NEXT_PUBLIC_*` args from it, and the app's `env_file` injects the runtime
-secrets. `REDIS_URL` is set in the compose file (not `.env.prod`) so it always
-points at the service.
+secrets. You set only `REDIS_PASSWORD` in `.env.prod` (not `REDIS_URL`); the app
+assembles `redis://:<password>@valkey:6379` at startup (see `src/lib/env.server.ts`),
+so the connection always points at the private service. An explicit `REDIS_URL`,
+if set, takes precedence (that is the local-dev path against `127.0.0.1:6379`).
 
 **Sync invalidation:** trigger the sync via the in-container route
 (`POST /api/cron/sync`) — it shares the network and can reach Valkey to

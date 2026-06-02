@@ -20,10 +20,31 @@ const ServerEnvSchema = z.object({
   FOOTBALL_DATA_API_TOKEN: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   FOOTBALL_DATA_COMPETITION: z.preprocess(emptyToUndefined, z.string().min(1).default("WC")),
   CRON_SECRET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  // Canonical public origin (e.g. https://tippkeks.de). Used to build absolute
+  // auth redirect URLs, since `request.url` behind the reverse proxy reflects the
+  // internal bind address (0.0.0.0:3000), not the public host.
+  SITE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
   // Valkey/Redis connection for the data cache and rate limiting. Optional: when
   // absent the cache no-ops (reads fall through to Postgres) and rate limits
   // fail open, so the app boots fine without it.
   REDIS_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
+  // Production (docker-compose.prod.yml): only the Valkey password is supplied as
+  // a runtime env var; the URL is assembled below against the compose service
+  // host. An explicit REDIS_URL (local dev) always wins.
+  REDIS_PASSWORD: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
 });
 
-export const serverEnv = ServerEnvSchema.parse(process.env);
+const parsed = ServerEnvSchema.parse(process.env);
+
+// Prod Valkey runs with `--requirepass`, reachable only as `valkey:6379` on the
+// private compose network. When no explicit REDIS_URL is set but a password is,
+// build the authenticated URL the password implies (hex secrets are URL-safe;
+// encode defensively anyway). Without this the app would have the password but
+// no URL, so getRedis() returns null — silently disabling cache + rate limiting.
+const redisUrl =
+  parsed.REDIS_URL ??
+  (parsed.REDIS_PASSWORD
+    ? `redis://:${encodeURIComponent(parsed.REDIS_PASSWORD)}@valkey:6379`
+    : undefined);
+
+export const serverEnv = { ...parsed, REDIS_URL: redisUrl };

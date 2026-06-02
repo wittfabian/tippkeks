@@ -97,9 +97,12 @@ export async function signUpAction(_prev: ActionState, formData: FormData): Prom
     options: { data: { display_name: parsed.data.displayName } },
   });
   if (error) {
-    return {
-      error: /registered|exists/i.test(error.message) ? de.auth.errorTaken : de.auth.errorGeneric,
-    };
+    const taken = /registered|exists/i.test(error.message);
+    // Surface the real GoTrue reason server-side — the UI message is deliberately
+    // generic, but "Error sending confirmation email" / "Database error saving new
+    // user" / "Signups not allowed" must be diagnosable from the logs.
+    if (!taken) logActionError("signUp", error);
+    return { error: taken ? de.auth.errorTaken : de.auth.errorGeneric };
   }
 
   // When email confirmation is enabled (production) there is no session yet.
