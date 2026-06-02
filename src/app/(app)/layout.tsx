@@ -21,10 +21,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!userData.user) redirect("/login");
 
   // MFA gate (UX layer; the Postgres MFA policies are the authoritative gate): a
-  // user with a verified second factor whose session is still aal1 must pass the
+  // user with a verified second factor whose session is not yet aal2 must pass the
   // /mfa challenge first. Users without a factor have nextLevel "aal1" and pass through.
+  //
+  // Redirect on ANY pending step-up (nextLevel "aal2" while currentLevel is not
+  // "aal2") — not only currentLevel === "aal1". An access token can omit the `aal`
+  // claim, leaving currentLevel null; a strict "=== aal1" check would let such a
+  // session into the app while private.mfa_satisfied() (which sees aal IS NOT
+  // 'aal2') denies every personal/tenant read — silently blanking the profile,
+  // the site-admin nav, and blocking the account-deletion RPC.
   const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (aal?.currentLevel === "aal1" && aal.nextLevel === "aal2") redirect("/mfa");
+  if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") redirect("/mfa");
 
   const siteAdmin = await isSiteAdmin(supabase);
 
