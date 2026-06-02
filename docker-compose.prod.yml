@@ -127,7 +127,7 @@ services:
         --maxmemory-policy allkeys-lru
     healthcheck:
       # valkey-cli reads REDISCLI_AUTH from the env, keeping the password out of argv.
-      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" valkey-cli ping | grep -q PONG"]
+      test: ["CMD-SHELL", 'REDISCLI_AUTH="$$REDIS_PASSWORD" valkey-cli ping | grep -q PONG']
       interval: 10s
       timeout: 3s
       retries: 5
