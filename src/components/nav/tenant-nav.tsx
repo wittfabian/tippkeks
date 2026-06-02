@@ -16,7 +16,6 @@ export function TenantNav({ tenantId, isAdmin }: { tenantId: string; isAdmin: bo
     ...(isAdmin
       ? [
           { href: `${base}/tipps`, label: de.admin.enterTips, exact: false },
-          { href: `${base}/ergebnisse`, label: de.admin.results, exact: false },
           { href: `${base}/admin`, label: de.nav.admin, exact: false },
         ]
       : []),

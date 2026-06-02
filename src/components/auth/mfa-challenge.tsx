@@ -26,7 +26,12 @@ export function MfaChallenge({ invite, redirectTo }: { invite?: string; redirect
 
   const finish = useCallback(async () => {
     const supabase = createClient();
-    let destination = redirectTo && redirectTo.startsWith("/") ? redirectTo : "/gruppen";
+    // Same-origin paths only: a protocol-relative "//evil.com" also starts with
+    // "/", so reject it explicitly to avoid an open redirect off-site.
+    let destination =
+      redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
+        ? redirectTo
+        : "/gruppen";
     const code = invite?.trim().toUpperCase();
     if (code) {
       const { data } = await supabase.rpc("redeem_invite", { p_code: code });

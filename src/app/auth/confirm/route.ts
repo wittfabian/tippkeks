@@ -8,11 +8,22 @@ import { createClient } from "@/lib/supabase/server";
  * confirmation is enabled (production). Verifies the OTP, which sets the session
  * cookies, then redirects. No-op for local dev where confirmation is disabled.
  */
+/**
+ * Only same-origin, non-protocol-relative paths are accepted as a redirect
+ * target. `new URL(next, base)` would otherwise honour an absolute
+ * (`https://evil.com`) or protocol-relative (`//evil.com`) value and bounce the
+ * just-authenticated user off-site — an open redirect. Anything else falls to "/".
+ */
+function safeNext(next: string | null): string {
+  if (next && next.startsWith("/") && !next.startsWith("//")) return next;
+  return "/";
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = searchParams.get("next") ?? "/";
+  const next = safeNext(searchParams.get("next"));
 
   if (tokenHash && type) {
     const supabase = await createClient();
