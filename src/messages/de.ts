@@ -312,6 +312,13 @@ export const de = {
     scoringSaved: "Punkteregeln gespeichert und Punkte neu berechnet.",
     homeGoals: "Tore Heim",
     awayGoals: "Tore Gast",
+    deleteGroup: "Gruppe löschen",
+    deleteGroupHint:
+      "Die Gruppe wird mit allen Mitgliedschaften, Tipps und Punkten dauerhaft gelöscht. Das betrifft alle Mitglieder und kann nicht rückgängig gemacht werden.",
+    deleteGroupConfirmLabel: "Zum Bestätigen den Gruppennamen eingeben",
+    deleteGroupSubmit: "Gruppe endgültig löschen",
+    deleteGroupNameMismatch: "Der eingegebene Name stimmt nicht mit dem Gruppennamen überein.",
+    deleteGroupError: "Gruppe konnte nicht gelöscht werden. Bitte versuche es erneut.",
   },
   empty: {
     tournamentStarts: "Das Turnier startet am 11.06.2026.",

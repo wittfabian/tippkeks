@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   CreateInviteForm,
   CreateManagedMemberForm,
+  DeleteGroupForm,
   DeleteInviteButton,
   MemberRowActions,
   MemberTippingForm,
@@ -76,9 +77,11 @@ export default async function AdminPage({
       {tab === "invites" && <InvitesTab supabase={supabase} tenantId={tenantId} />}
       {tab === "scoring" && <ScoringTab supabase={supabase} tenantId={tenantId} />}
       {tab === "settings" && (
-        <div className="rounded-md border p-4">
-          <MemberTippingForm tenantId={tenantId} enabled={membership.memberTippingEnabled} />
-        </div>
+        <SettingsTab
+          supabase={supabase}
+          tenantId={tenantId}
+          memberTippingEnabled={membership.memberTippingEnabled}
+        />
       )}
     </div>
   );
@@ -264,6 +267,34 @@ async function ScoringTab({ supabase, tenantId }: { supabase: SupabaseClient; te
   return (
     <div className="rounded-md border p-4">
       <ScoringForm tenantId={tenantId} values={scoringValues} />
+    </div>
+  );
+}
+
+async function SettingsTab({
+  supabase,
+  tenantId,
+  memberTippingEnabled,
+}: {
+  supabase: SupabaseClient;
+  tenantId: string;
+  memberTippingEnabled: boolean;
+}) {
+  const { data: tenant } = await supabase
+    .from("tenant")
+    .select("name")
+    .eq("id", tenantId)
+    .maybeSingle();
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-md border p-4">
+        <MemberTippingForm tenantId={tenantId} enabled={memberTippingEnabled} />
+      </div>
+      <div className="border-destructive/30 rounded-md border p-4">
+        <h2 className="text-destructive mb-3 text-sm font-medium">{de.admin.deleteGroup}</h2>
+        <DeleteGroupForm tenantId={tenantId} groupName={tenant?.name ?? ""} />
+      </div>
     </div>
   );
 }

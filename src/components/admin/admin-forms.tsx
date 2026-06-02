@@ -13,6 +13,7 @@ import {
   setMemberRoleAction,
   setMemberTippingAction,
 } from "@/actions/admin";
+import { deleteGroupAction } from "@/actions/tenant";
 import { initialActionState } from "@/actions/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -213,6 +214,31 @@ export function MemberTippingForm({ tenantId, enabled }: { tenantId: string; ena
       <Message error={state.error} info={state.info} />
       <Button type="submit" size="sm" disabled={pending}>
         {pending ? de.common.loading : de.common.save}
+      </Button>
+    </form>
+  );
+}
+
+export function DeleteGroupForm({ tenantId, groupName }: { tenantId: string; groupName: string }) {
+  const [state, formAction, pending] = useActionState(deleteGroupAction, initialActionState);
+  return (
+    <form action={formAction} className="space-y-3">
+      <p className="text-muted-foreground text-sm">{de.admin.deleteGroupHint}</p>
+      <input type="hidden" name="tenantId" value={tenantId} />
+      <div className="space-y-1.5">
+        <Label htmlFor="confirmName">{de.admin.deleteGroupConfirmLabel}</Label>
+        <Input
+          id="confirmName"
+          name="confirmName"
+          required
+          autoComplete="off"
+          placeholder={groupName}
+          className="max-w-sm"
+        />
+      </div>
+      <Message error={state.error} info={state.info} />
+      <Button type="submit" variant="destructive" disabled={pending}>
+        {pending ? de.common.loading : de.admin.deleteGroupSubmit}
       </Button>
     </form>
   );
