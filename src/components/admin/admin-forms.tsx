@@ -320,7 +320,10 @@ export function ScoringForm({ tenantId, values }: { tenantId: string; values: Sc
       <input type="hidden" name="tenantId" value={tenantId} />
       <div className="grid gap-3 sm:grid-cols-2">
         {fields.map((f) => (
-          <div key={f.name} className="space-y-1.5">
+          // Flex column with the input pinned to the bottom (mt-auto) so a label
+          // that wraps to two lines does not push its input out of line with the
+          // neighbouring cell's input in the same grid row.
+          <div key={f.name} className="flex h-full flex-col gap-1.5">
             <Label htmlFor={f.name}>{f.label}</Label>
             <Input
               id={f.name}
@@ -330,6 +333,7 @@ export function ScoringForm({ tenantId, values }: { tenantId: string; values: Sc
               max={100}
               required
               defaultValue={values[f.name]}
+              className="mt-auto"
             />
           </div>
         ))}
