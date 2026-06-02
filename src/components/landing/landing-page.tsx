@@ -1,10 +1,67 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import {
+  AR,
+  BE,
+  BR,
+  CA,
+  CH,
+  DE,
+  ES,
+  FR,
+  GH,
+  HR,
+  IT,
+  JP,
+  KR,
+  MA,
+  MX,
+  NL,
+  PT,
+  SN,
+  US,
+  UY,
+} from "country-flag-icons/react/1x1";
 
 import { Logo, Wordmark } from "@/components/brand/logo";
 import { Countdown } from "@/components/landing/countdown";
 import { de } from "@/messages/de";
 import { cn } from "@/lib/utils";
+
+/**
+ * Country flags as inline SVGs rather than Unicode flag emoji: Windows'
+ * Segoe UI Emoji ships no regional-indicator glyphs, so 🇩🇪-style emoji render
+ * as bare letters there. The SVG components render identically on every platform.
+ */
+const FLAGS = {
+  AR,
+  BE,
+  BR,
+  CA,
+  CH,
+  DE,
+  ES,
+  FR,
+  GH,
+  HR,
+  IT,
+  JP,
+  KR,
+  MA,
+  MX,
+  NL,
+  PT,
+  SN,
+  US,
+  UY,
+} as const;
+
+type CountryCode = keyof typeof FLAGS;
+
+function Flag({ code, className }: { code: CountryCode; className?: string }) {
+  const FlagSvg = FLAGS[code];
+  return <FlagSvg className={cn("rounded-full", className)} aria-hidden />;
+}
 
 /**
  * Public marketing landing page at `/`. Forced-dark "stadium at night" hero
@@ -25,8 +82,8 @@ function ScoreChip({
   rotate,
   delay,
 }: {
-  home: string;
-  away: string;
+  home: CountryCode;
+  away: CountryCode;
   scoreHome: number;
   scoreAway: number;
   tag: string;
@@ -43,11 +100,11 @@ function ScoreChip({
           style={{ animation: `tk-float 7s ease-in-out ${delay} infinite` }}
         >
           <div className="flex items-center gap-2.5">
-            <span className="text-xl">{home}</span>
+            <Flag code={home} className="size-6" />
             <span className="font-heading text-lg font-extrabold text-white tabular-nums">
               {scoreHome}:{scoreAway}
             </span>
-            <span className="text-xl">{away}</span>
+            <Flag code={away} className="size-6" />
           </div>
           <div className="mt-1.5 flex justify-center">
             <span className="bg-reward/20 text-reward rounded-full px-2 py-0.5 text-[0.65rem] font-semibold tracking-wide">
@@ -61,27 +118,27 @@ function ScoreChip({
 }
 
 const MARQUEE_FLAGS = [
-  "🇩🇪",
-  "🇧🇷",
-  "🇫🇷",
-  "🇦🇷",
-  "🇪🇸",
-  "🇳🇱",
-  "🇵🇹",
-  "🇧🇪",
-  "🇭🇷",
-  "🇮🇹",
-  "🇲🇽",
-  "🇺🇸",
-  "🇨🇦",
-  "🇯🇵",
-  "🇰🇷",
-  "🇸🇳",
-  "🇲🇦",
-  "🇺🇾",
-  "🇨🇭",
-  "🇬🇭",
-] as const;
+  "DE",
+  "BR",
+  "FR",
+  "AR",
+  "ES",
+  "NL",
+  "PT",
+  "BE",
+  "HR",
+  "IT",
+  "MX",
+  "US",
+  "CA",
+  "JP",
+  "KR",
+  "SN",
+  "MA",
+  "UY",
+  "CH",
+  "GH",
+] as const satisfies readonly CountryCode[];
 
 function FlagMarquee() {
   return (
@@ -99,12 +156,12 @@ function FlagMarquee() {
         className="flex w-max gap-4"
         style={{ animation: "tk-marquee 45s linear infinite" }}
       >
-        {[...MARQUEE_FLAGS, ...MARQUEE_FLAGS].map((flag, i) => (
+        {[...MARQUEE_FLAGS, ...MARQUEE_FLAGS].map((code, i) => (
           <span
             key={i}
-            className="grid size-11 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-2xl"
+            className="grid size-11 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.04]"
           >
-            {flag}
+            <Flag code={code} className="size-7" />
           </span>
         ))}
       </div>
@@ -162,8 +219,8 @@ export function LandingPage() {
 
       {/* Drifting prediction cards. */}
       <ScoreChip
-        home="🇩🇪"
-        away="🇫🇷"
+        home="DE"
+        away="FR"
         scoreHome={2}
         scoreAway={1}
         tag={de.landing.scoreTags.exact}
@@ -172,8 +229,8 @@ export function LandingPage() {
         delay="0s"
       />
       <ScoreChip
-        home="🇧🇷"
-        away="🇪🇸"
+        home="BR"
+        away="ES"
         scoreHome={3}
         scoreAway={2}
         tag={de.landing.scoreTags.tendency}
@@ -182,8 +239,8 @@ export function LandingPage() {
         delay="1.4s"
       />
       <ScoreChip
-        home="🇦🇷"
-        away="🇳🇱"
+        home="AR"
+        away="NL"
         scoreHome={1}
         scoreAway={1}
         tag={de.landing.scoreTags.exact}
