@@ -42,21 +42,6 @@ services:
     # build-arg interpolation above).
     env_file:
       - .env.prod
-    # REDIS_PASSWORD is passed THROUGH from the `up`-time environment (its value is
-    # never written into this file). REDIS_URL is assembled from it at container
-    # start by a tiny shell wrapper, so the secret stays a runtime env var instead
-    # of being baked into the compose config. The wrapper still reaches Valkey by
-    # service name over the private network.
-    environment:
-      - REDIS_PASSWORD
-    command:
-      - /bin/sh
-      - -c
-      - |
-        export REDIS_URL="redis://:$${REDIS_PASSWORD}@valkey:6379"
-        exec node server.js
-    # Loopback only: a host reverse proxy terminates TLS and upstreams here. If
-    # your proxy is itself a container, drop this and add it to `internal`.
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:
