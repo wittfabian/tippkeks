@@ -129,6 +129,13 @@ the `leaderboard` view (`security_invoker`), and `admin_audit_log`.
   `prediction` INSERT/UPDATE policies block their own writes while still letting an admin write for
   any member (`private.is_member_of` + `is_admin`). There is intentionally **no `prediction` DELETE
   policy** (nobody retracts tips via the app; deletes are service-role only).
+- **MFA step-up is a DB gate, not just app-layer.** `private.mfa_satisfied()` (definer) is false when
+  the caller has a verified `auth.mfa_factors` row but the JWT `aal` is not `aal2`. RESTRICTIVE
+  `to authenticated` policies on the personal/tenant tables AND it onto the permissive policies (so an
+  aal1-with-factor session is denied every direct read/write), and the user-mutation definer RPCs
+  (`create_group`, `redeem_invite`, `delete_own_account`, `recompute_tenant`) re-check it since they
+  bypass RLS. The `(app)` layout redirect to `/mfa` is the UX path; this is the non-bypassable one.
+  No-factor users are unaffected; the service role bypasses it.
 - **Account deletion** is the `delete_own_account()` definer RPC: in one transaction it blocks a sole
   admin of a group that still has other members (raises `SOLE_ADMIN`), deletes groups where the
   caller is the only member, then deletes the `auth.users` row (FKs cascade the rest). No service

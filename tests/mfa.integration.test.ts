@@ -1,9 +1,15 @@
 import { createHmac } from "node:crypto";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import { createSignedInUser, deleteUserByEmail, hasSupabase } from "./helpers";
+import {
+  SUPABASE_ANON_KEY,
+  SUPABASE_URL,
+  createSignedInUser,
+  deleteUserByEmail,
+  hasSupabase,
+} from "./helpers";
 
 const suite = hasSupabase ? describe : describe.skip;
 
@@ -46,10 +52,11 @@ function totp(secret: string, atMs: number): string {
 
 suite("MFA TOTP enrol + verify (integration)", () => {
   let client: SupabaseClient;
+  let userId: string;
 
   beforeAll(async () => {
     await deleteUserByEmail(EMAIL);
-    ({ client } = await createSignedInUser(EMAIL, "password123"));
+    ({ client, userId } = await createSignedInUser(EMAIL, "password123"));
   }, 30_000);
 
   afterAll(async () => {
@@ -104,5 +111,41 @@ suite("MFA TOTP enrol + verify (integration)", () => {
     });
     expect(error).not.toBeNull();
     await client.auth.mfa.unenroll({ factorId });
+  });
+
+  // The DB-level step-up gate (private.mfa_satisfied + restrictive policies +
+  // RPC re-checks). A user who has a verified factor but only an aal1 session —
+  // i.e. an attacker holding just the password — must be denied at the database,
+  // not merely redirected by the (app) layout.
+  it("denies gated reads and RPCs at aal1 once a factor is verified", async () => {
+    // A fresh password sign-in lands at aal1 (Supabase does not auto-challenge).
+    const aal1 = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error: signInError } = await aal1.auth.signInWithPassword({
+      email: EMAIL,
+      password: "password123",
+    });
+    expect(signInError).toBeNull();
+
+    const { data: aal } = await aal1.auth.mfa.getAuthenticatorAssuranceLevel();
+    expect(aal?.currentLevel).toBe("aal1");
+    expect(aal?.nextLevel).toBe("aal2");
+
+    // Restrictive RLS hides even the user's own profile until step-up.
+    const { data: profile } = await aal1.from("profile").select("user_id").eq("user_id", userId);
+    expect(profile ?? []).toHaveLength(0);
+
+    // The definer RPC re-checks the gate (RLS alone can't, it bypasses) and refuses.
+    const { error: rpcError } = await aal1.rpc("create_group", { p_name: "MFA Gate Test" });
+    expect(rpcError).not.toBeNull();
+
+    await aal1.auth.signOut();
+  });
+
+  it("allows the same reads once stepped up to aal2", async () => {
+    // `client` reached aal2 in the enrol+verify test above.
+    const { data: profile } = await client.from("profile").select("user_id").eq("user_id", userId);
+    expect(profile ?? []).toHaveLength(1);
   });
 });
