@@ -13,6 +13,9 @@
 #   NEXT_SERVER_ACTIONS_ENCRYPTION_KEY  (build-time + runtime; openssl rand -base64
 #       32 — `next build` embeds it, keep stable, MANDATORY once you run >1 replica)
 #   SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET                    (runtime secrets)
+#   SITE_URL  (public origin, e.g. https://tippkeks.de — builds absolute auth
+#       redirect links; without it the email-confirmation link points at the
+#       internal container address 0.0.0.0:3000)
 #   FOOTBALL_DATA_API_TOKEN, FOOTBALL_DATA_COMPETITION        (sync)
 #   REDIS_PASSWORD  (Valkey auth — openssl rand -hex 32; keep it URL-safe so it
 #       can be embedded in REDIS_URL without percent-encoding)

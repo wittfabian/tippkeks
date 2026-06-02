@@ -1,8 +1,10 @@
 import Link from "next/link";
 
 import {
+  ConvertMemberForm,
   CreateInviteForm,
   CreateManagedMemberForm,
+  DeleteGroupForm,
   DeleteInviteButton,
   MemberRowActions,
   MemberTippingForm,
@@ -76,9 +78,11 @@ export default async function AdminPage({
       {tab === "invites" && <InvitesTab supabase={supabase} tenantId={tenantId} />}
       {tab === "scoring" && <ScoringTab supabase={supabase} tenantId={tenantId} />}
       {tab === "settings" && (
-        <div className="rounded-md border p-4">
-          <MemberTippingForm tenantId={tenantId} enabled={membership.memberTippingEnabled} />
-        </div>
+        <SettingsTab
+          supabase={supabase}
+          tenantId={tenantId}
+          memberTippingEnabled={membership.memberTippingEnabled}
+        />
       )}
     </div>
   );
@@ -162,20 +166,18 @@ async function MembersTab({
       ) : (
         <ul className="divide-y rounded-md border">
           {pageRows.map((m) => (
-            <li key={m.user_id} className="flex items-center justify-between gap-3 px-3 py-2">
-              <span className="flex min-w-0 items-center gap-2 text-sm">
-                <span className="truncate">{m.name}</span>
-                <Badge variant={m.role === "admin" ? "default" : "secondary"}>
-                  {de.groups.role[m.role]}
-                </Badge>
-                {m.managed && <Badge variant="outline">{de.admin.managedBadge}</Badge>}
-              </span>
-              <MemberRowActions
-                tenantId={tenantId}
-                targetUserId={m.user_id}
-                role={m.role}
-                managed={m.managed}
-              />
+            <li key={m.user_id} className="px-3 py-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className="flex min-w-0 items-center gap-2 text-sm">
+                  <span className="truncate">{m.name}</span>
+                  <Badge variant={m.role === "admin" ? "default" : "secondary"}>
+                    {de.groups.role[m.role]}
+                  </Badge>
+                  {m.managed && <Badge variant="outline">{de.admin.managedBadge}</Badge>}
+                </span>
+                <MemberRowActions tenantId={tenantId} targetUserId={m.user_id} role={m.role} />
+              </div>
+              {m.managed && <ConvertMemberForm tenantId={tenantId} targetUserId={m.user_id} />}
             </li>
           ))}
         </ul>
@@ -264,6 +266,34 @@ async function ScoringTab({ supabase, tenantId }: { supabase: SupabaseClient; te
   return (
     <div className="rounded-md border p-4">
       <ScoringForm tenantId={tenantId} values={scoringValues} />
+    </div>
+  );
+}
+
+async function SettingsTab({
+  supabase,
+  tenantId,
+  memberTippingEnabled,
+}: {
+  supabase: SupabaseClient;
+  tenantId: string;
+  memberTippingEnabled: boolean;
+}) {
+  const { data: tenant } = await supabase
+    .from("tenant")
+    .select("name")
+    .eq("id", tenantId)
+    .maybeSingle();
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-md border p-4">
+        <MemberTippingForm tenantId={tenantId} enabled={memberTippingEnabled} />
+      </div>
+      <div className="border-destructive/30 rounded-md border p-4">
+        <h2 className="text-destructive mb-3 text-sm font-medium">{de.admin.deleteGroup}</h2>
+        <DeleteGroupForm tenantId={tenantId} groupName={tenant?.name ?? ""} />
+      </div>
     </div>
   );
 }

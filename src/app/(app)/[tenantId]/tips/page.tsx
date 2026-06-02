@@ -1,5 +1,6 @@
 import { MemberTipTable, type MemberTipRow } from "@/components/admin/admin-forms";
 import { FixturePicker, type FixtureGroup } from "@/components/admin/fixture-picker";
+import { TipCardDownload } from "@/components/predictions/tip-card-download";
 import { requireAdmin } from "@/lib/auth/membership";
 import { getFixtureBoard } from "@/lib/data/fixtures";
 import { berlinDayKey, formatDayHeading, formatTime } from "@/lib/format";
@@ -23,6 +24,12 @@ export default async function EnterTipsPage({
   const board = await getFixtureBoard(supabase, tenantId, userId);
   const upcoming = board.filter((f) => !f.locked && f.home && f.away);
   const selected = upcoming.find((f) => f.id === fixtureParam) ?? upcoming[0];
+
+  const { data: tenant } = await supabase
+    .from("tenant")
+    .select("name")
+    .eq("id", tenantId)
+    .maybeSingle();
 
   const { data: members } = await supabase
     .from("tenant_member")
@@ -83,6 +90,20 @@ export default async function EnterTipsPage({
               homeName={selected.home?.name ?? "?"}
               awayName={selected.away?.name ?? "?"}
               members={rows}
+              actions={
+                <TipCardDownload
+                  groupName={tenant?.name ?? de.app.name}
+                  fixture={{
+                    homeName: selected.home?.name ?? "?",
+                    homeCode: selected.home?.shortName ?? null,
+                    awayName: selected.away?.name ?? "?",
+                    awayCode: selected.away?.shortName ?? null,
+                    kickoffAt: selected.kickoffAt,
+                    stageName: selected.stageName,
+                  }}
+                  rows={rows}
+                />
+              }
             />
           )}
         </div>
