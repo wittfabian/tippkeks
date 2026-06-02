@@ -1,6 +1,6 @@
 /**
  * Grant (or revoke) site-admin rights to a user by email. Site admins control
- * the global toggles (registration, group creation) on /einstellungen. This is
+ * the global toggles (registration, group creation) on /settings. This is
  * deliberately the ONLY way to become a site admin — there is no self-service
  * path — so it runs server-side with the service-role key.
  *
