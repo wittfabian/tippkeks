@@ -1,6 +1,6 @@
 <!--
   Email-change confirmation. Uses the token_hash flow so the link hits our own
-  /auth/confirm route (verifyOtp) and lands on /profil. With secure email change
+  /auth/confirm route (verifyOtp) and lands on /profile. With secure email change
   enabled, Supabase sends this to BOTH the current and the new address.
   IMPORTANT: configure the SAME template in the hosted Supabase dashboard
   (Authentication -> Email Templates -> Change Email Address) -- config.toml
@@ -81,7 +81,7 @@
                   <tr>
                     <td style="border-radius: 10px; background-color: #1f9b54">
                       <a
-                        href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/profil"
+                        href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/profile"
                         style="
                           display: inline-block;
                           padding: 13px 26px;
@@ -100,10 +100,10 @@
                 <p style="margin: 0 0 16px 0; font-size: 13px; line-height: 1.6; color: #8a958f">
                   Falls der Button nicht funktioniert, kopiere diesen Link in deinen Browser:<br />
                   <a
-                    href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/profil"
+                    href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/profile"
                     style="color: #1f9b54; word-break: break-all"
                     >{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash
-                    }}&type=email_change&next=/profil</a
+                    }}&type=email_change&next=/profile</a
                   >
                 </p>
                 <p style="margin: 0 0 8px 0; font-size: 13px; line-height: 1.6; color: #8a958f">
@@ -123,9 +123,9 @@
                     >kontakt@tippkeks.de</a
                   >
                   &nbsp;·&nbsp;
-                  <a href="{{ .SiteURL }}/impressum" style="color: #8a958f">Impressum</a>
+                  <a href="{{ .SiteURL }}/imprint" style="color: #8a958f">Impressum</a>
                   &nbsp;·&nbsp;
-                  <a href="{{ .SiteURL }}/datenschutz" style="color: #8a958f">Datenschutz</a>
+                  <a href="{{ .SiteURL }}/privacy" style="color: #8a958f">Datenschutz</a>
                 </p>
               </td>
             </tr>

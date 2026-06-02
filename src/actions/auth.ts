@@ -37,9 +37,9 @@ async function postAuthDestination(
   rawInvite: FormDataEntryValue | null,
 ): Promise<string> {
   const code = typeof rawInvite === "string" ? rawInvite.trim().toUpperCase() : "";
-  if (!code) return "/gruppen";
+  if (!code) return "/groups";
   const { data } = await supabase.rpc("redeem_invite", { p_code: code });
-  return data?.id ? `/${data.id}` : "/gruppen";
+  return data?.id ? `/${data.id}` : "/groups";
 }
 
 export async function signInAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -118,7 +118,7 @@ const resetRequestSchema = z.object({ email: z.string().trim().email() });
 
 /**
  * Send a password-recovery email. Supabase builds the link from its recovery
- * template (→ /auth/confirm?type=recovery&next=/passwort-neu). We always return
+ * template (→ /auth/confirm?type=recovery&next=/reset-password). We always return
  * the same confirmation regardless of outcome so the form can't be used to probe
  * which email addresses have an account (enumeration protection).
  */

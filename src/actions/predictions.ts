@@ -71,6 +71,6 @@ export async function submitPredictionAction(
   );
   if (error) return { error: de.fixtures.saveError };
 
-  revalidatePath(`/${parsed.data.tenantId}/spiele`);
+  revalidatePath(`/${parsed.data.tenantId}/matches`);
   return { error: null, info: de.fixtures.saved };
 }

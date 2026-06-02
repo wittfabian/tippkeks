@@ -33,7 +33,7 @@ export default async function NewPasswordPage() {
             <p role="alert" className="text-destructive text-sm">
               {de.auth.newPasswordNoSession}
             </p>
-            <Link href="/passwort-vergessen" className={buttonVariants({ className: "w-full" })}>
+            <Link href="/forgot-password" className={buttonVariants({ className: "w-full" })}>
               {de.auth.requestNewLink}
             </Link>
           </>

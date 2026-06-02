@@ -7,7 +7,6 @@ import {
   createInviteAction,
   createManagedMemberAction,
   deleteInviteAction,
-  overrideResultAction,
   removeMemberAction,
   saveMemberTipsAction,
   saveScoringAction,
@@ -321,7 +320,10 @@ export function ScoringForm({ tenantId, values }: { tenantId: string; values: Sc
       <input type="hidden" name="tenantId" value={tenantId} />
       <div className="grid gap-3 sm:grid-cols-2">
         {fields.map((f) => (
-          <div key={f.name} className="space-y-1.5">
+          // Flex column with the input pinned to the bottom (mt-auto) so a label
+          // that wraps to two lines does not push its input out of line with the
+          // neighbouring cell's input in the same grid row.
+          <div key={f.name} className="flex h-full flex-col gap-1.5">
             <Label htmlFor={f.name}>{f.label}</Label>
             <Input
               id={f.name}
@@ -331,6 +333,7 @@ export function ScoringForm({ tenantId, values }: { tenantId: string; values: Sc
               max={100}
               required
               defaultValue={values[f.name]}
+              className="mt-auto"
             />
           </div>
         ))}
@@ -339,67 +342,6 @@ export function ScoringForm({ tenantId, values }: { tenantId: string; values: Sc
       <Button type="submit" disabled={pending}>
         {pending ? de.common.loading : de.admin.scoringSave}
       </Button>
-    </form>
-  );
-}
-
-export function ResultForm({
-  tenantId,
-  fixtureId,
-  homeName,
-  awayName,
-}: {
-  tenantId: string;
-  fixtureId: string;
-  homeName: string;
-  awayName: string;
-}) {
-  const [state, formAction, pending] = useActionState(overrideResultAction, initialActionState);
-  return (
-    <form action={formAction} className="flex flex-wrap items-center gap-2 text-sm">
-      <input type="hidden" name="tenantId" value={tenantId} />
-      <input type="hidden" name="fixtureId" value={fixtureId} />
-      <span className="min-w-28 flex-1 truncate text-right">{homeName}</span>
-      <Input
-        type="number"
-        name="homeGoals"
-        min={0}
-        max={99}
-        required
-        aria-label={de.admin.homeGoals}
-        className="w-14 text-center"
-      />
-      <span aria-hidden>:</span>
-      <Input
-        type="number"
-        name="awayGoals"
-        min={0}
-        max={99}
-        required
-        aria-label={de.admin.awayGoals}
-        className="w-14 text-center"
-      />
-      <span className="min-w-28 flex-1 truncate">{awayName}</span>
-      <label className="text-muted-foreground flex cursor-pointer items-center gap-1 text-xs">
-        <input type="checkbox" name="afterExtraTime" className="size-3.5 cursor-pointer" />
-        {de.admin.afterExtraTime}
-      </label>
-      <label className="text-muted-foreground flex items-center gap-1 text-xs">
-        {de.admin.winner}
-        <select
-          name="winnerSide"
-          defaultValue="none"
-          className="border-input bg-background cursor-pointer rounded-md border px-1.5 py-1"
-        >
-          <option value="none">{de.admin.winnerNone}</option>
-          <option value="home">{homeName}</option>
-          <option value="away">{awayName}</option>
-        </select>
-      </label>
-      <Button type="submit" size="sm" variant="secondary" disabled={pending}>
-        {pending ? de.common.loading : de.admin.markFinished}
-      </Button>
-      <Message error={state.error} info={state.info} />
     </form>
   );
 }

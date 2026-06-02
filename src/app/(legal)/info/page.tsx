@@ -32,7 +32,7 @@ export default function InfoPage() {
       <LegalSection heading={t.privacyHeading}>
         <p>{t.privacy}</p>
         <p>
-          <Link href="/datenschutz" className="hover:text-foreground underline">
+          <Link href="/privacy" className="hover:text-foreground underline">
             {t.privacyLink}
           </Link>
         </p>

@@ -57,7 +57,7 @@ export default async function LeaderboardPage({
   else if (sort === "hits") sorted.sort((a, b) => b.hit_count - a.hit_count);
 
   const podium = rows.slice(0, 3);
-  const base = `/${tenantId}/rangliste`;
+  const base = `/${tenantId}/leaderboard`;
 
   return (
     <div className="space-y-4">

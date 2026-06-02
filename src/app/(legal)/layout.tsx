@@ -31,11 +31,11 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
             {de.legal.footerNav.info}
           </Link>
           <span aria-hidden>·</span>
-          <Link href="/datenschutz" className="hover:text-foreground transition">
+          <Link href="/privacy" className="hover:text-foreground transition">
             {de.legal.footerNav.privacy}
           </Link>
           <span aria-hidden>·</span>
-          <Link href="/impressum" className="hover:text-foreground transition">
+          <Link href="/imprint" className="hover:text-foreground transition">
             {de.legal.footerNav.impressum}
           </Link>
           <span aria-hidden>·</span>

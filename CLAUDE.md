@@ -117,7 +117,7 @@ the `leaderboard` view (`security_invoker`), and `admin_audit_log`.
   `scripts/set-site-admin.ts` (no self-service path). Global feature toggles live in `app_setting`
   (`registration_enabled`, `group_creation_enabled`); the two public keys are readable by anon (the
   register page needs them pre-session), other keys are authenticated-only, and writes are
-  site-admin only. Site settings UI: `/(app)/einstellungen`.
+  site-admin only. Site settings UI: `/(app)/settings`.
   - `group_creation_enabled` is a **hard gate**: `create_group` (the only way to insert a tenant —
     no INSERT policy exists on `tenant`) re-checks it under definer rights.
   - `registration_enabled` is **best-effort only**: it is enforced in the register page + the
@@ -129,6 +129,13 @@ the `leaderboard` view (`security_invoker`), and `admin_audit_log`.
   `prediction` INSERT/UPDATE policies block their own writes while still letting an admin write for
   any member (`private.is_member_of` + `is_admin`). There is intentionally **no `prediction` DELETE
   policy** (nobody retracts tips via the app; deletes are service-role only).
+- **MFA step-up is a DB gate, not just app-layer.** `private.mfa_satisfied()` (definer) is false when
+  the caller has a verified `auth.mfa_factors` row but the JWT `aal` is not `aal2`. RESTRICTIVE
+  `to authenticated` policies on the personal/tenant tables AND it onto the permissive policies (so an
+  aal1-with-factor session is denied every direct read/write), and the user-mutation definer RPCs
+  (`create_group`, `redeem_invite`, `delete_own_account`, `recompute_tenant`) re-check it since they
+  bypass RLS. The `(app)` layout redirect to `/mfa` is the UX path; this is the non-bypassable one.
+  No-factor users are unaffected; the service role bypasses it.
 - **Account deletion** is the `delete_own_account()` definer RPC: in one transaction it blocks a sole
   admin of a group that still has other members (raises `SOLE_ADMIN`), deletes groups where the
   caller is the only member, then deletes the `auth.users` row (FKs cascade the rest). No service
@@ -160,12 +167,12 @@ the cache no-ops and limits fail open. Local: `podman compose up -d` (`docker-co
 ```
 src/proxy.ts                       # Next 16 proxy: session refresh + auth redirect
 src/app/(public)/{login,register}  # auth pages; (public) layout redirects logged-in users home
-src/app/(reset)/{passwort-vergessen,passwort-neu}  # password recovery; (reset) layout does NOT redirect (recovery link signs the user in first)
-src/app/(app)/gruppen/page.tsx     # tenant chooser / "Meine Gruppen" (create / join)
-src/app/(app)/profil/page.tsx      # account-wide settings (NOT tenant-scoped); reached from the header user icon
-src/app/(app)/[tenantId]/…         # dashboard, spiele (tipping), spiel/[id], rangliste, admin
+src/app/(reset)/{forgot-password,reset-password}  # password recovery; (reset) layout does NOT redirect (recovery link signs the user in first)
+src/app/(app)/groups/page.tsx      # tenant chooser / "Meine Gruppen" (create / join)
+src/app/(app)/profile/page.tsx     # account-wide settings (NOT tenant-scoped); reached from the header user icon
+src/app/(app)/[tenantId]/…         # dashboard, matches (tipping), match/[id], leaderboard, tips, admin
 src/app/api/cron/sync/route.ts     # secret-protected sync trigger
-src/app/(legal)/{info,datenschutz,impressum}  # public legal/info pages (own chrome; reachable signed-in + out)
+src/app/(legal)/{info,privacy,imprint}  # public legal/info pages (own chrome; reachable signed-in + out)
 src/actions/                       # "use server" mutations (auth, tenant, predictions, profile, admin)
 src/components/{ui,...}            # shadcn primitives + feature components
 src/lib/{supabase,auth,data,providers,sync,scoring,domain,i18n}/

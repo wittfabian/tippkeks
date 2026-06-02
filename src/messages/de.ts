@@ -249,11 +249,7 @@ export const de = {
     invites: "Einladungen",
     enterTips: "Tipps eintragen",
     scoring: "Punkteregeln",
-    results: "Ergebnisse",
     settingsTab: "Einstellungen",
-    resultsIntro:
-      "Trage Ergebnisse für Spiele ein, deren Anpfiff vorbei ist, die aber noch nicht gewertet wurden – z. B. wenn der automatische Abgleich verzögert ist.",
-    resultsNone: "Aktuell sind keine Ergebnisse einzutragen.",
     memberTipping: "Mitglieder dürfen selbst tippen",
     memberTippingHint:
       "Wenn deaktiviert, sehen Mitglieder alles, können aber nicht selbst tippen – nur Admins tragen dann Tipps ein.",
@@ -312,15 +308,8 @@ export const de = {
     scoringAdvance: "Bonus für richtiges Weiterkommen (K.-o.)",
     scoringSave: "Regeln speichern & neu berechnen",
     scoringSaved: "Punkteregeln gespeichert und Punkte neu berechnet.",
-    overrideResult: "Ergebnis eintragen",
     homeGoals: "Tore Heim",
     awayGoals: "Tore Gast",
-    markFinished: "Als beendet werten",
-    afterExtraTime: "nach Verlängerung",
-    winner: "Sieger (K.-o.)",
-    winnerNone: "kein/unentschieden",
-    resultSaved: "Ergebnis gespeichert und Punkte berechnet.",
-    resultError: "Ergebnis konnte nicht gespeichert werden.",
   },
   empty: {
     tournamentStarts: "Das Turnier startet am 11.06.2026.",

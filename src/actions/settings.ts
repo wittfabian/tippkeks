@@ -43,7 +43,7 @@ export async function updateAppSettingsAction(
   }
 
   await invalidateTags("app-settings");
-  revalidatePath("/einstellungen");
+  revalidatePath("/settings");
   revalidatePath("/register");
   revalidatePath("/");
   return { error: null, info: de.settings.saved };

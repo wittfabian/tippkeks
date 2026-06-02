@@ -53,7 +53,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ tena
               <p className="text-muted-foreground text-xs">
                 {closesToday > 0 ? de.dashboard.closesToday(closesToday) : ""}
               </p>
-              <Link href={`/${tenantId}/spiele`} className={buttonVariants({ size: "sm" })}>
+              <Link href={`/${tenantId}/matches`} className={buttonVariants({ size: "sm" })}>
                 {de.dashboard.tipNow}
               </Link>
             </div>

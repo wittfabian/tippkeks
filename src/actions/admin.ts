@@ -166,7 +166,7 @@ export async function setMemberTippingAction(
   }
 
   revalidatePath(`/${parsed.data.tenantId}/admin`);
-  revalidatePath(`/${parsed.data.tenantId}/spiele`);
+  revalidatePath(`/${parsed.data.tenantId}/matches`);
   return { error: null, info: de.admin.memberTippingSaved };
 }
 
@@ -241,7 +241,7 @@ export async function saveMemberTipsAction(
   }
 
   revalidatePath(`/${parsed.data.tenantId}/admin`);
-  revalidatePath(`/${parsed.data.tenantId}/spiele`);
+  revalidatePath(`/${parsed.data.tenantId}/matches`);
   return { error: null, info: de.admin.tipsSaved(rows.length) };
 }
 
@@ -390,116 +390,6 @@ export async function saveScoringAction(
   return { error: null, info: de.admin.scoringSaved };
 }
 
-const resultSchema = tenantField.extend({
-  fixtureId: z.string().uuid(),
-  homeGoals: z.coerce.number().int().min(0).max(99),
-  awayGoals: z.coerce.number().int().min(0).max(99),
-  // Knockout extras: who advanced when 90' was level, and the optional shootout score.
-  afterExtraTime: z.coerce.boolean().optional(),
-  winnerSide: z.enum(["home", "away", "none"]).optional(),
-  penaltyHome: z.coerce.number().int().min(0).max(99).optional(),
-  penaltyAway: z.coerce.number().int().min(0).max(99).optional(),
-});
-
-/**
- * Manually enter/override a fixture's regulation result and score it. Fixtures
- * are shared reference data, so this uses the service role AFTER verifying the
- * caller is an admin of a tenant subscribed to the fixture's season. Note: the
- * result is global (affects every tenant playing that season) — this is the
- * deliberate fallback for provider lag/outage, not routine editing.
- */
-export async function overrideResultAction(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const parsed = resultSchema.safeParse({
-    tenantId: formData.get("tenantId"),
-    fixtureId: formData.get("fixtureId"),
-    homeGoals: formData.get("homeGoals"),
-    awayGoals: formData.get("awayGoals"),
-    afterExtraTime: formData.get("afterExtraTime") === "on",
-    winnerSide: formData.get("winnerSide") ?? "none",
-    penaltyHome: formData.get("penaltyHome") || undefined,
-    penaltyAway: formData.get("penaltyAway") || undefined,
-  });
-  if (!parsed.success) return { error: de.admin.resultError };
-
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const userId = claims?.claims?.sub;
-  if (!userId) return { error: de.admin.resultError };
-
-  // Verify the caller is an admin of this tenant.
-  const { data: membership } = await supabase
-    .from("tenant_member")
-    .select("role")
-    .eq("tenant_id", parsed.data.tenantId)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (membership?.role !== "admin") return { error: de.admin.resultError };
-
-  // Verify the fixture belongs to a season the tenant is subscribed to.
-  const { data: fixture } = await supabase
-    .from("fixture")
-    .select("id, season_id, home_team_id, away_team_id")
-    .eq("id", parsed.data.fixtureId)
-    .maybeSingle();
-  if (!fixture) return { error: de.admin.resultError };
-
-  const { data: subscribed } = await supabase
-    .from("tenant_season")
-    .select("season_id")
-    .eq("tenant_id", parsed.data.tenantId)
-    .eq("season_id", fixture.season_id)
-    .maybeSingle();
-  if (!subscribed) return { error: de.admin.resultError };
-
-  // Winner from the 90' result; if level (a knockout), use the admin's pick so the
-  // advancing bonus is correct (the previous 90'-only derivation was the bug).
-  let winnerTeamId: string | null;
-  if (parsed.data.homeGoals > parsed.data.awayGoals) winnerTeamId = fixture.home_team_id;
-  else if (parsed.data.awayGoals > parsed.data.homeGoals) winnerTeamId = fixture.away_team_id;
-  else if (parsed.data.winnerSide === "home") winnerTeamId = fixture.home_team_id;
-  else if (parsed.data.winnerSide === "away") winnerTeamId = fixture.away_team_id;
-  else winnerTeamId = null;
-
-  // Privileged write: fixtures have no authenticated write policy by design.
-  const service = createServiceClient();
-  const { error: updateError } = await service
-    .from("fixture")
-    .update({
-      regular_home: parsed.data.homeGoals,
-      regular_away: parsed.data.awayGoals,
-      status: "finished",
-      after_extra_time: parsed.data.afterExtraTime ?? false,
-      penalty_home: parsed.data.penaltyHome ?? null,
-      penalty_away: parsed.data.penaltyAway ?? null,
-      winner_team_id: winnerTeamId,
-    })
-    .eq("id", parsed.data.fixtureId);
-  if (updateError) return { error: de.admin.resultError };
-
-  const { error: scoreError } = await service.rpc("score_fixture", {
-    p_fixture: parsed.data.fixtureId,
-  });
-  if (scoreError) return { error: de.admin.resultError };
-
-  // The fixture result is global; scoring shifts every affected tenant's board.
-  await invalidateTags("tournament", "leaderboard");
-
-  await supabase.from("admin_audit_log").insert({
-    tenant_id: parsed.data.tenantId,
-    actor_id: userId,
-    action: "result_override",
-    target_type: "fixture",
-    target_id: parsed.data.fixtureId,
-    detail: { home: parsed.data.homeGoals, away: parsed.data.awayGoals },
-  });
-
-  revalidatePath(`/${parsed.data.tenantId}`);
-  return { error: null, info: de.admin.resultSaved };
-}
-
 const createManagedSchema = tenantField.extend({
   displayName: z.string().trim().min(1).max(80),
 });
@@ -511,7 +401,7 @@ const createManagedSchema = tenantField.extend({
  * profile.managed. From there the existing membership/prediction/scoring/
  * leaderboard machinery applies unchanged — incl. the admin-writes-for-member
  * RLS policy. Privileged work (auth user + flag + membership) runs under the
- * service role AFTER an admin/site-admin check, mirroring overrideResultAction.
+ * service role AFTER an admin/site-admin check (the action is the trust boundary).
  */
 export async function createManagedMemberAction(
   _prev: ActionState,
@@ -574,7 +464,7 @@ export async function createManagedMemberAction(
   });
 
   revalidatePath(`/${parsed.data.tenantId}/admin`);
-  revalidatePath(`/${parsed.data.tenantId}/spiele`);
+  revalidatePath(`/${parsed.data.tenantId}/matches`);
   return { error: null, info: de.admin.managedCreated(parsed.data.displayName) };
 }
 

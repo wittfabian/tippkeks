@@ -236,7 +236,7 @@ otp_length = 6
 otp_expiry = 1800
 
 # Custom recovery (password-reset) email. Uses the token_hash flow so the link
-# hits our own /auth/confirm route (verifyOtp) and lands on /passwort-neu.
+# hits our own /auth/confirm route (verifyOtp) and lands on /reset-password.
 # IMPORTANT: configure the SAME template in the hosted Supabase dashboard
 # (Authentication → Email Templates → Reset Password) — config.toml only applies
 # to the local stack.
@@ -251,7 +251,7 @@ content_path = "./supabase/templates/recovery.html"
 subject = "Willkommen bei TippKeks – bitte E-Mail bestätigen"
 content_path = "./supabase/templates/confirmation.html"
 
-# Email-change confirmation (token_hash flow -> /auth/confirm, lands on /profil).
+# Email-change confirmation (token_hash flow -> /auth/confirm, lands on /profile).
 # Mirror in the hosted dashboard (Authentication -> Email Templates -> Change
 # Email Address).
 [auth.email.template.email_change]

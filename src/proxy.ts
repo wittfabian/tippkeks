@@ -11,13 +11,13 @@ const PUBLIC_PREFIXES = [
   "/login",
   "/register",
   "/auth",
-  "/passwort-vergessen",
-  "/passwort-neu",
-  "/datenschutz",
-  "/impressum",
+  "/forgot-password",
+  "/reset-password",
+  "/privacy",
+  "/imprint",
   "/info",
   // Shared invite links must greet logged-out friends (they register from here).
-  "/beitreten",
+  "/join",
 ];
 
 function isPublic(pathname: string): boolean {

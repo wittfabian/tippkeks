@@ -1,6 +1,6 @@
 <!--
   Custom recovery (password-reset) email. Uses the token_hash flow so the link
-  hits our own /auth/confirm route (verifyOtp) and lands on /passwort-neu.
+  hits our own /auth/confirm route (verifyOtp) and lands on /reset-password.
   IMPORTANT: configure the SAME template in the hosted Supabase dashboard
   (Authentication -> Email Templates -> Reset Password) -- config.toml only
   applies to the local stack.
@@ -78,7 +78,7 @@
                   <tr>
                     <td style="border-radius: 10px; background-color: #1f9b54">
                       <a
-                        href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/passwort-neu"
+                        href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password"
                         style="
                           display: inline-block;
                           padding: 13px 26px;
@@ -97,10 +97,10 @@
                 <p style="margin: 0 0 16px 0; font-size: 13px; line-height: 1.6; color: #8a958f">
                   Falls der Button nicht funktioniert, kopiere diesen Link in deinen Browser:<br />
                   <a
-                    href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/passwort-neu"
+                    href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password"
                     style="color: #1f9b54; word-break: break-all"
                     >{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash
-                    }}&type=recovery&next=/passwort-neu</a
+                    }}&type=recovery&next=/reset-password</a
                   >
                 </p>
                 <p style="margin: 0 0 8px 0; font-size: 13px; line-height: 1.6; color: #8a958f">
@@ -121,9 +121,9 @@
                     >kontakt@tippkeks.de</a
                   >
                   &nbsp;·&nbsp;
-                  <a href="{{ .SiteURL }}/impressum" style="color: #8a958f">Impressum</a>
+                  <a href="{{ .SiteURL }}/imprint" style="color: #8a958f">Impressum</a>
                   &nbsp;·&nbsp;
-                  <a href="{{ .SiteURL }}/datenschutz" style="color: #8a958f">Datenschutz</a>
+                  <a href="{{ .SiteURL }}/privacy" style="color: #8a958f">Datenschutz</a>
                 </p>
               </td>
             </tr>

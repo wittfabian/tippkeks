@@ -24,7 +24,7 @@ export default async function LoginPage({
         <AuthForm mode="login" invite={invite} />
         <div className="space-y-1 text-center text-sm">
           <Link
-            href="/passwort-vergessen"
+            href="/forgot-password"
             className="text-muted-foreground hover:text-foreground block"
           >
             {de.auth.forgotPassword}

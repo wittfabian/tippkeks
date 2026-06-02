@@ -91,7 +91,7 @@ export function MatchCard({
               </span>
               {f.myCategory && <CategoryChip category={f.myCategory} points={f.myPoints} />}
             </span>
-            <Link href={`/${tenantId}/spiel/${f.id}`} className="hover:text-foreground underline">
+            <Link href={`/${tenantId}/match/${f.id}`} className="hover:text-foreground underline">
               {de.fixtures.viewAll}
             </Link>
           </div>

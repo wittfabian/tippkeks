@@ -279,11 +279,11 @@ export function LandingPage() {
           {de.legal.footerNav.info}
         </Link>
         <span aria-hidden>·</span>
-        <Link href="/datenschutz" className="transition hover:text-white/70">
+        <Link href="/privacy" className="transition hover:text-white/70">
           {de.legal.footerNav.privacy}
         </Link>
         <span aria-hidden>·</span>
-        <Link href="/impressum" className="transition hover:text-white/70">
+        <Link href="/imprint" className="transition hover:text-white/70">
           {de.legal.footerNav.impressum}
         </Link>
         <span aria-hidden>·</span>
