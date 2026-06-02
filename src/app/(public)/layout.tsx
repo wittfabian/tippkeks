@@ -7,7 +7,7 @@ import { de } from "@/messages/de";
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   // Signed-in users have no business on login/register.
   const user = await getCurrentUser();
-  if (user) redirect("/gruppen");
+  if (user) redirect("/groups");
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 p-4">
@@ -17,11 +17,11 @@ export default async function PublicLayout({ children }: { children: React.React
           {de.legal.footerNav.info}
         </Link>
         <span aria-hidden>·</span>
-        <Link href="/datenschutz" className="hover:text-foreground transition">
+        <Link href="/privacy" className="hover:text-foreground transition">
           {de.legal.footerNav.privacy}
         </Link>
         <span aria-hidden>·</span>
-        <Link href="/impressum" className="hover:text-foreground transition">
+        <Link href="/imprint" className="hover:text-foreground transition">
           {de.legal.footerNav.impressum}
         </Link>
       </nav>

@@ -10,7 +10,7 @@ to Supabase's built-in sender, which is capped at ~2 mails/hour and lands in spa
 Even with `enable_confirmations = false` (signup sends no confirmation), the app
 still sends real mail today:
 
-- **Password reset** (`/passwort-vergessen`) — implemented, sends a recovery link.
+- **Password reset** (`/forgot-password`) — implemented, sends a recovery link.
 - **Email change** (`double_confirm_changes = true`) — sends a confirmation link.
 
 So the 2-mails/hour built-in limit will bite at launch. A custom SMTP provider
@@ -122,7 +122,7 @@ The app itself never reads this — only the Supabase CLI (`config.toml`'s
 
 After steps 1–3, trigger a real send and confirm delivery:
 
-1. On `/passwort-vergessen`, request a reset for a real inbox → the mail should
+1. On `/forgot-password`, request a reset for a real inbox → the mail should
    arrive from your verified domain (check it's **not** in spam).
 2. In Resend → **Logs**, confirm the message shows as delivered.
 

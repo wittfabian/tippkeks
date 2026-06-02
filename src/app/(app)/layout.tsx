@@ -26,12 +26,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-full flex-col">
       <header className="bg-background/80 sticky top-0 z-30 border-b backdrop-blur">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 py-3">
-          <Link href="/gruppen" aria-label={de.app.name}>
+          <Link href="/groups" aria-label={de.app.name}>
             <Wordmark />
           </Link>
           <div className="flex items-center gap-1">
             <Link
-              href="/profil"
+              href="/profile"
               aria-label={de.nav.profile}
               title={de.nav.profile}
               className={buttonVariants({ variant: "ghost", size: "icon" })}
@@ -40,7 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </Link>
             {siteAdmin && (
               <Link
-                href="/einstellungen"
+                href="/settings"
                 aria-label={de.settings.title}
                 title={de.settings.title}
                 className={buttonVariants({ variant: "ghost", size: "icon" })}
@@ -64,11 +64,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {de.legal.footerNav.info}
           </Link>
           <span aria-hidden>·</span>
-          <Link href="/datenschutz" className="hover:text-foreground transition">
+          <Link href="/privacy" className="hover:text-foreground transition">
             {de.legal.footerNav.privacy}
           </Link>
           <span aria-hidden>·</span>
-          <Link href="/impressum" className="hover:text-foreground transition">
+          <Link href="/imprint" className="hover:text-foreground transition">
             {de.legal.footerNav.impressum}
           </Link>
           <span aria-hidden>·</span>

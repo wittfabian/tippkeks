@@ -21,7 +21,7 @@ export function NewPasswordForm() {
         <p role="status" className="text-sm text-emerald-600">
           {state.info}
         </p>
-        <Link href="/gruppen" className={buttonVariants({ className: "w-full" })}>
+        <Link href="/groups" className={buttonVariants({ className: "w-full" })}>
           {de.auth.newPasswordContinue}
         </Link>
       </div>

@@ -18,7 +18,7 @@ export default async function EnterTipsPage({
   const fixtureParam = (await searchParams).fixture || undefined;
   const membership = await requireAdmin(tenantId);
   const { supabase, userId } = membership;
-  const base = `/${tenantId}/tipps`;
+  const base = `/${tenantId}/tips`;
 
   const board = await getFixtureBoard(supabase, tenantId, userId);
   const upcoming = board.filter((f) => !f.locked && f.home && f.away);

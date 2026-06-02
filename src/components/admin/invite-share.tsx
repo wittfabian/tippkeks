@@ -16,7 +16,7 @@ export function InviteShare({ code }: { code: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
 
-  const linkFor = () => `${window.location.origin}/beitreten/${code}`;
+  const linkFor = () => `${window.location.origin}/join/${code}`;
 
   useEffect(() => {
     if (inputRef.current) inputRef.current.value = linkFor();
@@ -52,7 +52,7 @@ export function InviteShare({ code }: { code: string }) {
       <input
         ref={inputRef}
         readOnly
-        defaultValue={`/beitreten/${code}`}
+        defaultValue={`/join/${code}`}
         aria-label={de.invite.copy}
         onFocus={(e) => e.currentTarget.select()}
         className="border-input bg-muted/40 text-muted-foreground min-w-0 flex-1 rounded-md border px-2 py-1 font-mono text-xs"

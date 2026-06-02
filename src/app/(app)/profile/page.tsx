@@ -12,7 +12,7 @@ import { de } from "@/messages/de";
 export const metadata = { title: de.profile.title };
 
 /**
- * Account-wide settings — not tenant-scoped. Lives at /profil (reached from the
+ * Account-wide settings — not tenant-scoped. Lives at /profile (reached from the
  * header icon), since email/password/display name and account deletion belong
  * to the user, not to any one group.
  */

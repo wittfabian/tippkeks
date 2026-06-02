@@ -166,7 +166,7 @@ export async function setMemberTippingAction(
   }
 
   revalidatePath(`/${parsed.data.tenantId}/admin`);
-  revalidatePath(`/${parsed.data.tenantId}/spiele`);
+  revalidatePath(`/${parsed.data.tenantId}/matches`);
   return { error: null, info: de.admin.memberTippingSaved };
 }
 
@@ -241,7 +241,7 @@ export async function saveMemberTipsAction(
   }
 
   revalidatePath(`/${parsed.data.tenantId}/admin`);
-  revalidatePath(`/${parsed.data.tenantId}/spiele`);
+  revalidatePath(`/${parsed.data.tenantId}/matches`);
   return { error: null, info: de.admin.tipsSaved(rows.length) };
 }
 
@@ -464,7 +464,7 @@ export async function createManagedMemberAction(
   });
 
   revalidatePath(`/${parsed.data.tenantId}/admin`);
-  revalidatePath(`/${parsed.data.tenantId}/spiele`);
+  revalidatePath(`/${parsed.data.tenantId}/matches`);
   return { error: null, info: de.admin.managedCreated(parsed.data.displayName) };
 }
 

@@ -42,7 +42,7 @@ export async function updateDisplayNameAction(
     return { error: de.profile.error };
   }
 
-  revalidatePath("/profil");
+  revalidatePath("/profile");
   return { error: null, info: de.profile.saved };
 }
 

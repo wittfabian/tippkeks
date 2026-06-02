@@ -31,7 +31,7 @@ export function MfaChallenge({ invite, redirectTo }: { invite?: string; redirect
     let destination =
       redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
         ? redirectTo
-        : "/gruppen";
+        : "/groups";
     const code = invite?.trim().toUpperCase();
     if (code) {
       const { data } = await supabase.rpc("redeem_invite", { p_code: code });

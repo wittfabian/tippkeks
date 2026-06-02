@@ -11,11 +11,11 @@ export function TenantNav({ tenantId, isAdmin }: { tenantId: string; isAdmin: bo
   const base = `/${tenantId}`;
   const items = [
     { href: base, label: de.nav.dashboard, exact: true },
-    { href: `${base}/spiele`, label: de.nav.fixtures, exact: false },
-    { href: `${base}/rangliste`, label: de.nav.leaderboard, exact: false },
+    { href: `${base}/matches`, label: de.nav.fixtures, exact: false },
+    { href: `${base}/leaderboard`, label: de.nav.leaderboard, exact: false },
     ...(isAdmin
       ? [
-          { href: `${base}/tipps`, label: de.admin.enterTips, exact: false },
+          { href: `${base}/tips`, label: de.admin.enterTips, exact: false },
           { href: `${base}/admin`, label: de.nav.admin, exact: false },
         ]
       : []),

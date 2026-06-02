@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { de } from "@/messages/de";
 
 /**
- * One-click accept for a shared invite link, used on /beitreten/[code] once the
+ * One-click accept for a shared invite link, used on /join/[code] once the
  * visitor is authenticated. Reuses joinGroupAction (redeem_invite) with the code
  * carried in a hidden field; on success the action redirects into the group.
  */

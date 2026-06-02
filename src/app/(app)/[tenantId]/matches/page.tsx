@@ -96,7 +96,7 @@ export default async function FixturesPage({
               : de.filters.noResults}
           </p>
           {board.length > 0 && (
-            <Link href={`/${tenantId}/spiele`} className="text-primary underline">
+            <Link href={`/${tenantId}/matches`} className="text-primary underline">
               {de.filters.reset}
             </Link>
           )}
