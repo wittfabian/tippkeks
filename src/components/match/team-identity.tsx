@@ -1,4 +1,4 @@
-import { flagForCode } from "@/lib/i18n/teamFlags";
+import { TeamFlag } from "@/components/match/team-flag";
 import { cn } from "@/lib/utils";
 
 export interface TeamLike {
@@ -23,7 +23,6 @@ export function TeamIdentity({
   className?: string;
 }) {
   const code = team?.shortName ?? "?";
-  const flag = flagForCode(team?.shortName);
   const name = team?.name ?? "?";
 
   return (
@@ -34,11 +33,7 @@ export function TeamIdentity({
         className,
       )}
     >
-      {flag && (
-        <span className="text-base leading-none" aria-hidden>
-          {flag}
-        </span>
-      )}
+      <TeamFlag code={team?.shortName} className="size-4 shrink-0" />
       <span className="bg-muted text-muted-foreground rounded px-1 py-0.5 font-mono text-[0.7rem] leading-none font-medium">
         {code}
       </span>

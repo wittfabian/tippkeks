@@ -7,7 +7,7 @@ import { submitPredictionAction } from "@/actions/predictions";
 import { initialActionState } from "@/actions/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { flagForCode } from "@/lib/i18n/teamFlags";
+import { TeamFlag } from "@/components/match/team-flag";
 import { cn } from "@/lib/utils";
 import { de } from "@/messages/de";
 
@@ -163,7 +163,7 @@ export function PredictionForm(props: PredictionFormProps) {
                   className={cn("gap-1", active && "ring-primary ring-2")}
                   onClick={() => setAdvancing(active ? "" : idStr)}
                 >
-                  <span aria-hidden>{flagForCode(t.code)}</span>
+                  <TeamFlag code={t.code} className="size-4 shrink-0" />
                   {t.name}
                 </Button>
               );
