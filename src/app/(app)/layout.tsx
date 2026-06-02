@@ -6,17 +6,23 @@ import { signOutAction } from "@/actions/auth";
 import { Wordmark } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { isSiteAdmin, requireUser } from "@/lib/auth/membership";
+import { isSiteAdmin } from "@/lib/auth/membership";
 import { createClient } from "@/lib/supabase/server";
 import { de } from "@/messages/de";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  await requireUser(); // redirects to /login when unauthenticated
   const supabase = await createClient();
 
-  // MFA gate: a user with a verified second factor whose session is still aal1
-  // must pass the /mfa challenge before reaching any app page. Users without a
-  // factor have nextLevel === "aal1" and pass straight through.
+  // Authenticate against the Auth server with getUser() (not getSession): this
+  // verifies the session server-side and silences supabase-js's "insecure user
+  // object" warning that getAuthenticatorAssuranceLevel()'s internal getSession()
+  // would otherwise emit on a fresh per-request client.
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) redirect("/login");
+
+  // MFA gate (UX layer; the Postgres MFA policies are the authoritative gate): a
+  // user with a verified second factor whose session is still aal1 must pass the
+  // /mfa challenge first. Users without a factor have nextLevel "aal1" and pass through.
   const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (aal?.currentLevel === "aal1" && aal.nextLevel === "aal2") redirect("/mfa");
 
