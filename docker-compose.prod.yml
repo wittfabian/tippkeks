@@ -14,7 +14,12 @@
 #       32 — `next build` embeds it, keep stable, MANDATORY once you run >1 replica)
 #   SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET                    (runtime secrets)
 #   FOOTBALL_DATA_API_TOKEN, FOOTBALL_DATA_COMPETITION        (sync)
-# REDIS_URL is set here, not in .env.prod, so it points at the compose service.
+#   REDIS_PASSWORD  (Valkey auth — openssl rand -hex 32; keep it URL-safe so it
+#       can be embedded in REDIS_URL without percent-encoding)
+# REDIS_PASSWORD is consumed at RUNTIME as a container env var (not interpolated
+# into this file): Valkey reads it in its shell entrypoint and the app assembles
+# REDIS_URL from it at startup. Supply it via `--env-file .env.prod` or an
+# exported shell variable at `up` time.
 
 name: tippkeks
 
@@ -37,9 +42,19 @@ services:
     # build-arg interpolation above).
     env_file:
       - .env.prod
+    # REDIS_PASSWORD is passed THROUGH from the `up`-time environment (its value is
+    # never written into this file). REDIS_URL is assembled from it at container
+    # start by a tiny shell wrapper, so the secret stays a runtime env var instead
+    # of being baked into the compose config. The wrapper still reaches Valkey by
+    # service name over the private network.
     environment:
-      # Reach Valkey by service name over the private network.
-      REDIS_URL: "redis://valkey:6379"
+      - REDIS_PASSWORD
+    command:
+      - /bin/sh
+      - -c
+      - |
+        export REDIS_URL="redis://:$${REDIS_PASSWORD}@valkey:6379"
+        exec node server.js
     # Loopback only: a host reverse proxy terminates TLS and upstreams here. If
     # your proxy is itself a container, drop this and add it to `internal`.
     ports:
@@ -90,20 +105,29 @@ services:
   valkey:
     image: valkey/valkey:8-alpine
     restart: unless-stopped
+    # REDIS_PASSWORD is passed THROUGH from the `up`-time environment (value not
+    # written into this file). Valkey has no native env-var config, so a tiny shell
+    # entrypoint expands it at container start; --requirepass then rejects
+    # unauthenticated clients (defense-in-depth — the service is already unreachable
+    # from outside the private network). `$$` is escaped from compose so the
+    # CONTAINER shell does the expansion, not compose at parse time.
+    environment:
+      - REDIS_PASSWORD
     # No published ports — private to the compose network. Pure cache: no
     # persistence, bounded memory with LRU eviction.
     command:
-      - valkey-server
-      - --save
-      - ""
-      - --appendonly
-      - "no"
-      - --maxmemory
-      - 256mb
-      - --maxmemory-policy
-      - allkeys-lru
+      - /bin/sh
+      - -c
+      - >
+        exec valkey-server
+        --requirepass "$$REDIS_PASSWORD"
+        --save ""
+        --appendonly "no"
+        --maxmemory 256mb
+        --maxmemory-policy allkeys-lru
     healthcheck:
-      test: ["CMD", "valkey-cli", "ping"]
+      # valkey-cli reads REDISCLI_AUTH from the env, keeping the password out of argv.
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" valkey-cli ping | grep -q PONG"]
       interval: 10s
       timeout: 3s
       retries: 5
