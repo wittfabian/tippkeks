@@ -266,7 +266,8 @@ export const de = {
     tipImageDownload: "Tipps als Bild herunterladen",
     tipImageBusy: "Bild wird erstellt …",
     tipImageError: "Bild konnte nicht erstellt werden. Bitte erneut versuchen.",
-    tipImageHint: "Lädt die gespeicherten Tipps aller Mitglieder zu diesem Spiel als Bild herunter.",
+    tipImageHint:
+      "Lädt die gespeicherten Tipps aller Mitglieder zu diesem Spiel als Bild herunter.",
     tipImageNoTip: "offen",
     tipImageFooter: "tippkeks.de · FIFA WM 2026",
     createInvite: "Einladungscode erstellen",

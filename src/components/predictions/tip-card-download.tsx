@@ -137,7 +137,7 @@ export function TipCardDownload({
       >
         <div
           ref={cardRef}
-          className="font-sans w-[760px] overflow-hidden rounded-3xl"
+          className="w-[760px] overflow-hidden rounded-3xl font-sans"
           style={{ backgroundColor: C.bg, color: C.fg, border: `1px solid ${C.border}` }}
         >
           {/* Header band */}
