@@ -55,7 +55,16 @@ export async function signInAction(_prev: ActionState, formData: FormData): Prom
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
-  if (error) return { error: de.auth.errorInvalid };
+  if (error) {
+    // An unconfirmed account returns a specific code; show the "confirm your
+    // email" hint instead of the misleading "wrong credentials". This leaks no
+    // new information — the register flow already reveals existence ("email
+    // taken"), and the password was, in fact, correct here.
+    if (error.code === "email_not_confirmed" || /not confirmed/i.test(error.message)) {
+      return { error: null, info: de.auth.checkEmail, needsConfirmation: true };
+    }
+    return { error: de.auth.errorInvalid };
+  }
 
   // If the account has a verified second factor, sign-in only reaches aal1 —
   // send them to the /mfa challenge before resolving their destination. The
@@ -72,6 +81,35 @@ export async function signInAction(_prev: ActionState, formData: FormData): Prom
   }
 
   redirect(await postAuthDestination(supabase, formData.get("invite")));
+}
+
+const resendSchema = z.object({ email: z.string().trim().email() });
+
+/**
+ * Resend the sign-up confirmation email. Offered on the login form when an
+ * unconfirmed account tries to sign in. Throttled per IP and per address to
+ * prevent inbox-bombing, and always returns the same confirmation regardless of
+ * outcome (already confirmed / unknown address) so it can't probe account state.
+ */
+export async function resendConfirmationAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = resendSchema.safeParse({ email: formData.get("email") });
+  if (!parsed.success) return { error: de.auth.errorInvalid };
+
+  const email = parsed.data.email.toLowerCase();
+  const [byIp, byEmail] = await Promise.all([
+    rateLimit(`confirm:ip:${await getClientIp()}`, 5, 900),
+    rateLimit(`confirm:email:${email}`, 3, 3600),
+  ]);
+  if (byIp.allowed && byEmail.allowed) {
+    const supabase = await createClient();
+    // Swallow errors (already confirmed / unknown address): always answer the
+    // same so this can't be used to probe which accounts exist or are confirmed.
+    await supabase.auth.resend({ type: "signup", email });
+  }
+  return { error: null, info: de.auth.confirmationResent };
 }
 
 export async function signUpAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -97,9 +135,12 @@ export async function signUpAction(_prev: ActionState, formData: FormData): Prom
     options: { data: { display_name: parsed.data.displayName } },
   });
   if (error) {
-    return {
-      error: /registered|exists/i.test(error.message) ? de.auth.errorTaken : de.auth.errorGeneric,
-    };
+    const taken = /registered|exists/i.test(error.message);
+    // Surface the real GoTrue reason server-side — the UI message is deliberately
+    // generic, but "Error sending confirmation email" / "Database error saving new
+    // user" / "Signups not allowed" must be diagnosable from the logs.
+    if (!taken) logActionError("signUp", error);
+    return { error: taken ? de.auth.errorTaken : de.auth.errorGeneric };
   }
 
   // When email confirmation is enabled (production) there is no session yet.

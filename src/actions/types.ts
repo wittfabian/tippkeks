@@ -2,6 +2,9 @@
 export type ActionState = {
   error: string | null;
   info?: string | null;
+  /** Set by signInAction when the account exists but its email is unconfirmed —
+   *  the login form then offers a "resend confirmation email" button. */
+  needsConfirmation?: boolean;
 };
 
 export const initialActionState: ActionState = { error: null, info: null };

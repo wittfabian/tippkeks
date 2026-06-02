@@ -153,13 +153,15 @@ function FlagMarquee() {
     >
       <div
         data-tk-anim
-        className="flex w-max gap-4"
+        className="flex w-max"
         style={{ animation: "tk-marquee 45s linear infinite" }}
       >
+        {/* Spacing lives on each chip (mr-4), not as a flex `gap`, so one copy is
+            exactly half the track width and the -50% loop is perfectly seamless. */}
         {[...MARQUEE_FLAGS, ...MARQUEE_FLAGS].map((code, i) => (
           <span
             key={i}
-            className="grid size-11 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.04]"
+            className="mr-4 grid size-11 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.04]"
           >
             <Flag code={code} className="size-7" />
           </span>

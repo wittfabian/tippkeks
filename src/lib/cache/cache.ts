@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getRedis } from "./redis";
+import { getRedis, getRedisReady } from "./redis";
 
 const VALUE_PREFIX = "tk:cache:";
 const TAG_PREFIX = "tk:tag:";
@@ -61,8 +61,11 @@ export async function cached<T>(opts: CacheOptions, fetcher: () => Promise<T>): 
  * invalidation crosses process and instance boundaries (unlike revalidateTag).
  */
 export async function invalidateTags(...tags: string[]): Promise<void> {
-  const redis = getRedis();
-  if (!redis || tags.length === 0) return;
+  if (tags.length === 0) return;
+  // Wait briefly for readiness: invalidation is correctness-critical (a skipped
+  // clear leaves a stale leaderboard), unlike a read which can just miss.
+  const redis = await getRedisReady();
+  if (!redis) return;
 
   try {
     for (const tag of tags) {
