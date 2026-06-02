@@ -56,6 +56,8 @@ export const de = {
     errorTaken: "Diese E-Mail ist bereits registriert.",
     passwordHint: "Mindestens 8 Zeichen.",
     checkEmail: "Bitte bestätige deine E-Mail-Adresse über den Link, den wir dir geschickt haben.",
+    resendConfirmation: "Bestätigungs-Mail erneut senden",
+    confirmationResent: "Wir haben dir die Bestätigungs-Mail erneut geschickt.",
     registrationClosed: "Die Registrierung ist derzeit geschlossen.",
     forgotPassword: "Passwort vergessen?",
     resetTitle: "Passwort zurücksetzen",
