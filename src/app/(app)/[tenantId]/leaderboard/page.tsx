@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Crown } from "lucide-react";
 
+import { LiveLeaderboardBanner } from "@/components/leaderboard/live-leaderboard-banner";
 import {
   Table,
   TableBody,
@@ -10,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { requireMembership } from "@/lib/auth/membership";
+import { getFixtureBoard } from "@/lib/data/fixtures";
 import { getLeaderboard } from "@/lib/data/leaderboard";
 import { cn } from "@/lib/utils";
 import { de } from "@/messages/de";
@@ -41,12 +43,24 @@ export default async function LeaderboardPage({
   const { sort = "rank" } = await searchParams;
   const membership = await requireMembership(tenantId);
 
-  const rows = await getLeaderboard(membership.tenantId);
+  const [rows, board] = await Promise.all([
+    getLeaderboard(membership.tenantId),
+    getFixtureBoard(membership.supabase, membership.tenantId, membership.userId),
+  ]);
+
+  // Live = kicked off but not finished. The banner names them and drives the
+  // auto-refresh so points appear once the match is scored.
+  const liveMatches = board.flatMap((f) =>
+    f.status === "live" && f.home && f.away
+      ? [{ id: f.id, home: f.home.name, away: f.away.name }]
+      : [],
+  );
 
   if (rows.length === 0) {
     return (
       <div className="space-y-3">
         <h2 className="font-heading text-lg font-bold">{de.leaderboard.title}</h2>
+        {liveMatches.length > 0 && <LiveLeaderboardBanner matches={liveMatches} />}
         <p className="text-muted-foreground text-sm">{de.leaderboard.empty}</p>
       </div>
     );
@@ -62,6 +76,8 @@ export default async function LeaderboardPage({
   return (
     <div className="space-y-4">
       <h2 className="font-heading text-lg font-bold">{de.leaderboard.title}</h2>
+
+      {liveMatches.length > 0 && <LiveLeaderboardBanner matches={liveMatches} />}
 
       {/* Podium */}
       <div className="grid grid-cols-3 gap-2">

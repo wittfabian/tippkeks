@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import {
+  ConvertMemberForm,
   CreateInviteForm,
   CreateManagedMemberForm,
   DeleteGroupForm,
@@ -165,20 +166,18 @@ async function MembersTab({
       ) : (
         <ul className="divide-y rounded-md border">
           {pageRows.map((m) => (
-            <li key={m.user_id} className="flex items-center justify-between gap-3 px-3 py-2">
-              <span className="flex min-w-0 items-center gap-2 text-sm">
-                <span className="truncate">{m.name}</span>
-                <Badge variant={m.role === "admin" ? "default" : "secondary"}>
-                  {de.groups.role[m.role]}
-                </Badge>
-                {m.managed && <Badge variant="outline">{de.admin.managedBadge}</Badge>}
-              </span>
-              <MemberRowActions
-                tenantId={tenantId}
-                targetUserId={m.user_id}
-                role={m.role}
-                managed={m.managed}
-              />
+            <li key={m.user_id} className="px-3 py-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className="flex min-w-0 items-center gap-2 text-sm">
+                  <span className="truncate">{m.name}</span>
+                  <Badge variant={m.role === "admin" ? "default" : "secondary"}>
+                    {de.groups.role[m.role]}
+                  </Badge>
+                  {m.managed && <Badge variant="outline">{de.admin.managedBadge}</Badge>}
+                </span>
+                <MemberRowActions tenantId={tenantId} targetUserId={m.user_id} role={m.role} />
+              </div>
+              {m.managed && <ConvertMemberForm tenantId={tenantId} targetUserId={m.user_id} />}
             </li>
           ))}
         </ul>

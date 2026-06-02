@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { Info } from "lucide-react";
+import { useActionState, type ReactNode } from "react";
 
 import {
   convertManagedMemberAction,
@@ -18,6 +19,7 @@ import { initialActionState } from "@/actions/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { de } from "@/messages/de";
 
 function Message({ error, info }: { error: string | null; info?: string | null }) {
@@ -117,13 +119,19 @@ export function CreateManagedMemberForm({ tenantId }: { tenantId: string }) {
   );
 }
 
-function ConvertMemberForm({ tenantId, targetUserId }: { tenantId: string; targetUserId: string }) {
+export function ConvertMemberForm({
+  tenantId,
+  targetUserId,
+}: {
+  tenantId: string;
+  targetUserId: string;
+}) {
   const [state, formAction, pending] = useActionState(
     convertManagedMemberAction,
     initialActionState,
   );
   return (
-    <details className="w-full">
+    <details className="mt-2 border-t pt-2">
       <summary className="text-primary cursor-pointer text-xs">{de.admin.managedConvert}</summary>
       <form action={formAction} className="mt-2 space-y-2">
         <input type="hidden" name="tenantId" value={tenantId} />
@@ -152,12 +160,10 @@ export function MemberRowActions({
   tenantId,
   targetUserId,
   role,
-  managed = false,
 }: {
   tenantId: string;
   targetUserId: string;
   role: "admin" | "member";
-  managed?: boolean;
 }) {
   const [roleState, roleAction, rolePending] = useActionState(
     setMemberRoleAction,
@@ -188,7 +194,6 @@ export function MemberRowActions({
           </Button>
         </form>
       </div>
-      {managed && <ConvertMemberForm tenantId={tenantId} targetUserId={targetUserId} />}
       <Message error={roleState.error ?? removeState.error} />
     </div>
   );
@@ -257,12 +262,15 @@ export function MemberTipTable({
   homeName,
   awayName,
   members,
+  actions,
 }: {
   tenantId: string;
   fixtureId: string;
   homeName: string;
   awayName: string;
   members: MemberTipRow[];
+  /** Extra controls rendered next to the save button (e.g. the image download). */
+  actions?: ReactNode;
 }) {
   const [state, formAction, pending] = useActionState(saveMemberTipsAction, initialActionState);
   return (
@@ -318,9 +326,12 @@ export function MemberTipTable({
       </div>
       <div className="flex items-center justify-between gap-2">
         <Message error={state.error} info={state.info} />
-        <Button type="submit" size="sm" disabled={pending}>
-          {pending ? de.common.loading : de.admin.tipsSave}
-        </Button>
+        <div className="flex items-center gap-2">
+          {actions}
+          <Button type="submit" size="sm" disabled={pending}>
+            {pending ? de.common.loading : de.admin.tipsSave}
+          </Button>
+        </div>
       </div>
     </form>
   );
@@ -335,11 +346,11 @@ export interface ScoringValues {
 
 export function ScoringForm({ tenantId, values }: { tenantId: string; values: ScoringValues }) {
   const [state, formAction, pending] = useActionState(saveScoringAction, initialActionState);
-  const fields: { name: keyof ScoringValues; label: string }[] = [
-    { name: "exact", label: de.admin.scoringExact },
-    { name: "goalDiff", label: de.admin.scoringDiff },
-    { name: "tendency", label: de.admin.scoringTendency },
-    { name: "advanceBonus", label: de.admin.scoringAdvance },
+  const fields: { name: keyof ScoringValues; label: string; info: string }[] = [
+    { name: "exact", label: de.admin.scoringExact, info: de.admin.scoringExactInfo },
+    { name: "goalDiff", label: de.admin.scoringDiff, info: de.admin.scoringDiffInfo },
+    { name: "tendency", label: de.admin.scoringTendency, info: de.admin.scoringTendencyInfo },
+    { name: "advanceBonus", label: de.admin.scoringAdvance, info: de.admin.scoringAdvanceInfo },
   ];
   return (
     <form action={formAction} className="space-y-3">
@@ -350,7 +361,19 @@ export function ScoringForm({ tenantId, values }: { tenantId: string; values: Sc
           // that wraps to two lines does not push its input out of line with the
           // neighbouring cell's input in the same grid row.
           <div key={f.name} className="flex h-full flex-col gap-1.5">
-            <Label htmlFor={f.name}>{f.label}</Label>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor={f.name}>{f.label}</Label>
+              <Popover>
+                <PopoverTrigger
+                  type="button"
+                  aria-label={de.admin.scoringInfoAria}
+                  className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex rounded-full focus-visible:ring-2 focus-visible:outline-none"
+                >
+                  <Info className="size-3.5" aria-hidden />
+                </PopoverTrigger>
+                <PopoverContent>{f.info}</PopoverContent>
+              </Popover>
+            </div>
             <Input
               id={f.name}
               name={f.name}

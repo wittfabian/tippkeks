@@ -185,6 +185,8 @@ export const de = {
     empty: "Die Rangliste erscheint nach den ersten gewerteten Spielen.",
     tieBreakNote:
       "Bei Punktgleichheit entscheiden: exakte Tipps, dann richtige Treffer, dann früheste Tippabgabe.",
+    liveHeading: (n: number) => (n === 1 ? "Spiel läuft gerade" : "Spiele laufen gerade"),
+    liveHint: "Die Wertung folgt nach Abpfiff – die Rangliste aktualisiert sich dann automatisch.",
   },
   profile: {
     title: "Profil",
@@ -261,6 +263,12 @@ export const de = {
     tipsSave: "Tipps speichern",
     tipsSaved: (n: number) => (n === 1 ? "1 Tipp gespeichert." : `${n} Tipps gespeichert.`),
     tipsError: "Tipps konnten nicht gespeichert werden (evtl. ist der Anpfiff schon vorbei).",
+    tipImageDownload: "Tipps als Bild herunterladen",
+    tipImageBusy: "Bild wird erstellt …",
+    tipImageError: "Bild konnte nicht erstellt werden. Bitte erneut versuchen.",
+    tipImageHint: "Lädt die gespeicherten Tipps aller Mitglieder zu diesem Spiel als Bild herunter.",
+    tipImageNoTip: "offen",
+    tipImageFooter: "tippkeks.de · FIFA WM 2026",
     createInvite: "Einladungscode erstellen",
     inviteCreated: "Einladungscode erstellt.",
     inviteDelete: "Löschen",
@@ -304,10 +312,19 @@ export const de = {
     pagePrev: "Zurück",
     pageNext: "Weiter",
     pageInfo: (page: number, total: number) => `Seite ${page} von ${total}`,
-    scoringExact: "Punkte für das exakte Ergebnis",
-    scoringDiff: "Punkte für die richtige Tordifferenz (auch Unentschieden)",
-    scoringTendency: "Punkte für den richtigen Sieger (Tendenz)",
-    scoringAdvance: "Bonus für richtiges Weiterkommen (K.-o.)",
+    scoringExact: "Exaktes Ergebnis",
+    scoringDiff: "Richtige Tordifferenz",
+    scoringTendency: "Richtige Tendenz",
+    scoringAdvance: "Weiterkommen (K.-o.)",
+    scoringExactInfo:
+      "Volle Punkte, wenn dein Tipp exakt stimmt – Tore von Heim und Gast genau richtig (z. B. Tipp 2:1, Ergebnis 2:1). Höchste Stufe; schließt Tordifferenz und Tendenz aus.",
+    scoringDiffInfo:
+      "Punkte, wenn die Tordifferenz stimmt, aber nicht das exakte Ergebnis – inklusive richtig getipptem Unentschieden (z. B. Tipp 2:1 bei Ergebnis 3:2, oder Tipp 1:1 bei 2:2).",
+    scoringTendencyInfo:
+      "Punkte, wenn nur der richtige Ausgang stimmt – Heimsieg, Auswärtssieg oder Unentschieden – ohne passende Tordifferenz (z. B. Tipp 3:0 bei Ergebnis 1:0).",
+    scoringAdvanceInfo:
+      "Zusätzlicher Bonus in der K.-o.-Phase, wenn du das weiterkommende Team richtig tippst. Die Ergebnis-Punkte zählen dort nach 90 Minuten, das Weiterkommen nach Verlängerung bzw. Elfmeterschießen.",
+    scoringInfoAria: "Erklärung anzeigen",
     scoringSave: "Regeln speichern & neu berechnen",
     scoringSaved: "Punkteregeln gespeichert und Punkte neu berechnet.",
     homeGoals: "Tore Heim",
