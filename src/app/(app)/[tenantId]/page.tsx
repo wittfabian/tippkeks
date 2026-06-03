@@ -121,7 +121,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ tena
                   </span>
                 </span>
                 <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-                  {formatDateTime(f.kickoffAt)} Uhr
+                  {formatDateTime(f.kickoffAt)}
                 </span>
               </li>
             ))}

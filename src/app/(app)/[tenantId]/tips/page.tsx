@@ -3,6 +3,7 @@ import { FixturePicker, type FixtureGroup } from "@/components/admin/fixture-pic
 import { TipCardDownload } from "@/components/predictions/tip-card-download";
 import { requireAdmin } from "@/lib/auth/membership";
 import { getFixtureBoard } from "@/lib/data/fixtures";
+import { getMemberNames } from "@/lib/data/members";
 import { berlinDayKey, formatDayHeading, formatTime } from "@/lib/format";
 import { de } from "@/messages/de";
 
@@ -18,28 +19,14 @@ export default async function EnterTipsPage({
   const { tenantId } = await params;
   const fixtureParam = (await searchParams).fixture || undefined;
   const membership = await requireAdmin(tenantId);
-  const { supabase, userId } = membership;
+  const { supabase, userId, tenantName } = membership;
   const base = `/${tenantId}/tips`;
 
   const board = await getFixtureBoard(supabase, tenantId, userId);
   const upcoming = board.filter((f) => !f.locked && f.home && f.away);
   const selected = upcoming.find((f) => f.id === fixtureParam) ?? upcoming[0];
 
-  const { data: tenant } = await supabase
-    .from("tenant")
-    .select("name")
-    .eq("id", tenantId)
-    .maybeSingle();
-
-  const { data: members } = await supabase
-    .from("tenant_member")
-    .select("user_id")
-    .eq("tenant_id", tenantId);
-  const memberIds = (members ?? []).map((m) => m.user_id);
-  const { data: profiles } = memberIds.length
-    ? await supabase.from("profile").select("user_id, display_name").in("user_id", memberIds)
-    : { data: [] };
-  const nameById = new Map((profiles ?? []).map((p) => [p.user_id, p.display_name]));
+  const nameById = await getMemberNames(supabase, tenantId);
 
   const { data: preds } = selected
     ? await supabase
@@ -50,12 +37,12 @@ export default async function EnterTipsPage({
     : { data: [] };
   const predByUser = new Map((preds ?? []).map((p) => [p.user_id, p]));
 
-  const rows: MemberTipRow[] = (members ?? [])
-    .map((m) => ({
-      userId: m.user_id,
-      name: nameById.get(m.user_id) ?? "—",
-      home: predByUser.get(m.user_id)?.home_goals ?? null,
-      away: predByUser.get(m.user_id)?.away_goals ?? null,
+  const rows: MemberTipRow[] = [...nameById.entries()]
+    .map(([memberId, name]) => ({
+      userId: memberId,
+      name,
+      home: predByUser.get(memberId)?.home_goals ?? null,
+      away: predByUser.get(memberId)?.away_goals ?? null,
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
 
@@ -92,7 +79,7 @@ export default async function EnterTipsPage({
               members={rows}
               actions={
                 <TipCardDownload
-                  groupName={tenant?.name ?? de.app.name}
+                  groupName={tenantName}
                   fixture={{
                     homeName: selected.home?.name ?? "?",
                     homeCode: selected.home?.shortName ?? null,

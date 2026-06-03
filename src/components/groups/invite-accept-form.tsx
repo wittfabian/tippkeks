@@ -4,7 +4,8 @@ import { useActionState } from "react";
 
 import { joinGroupAction } from "@/actions/tenant";
 import { initialActionState } from "@/actions/types";
-import { Button } from "@/components/ui/button";
+import { FormMessage } from "@/components/ui/form-message";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { de } from "@/messages/de";
 
 /**
@@ -13,18 +14,13 @@ import { de } from "@/messages/de";
  * carried in a hidden field; on success the action redirects into the group.
  */
 export function InviteAcceptForm({ code }: { code: string }) {
-  const [state, formAction, pending] = useActionState(joinGroupAction, initialActionState);
+  const [state, formAction] = useActionState(joinGroupAction, initialActionState);
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="code" value={code} />
-      <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? de.common.loading : de.invite.accept}
-      </Button>
-      {state.error && (
-        <p role="alert" className="text-destructive text-sm">
-          {de.invite.invalidBody}
-        </p>
-      )}
+      <SubmitButton label={de.invite.accept} className="w-full" />
+      {/* Any redeem failure means the link is invalid/expired/used up. */}
+      <FormMessage error={state.error ? de.invite.invalidBody : null} />
     </form>
   );
 }

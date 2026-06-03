@@ -86,11 +86,11 @@ export async function createInviteAction(
   if (!parsed.success) return { error: de.auth.errorGeneric };
 
   const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const userId = claims?.claims?.sub;
+  // Re-resolve admin in the action (the trust boundary), not only via RLS.
+  const userId = await adminUserId(supabase, parsed.data.tenantId);
   if (!userId) return { error: de.auth.errorGeneric };
 
-  // RLS only lets a tenant admin insert here.
+  // RLS also enforces that only a tenant admin may insert here.
   const { error } = await supabase.from("tenant_invite").insert({
     tenant_id: parsed.data.tenantId,
     code: generateInviteCode(),
@@ -123,11 +123,10 @@ export async function deleteInviteAction(
   if (!parsed.success) return { error: de.auth.errorGeneric };
 
   const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const userId = claims?.claims?.sub;
-  if (!userId) return { error: de.auth.errorGeneric };
+  // Re-resolve admin in the action (the trust boundary), not only via RLS.
+  if (!(await adminUserId(supabase, parsed.data.tenantId))) return { error: de.auth.errorGeneric };
 
-  // RLS only lets a tenant admin delete here.
+  // RLS also enforces that only a tenant admin may delete here.
   const { error } = await supabase
     .from("tenant_invite")
     .delete()
@@ -263,8 +262,8 @@ export async function setMemberRoleAction(
   if (!parsed.success) return { error: de.auth.errorGeneric };
 
   const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const actorId = claims?.claims?.sub;
+  // Re-resolve admin in the action (the trust boundary), not only via RLS.
+  const actorId = await adminUserId(supabase, parsed.data.tenantId);
   if (!actorId) return { error: de.auth.errorGeneric };
 
   const { error } = await supabase
@@ -305,8 +304,8 @@ export async function removeMemberAction(
   if (!parsed.success) return { error: de.auth.errorGeneric };
 
   const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const actorId = claims?.claims?.sub;
+  // Re-resolve admin in the action (the trust boundary), not only via RLS.
+  const actorId = await adminUserId(supabase, parsed.data.tenantId);
   if (!actorId) return { error: de.auth.errorGeneric };
 
   const { error } = await supabase
@@ -353,6 +352,9 @@ export async function saveScoringAction(
   if (!parsed.success) return { error: de.auth.errorGeneric };
 
   const supabase = await createClient();
+  // Re-resolve admin in the action (the trust boundary); the recompute_tenant
+  // RPC re-checks admin under definer rights and RLS gates the rule-set update.
+  if (!(await adminUserId(supabase, parsed.data.tenantId))) return { error: de.auth.errorGeneric };
 
   // Preserve any configured per-stage multipliers.
   const { data: active } = await supabase
@@ -533,9 +535,26 @@ export async function convertManagedMemberAction(
     return { error: de.admin.managedConvertError };
   }
 
-  // Email already in use → the merge path. First submit just asks to confirm
-  // (irreversible: it deletes the placeholder); the confirm submit performs it.
+  // Email already in use → the merge path. The merge requires the target to
+  // already be a member of this group (it never silently pulls a stranger in),
+  // so check that up front and give a clear, actionable message rather than
+  // failing only after the merge confirmation.
   if (emailTaken) {
+    const { data: targetIsMember, error: memberLookupError } = await service.rpc(
+      "email_member_of",
+      {
+        p_tenant: parsed.data.tenantId,
+        p_email: parsed.data.email,
+      },
+    );
+    if (memberLookupError) {
+      logActionError("convertManagedMember.memberLookup", memberLookupError);
+      return { error: de.admin.managedConvertError };
+    }
+    if (!targetIsMember) return { error: de.admin.managedMergeNotMember };
+
+    // First submit just asks to confirm (irreversible: it deletes the
+    // placeholder); the confirm submit performs it.
     if (!confirmMerge) {
       return { error: null, needsMergeConfirm: true, mergeEmail: parsed.data.email };
     }

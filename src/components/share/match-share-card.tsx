@@ -1,6 +1,11 @@
 "use client";
 
-import { ShareCard, ShareTeamColumn, SHARE_PALETTE as C } from "@/components/share/share-card";
+import {
+  ShareCard,
+  ShareRow,
+  ShareTeamColumn,
+  SHARE_PALETTE as C,
+} from "@/components/share/share-card";
 import type { ScoreCategory } from "@/lib/scoring/engine";
 import { formatDateTime } from "@/lib/format";
 import { de } from "@/messages/de";
@@ -52,7 +57,7 @@ export function MatchShareCard({
       headerRight={
         <>
           <div className="font-medium">{fixture.stageName}</div>
-          <div>{formatDateTime(fixture.kickoffAt)} Uhr</div>
+          <div>{formatDateTime(fixture.kickoffAt)}</div>
         </>
       }
     >
@@ -74,11 +79,7 @@ export function MatchShareCard({
           {rows.map((row) => {
             const colors = row.category ? badgeColors(row.category) : null;
             return (
-              <div
-                key={row.userId}
-                className="flex items-center justify-between gap-4 rounded-xl px-4 py-2.5"
-                style={{ backgroundColor: C.muted }}
-              >
+              <ShareRow key={row.userId}>
                 <span className="truncate text-lg font-medium">{row.name}</span>
                 <div className="flex items-center gap-3">
                   <span
@@ -101,7 +102,7 @@ export function MatchShareCard({
                     </span>
                   )}
                 </div>
-              </div>
+              </ShareRow>
             );
           })}
         </div>

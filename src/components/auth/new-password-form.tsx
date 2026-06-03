@@ -5,22 +5,22 @@ import { useActionState } from "react";
 
 import { setNewPasswordAction } from "@/actions/auth";
 import { initialActionState } from "@/actions/types";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { FormMessage } from "@/components/ui/form-message";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { de } from "@/messages/de";
 
 export function NewPasswordForm() {
-  const [state, formAction, pending] = useActionState(setNewPasswordAction, initialActionState);
+  const [state, formAction] = useActionState(setNewPasswordAction, initialActionState);
 
   // On success the recovery session is still valid, so send the user straight
   // into the app rather than back through the login form.
   if (state.info) {
     return (
       <div className="space-y-4">
-        <p role="status" className="text-sm text-emerald-600">
-          {state.info}
-        </p>
+        <FormMessage info={state.info} />
         <Link href="/groups" className={buttonVariants({ className: "w-full" })}>
           {de.auth.newPasswordContinue}
         </Link>
@@ -43,15 +43,9 @@ export function NewPasswordForm() {
         <p className="text-muted-foreground text-xs">{de.auth.passwordHint}</p>
       </div>
 
-      {state.error && (
-        <p role="alert" className="text-destructive text-sm">
-          {state.error}
-        </p>
-      )}
+      <FormMessage error={state.error} />
 
-      <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? de.common.loading : de.auth.newPasswordSubmit}
-      </Button>
+      <SubmitButton label={de.auth.newPasswordSubmit} className="w-full" />
     </form>
   );
 }

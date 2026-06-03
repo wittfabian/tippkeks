@@ -52,16 +52,28 @@ export function ShareTeamColumn({
   );
 }
 
+/** A muted pill row used in every share-card body (one member / rank per line). */
+export function ShareRow({ children }: { children: ReactNode }) {
+  return (
+    <div
+      className="flex items-center justify-between gap-4 rounded-xl px-4 py-2.5"
+      style={{ backgroundColor: C.muted }}
+    >
+      {children}
+    </div>
+  );
+}
+
 /**
  * Renders an off-screen branded card (brand header band + body + footer) and
  * exports it to a downloadable PNG via html-to-image. The body is provided by
- * the caller; this shell owns the chrome, palette and the capture/download. The
- * existing tip-card export predates this and is left as-is.
+ * the caller; this shell owns the chrome, palette and the capture/download.
  */
 export function ShareCard({
   groupName,
   fileSlug,
   buttonLabel,
+  buttonTitle,
   headerRight,
   children,
 }: {
@@ -69,6 +81,8 @@ export function ShareCard({
   /** Used in the download filename: `tippkeks-<fileSlug>.png`. */
   fileSlug: string;
   buttonLabel: string;
+  /** Optional tooltip on the download button. */
+  buttonTitle?: string;
   /** Optional content for the right side of the header band (date, score, …). */
   headerRight?: ReactNode;
   children: ReactNode;
@@ -105,7 +119,14 @@ export function ShareCard({
 
   return (
     <div className="flex flex-col items-end gap-0.5">
-      <Button type="button" variant="outline" size="sm" onClick={handleDownload} disabled={busy}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={handleDownload}
+        disabled={busy}
+        title={buttonTitle}
+      >
         {busy ? de.share.busy : buttonLabel}
       </Button>
       {error && (

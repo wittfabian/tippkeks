@@ -30,10 +30,11 @@ export async function getMatchdayRecap(tenantId: string): Promise<MatchdayRecap 
     },
     async () => {
       const service = createServiceClient();
-      const { data: scores } = await service
+      const { data: scores, error } = await service
         .from("prediction_score")
         .select("user_id, points, category, fixture_id")
         .eq("tenant_id", tenantId);
+      if (error) console.error("[data:recap] query failed", error);
       if (!scores || scores.length === 0) return null;
 
       const fixtureIds = [...new Set(scores.map((s) => s.fixture_id))];

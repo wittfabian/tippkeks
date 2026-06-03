@@ -7,19 +7,9 @@ import { PredictionForm } from "@/components/predictions/prediction-form";
 import { Card, CardContent } from "@/components/ui/card";
 import { isKnockoutStage } from "@/lib/domain/stages";
 import type { FixtureVM } from "@/lib/data/fixtures";
-import { formatTime } from "@/lib/format";
+import { formatKickoffTime, formatResult, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { de } from "@/messages/de";
-
-function resultLabel(f: FixtureVM): string {
-  if (f.regularHome == null || f.regularAway == null) return "–:–";
-  const et = f.afterExtraTime ? " n.V." : "";
-  const pens =
-    f.penaltyHome != null && f.penaltyAway != null
-      ? ` (${f.penaltyHome}:${f.penaltyAway} i.E.)`
-      : "";
-  return `${f.regularHome}:${f.regularAway}${et}${pens}`;
-}
 
 // Coloured left edge: category colour once graded, ice-blue while live.
 function edgeClass(f: FixtureVM): string {
@@ -67,7 +57,7 @@ export function MatchCard({
           ) : f.status === "finished" ? (
             <span>{de.status.finished}</span>
           ) : f.locked ? (
-            <span>{formatTime(f.kickoffAt)} Uhr</span>
+            <span>{formatKickoffTime(f.kickoffAt)}</span>
           ) : (
             <span className="inline-flex items-center gap-2">
               {pulse && pulse.members > 0 && (
@@ -79,7 +69,7 @@ export function MatchCard({
                   {de.predictions.pulse(pulse.tipped, pulse.members)}
                 </span>
               )}
-              <span>{formatTime(f.kickoffAt)} Uhr</span>
+              <span>{formatKickoffTime(f.kickoffAt)}</span>
             </span>
           )}
         </div>
@@ -88,7 +78,7 @@ export function MatchCard({
         <div className="flex items-center gap-2">
           <TeamIdentity team={f.home} className="flex-1" />
           <span className="font-heading shrink-0 px-1 text-center text-lg font-bold tabular-nums">
-            {hasResult || isLive ? resultLabel(f) : formatTime(f.kickoffAt)}
+            {hasResult || isLive ? formatResult(f) : formatTime(f.kickoffAt)}
           </span>
           <TeamIdentity team={f.away} align="end" className="flex-1" />
         </div>

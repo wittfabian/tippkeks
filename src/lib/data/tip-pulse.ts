@@ -29,13 +29,16 @@ export async function getTipPulse(tenantId: string): Promise<TipPulse> {
     },
     async () => {
       const service = createServiceClient();
-      const [{ data: predictions }, { count: members }] = await Promise.all([
-        service.from("prediction").select("fixture_id").eq("tenant_id", tenantId),
-        service
-          .from("tenant_member")
-          .select("user_id", { count: "exact", head: true })
-          .eq("tenant_id", tenantId),
-      ]);
+      const [{ data: predictions, error: predError }, { count: members, error: memberError }] =
+        await Promise.all([
+          service.from("prediction").select("fixture_id").eq("tenant_id", tenantId),
+          service
+            .from("tenant_member")
+            .select("user_id", { count: "exact", head: true })
+            .eq("tenant_id", tenantId),
+        ]);
+      if (predError || memberError)
+        console.error("[data:tip-pulse] query failed", predError ?? memberError);
       const counts: Record<string, number> = {};
       for (const p of predictions ?? []) {
         counts[p.fixture_id] = (counts[p.fixture_id] ?? 0) + 1;

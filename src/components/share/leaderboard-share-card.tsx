@@ -1,6 +1,6 @@
 "use client";
 
-import { ShareCard, SHARE_PALETTE as C } from "@/components/share/share-card";
+import { ShareCard, ShareRow, SHARE_PALETTE as C } from "@/components/share/share-card";
 import { de } from "@/messages/de";
 
 export interface LeaderboardShareRow {
@@ -43,11 +43,7 @@ export function LeaderboardShareCard({
           {rows.map((row) => {
             const colors = rankColors(row.rank);
             return (
-              <div
-                key={row.userId}
-                className="flex items-center justify-between gap-4 rounded-xl px-4 py-2.5"
-                style={{ backgroundColor: C.muted }}
-              >
+              <ShareRow key={row.userId}>
                 <div className="flex min-w-0 items-center gap-4">
                   <span
                     className="font-heading flex size-9 shrink-0 items-center justify-center rounded-full text-base font-bold tabular-nums"
@@ -65,7 +61,7 @@ export function LeaderboardShareCard({
                     {de.share.matchPoints(row.points)}
                   </span>
                 </div>
-              </div>
+              </ShareRow>
             );
           })}
         </div>

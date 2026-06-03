@@ -1,10 +1,10 @@
+import "server-only";
+
 import { cached } from "@/lib/cache/cache";
 import type { ScoreCategory, StageKind } from "@/lib/scoring/engine";
 import type { FixtureStatus } from "@/lib/providers/types";
-import type { createClient } from "@/lib/supabase/server";
+import type { ServerClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-
-type ServerClient = Awaited<ReturnType<typeof createClient>>;
 
 export interface TeamLite {
   id: string;
@@ -44,16 +44,19 @@ async function getTournamentData(seasonIds: string[]) {
   const key = `tournament:${[...seasonIds].sort().join(",")}`;
   return cached({ key, ttlSeconds: 60, tags: ["tournament"] }, async () => {
     const service = createServiceClient();
-    const [{ data: fixtures }, { data: teams }] = await Promise.all([
-      service
-        .from("fixture")
-        .select(
-          "id, kickoff_at, status, matchday, regular_home, regular_away, after_extra_time, penalty_home, penalty_away, home_team_id, away_team_id, stage:stage_id(kind, name)",
-        )
-        .in("season_id", seasonIds)
-        .order("kickoff_at", { ascending: true }),
-      service.from("team").select("id, name, short_name, crest_url"),
-    ]);
+    const [{ data: fixtures, error: fixtureError }, { data: teams, error: teamError }] =
+      await Promise.all([
+        service
+          .from("fixture")
+          .select(
+            "id, kickoff_at, status, matchday, regular_home, regular_away, after_extra_time, penalty_home, penalty_away, home_team_id, away_team_id, stage:stage_id(kind, name)",
+          )
+          .in("season_id", seasonIds)
+          .order("kickoff_at", { ascending: true }),
+        service.from("team").select("id, name, short_name, crest_url"),
+      ]);
+    if (fixtureError || teamError)
+      console.error("[data:tournament] query failed", fixtureError ?? teamError);
     const teamList: TeamLite[] = (teams ?? []).map((t) => ({
       id: t.id,
       name: t.name,
@@ -82,7 +85,11 @@ export async function getFixtureBoard(
   const seasonIds = (subscriptions ?? []).map((s) => s.season_id);
   if (seasonIds.length === 0) return [];
 
-  const [{ fixtures, teams }, { data: predictions }, { data: scores }] = await Promise.all([
+  const [
+    { fixtures, teams },
+    { data: predictions, error: predError },
+    { data: scores, error: scoreError },
+  ] = await Promise.all([
     getTournamentData(seasonIds),
     supabase
       .from("prediction")
@@ -95,6 +102,8 @@ export async function getFixtureBoard(
       .eq("tenant_id", tenantId)
       .eq("user_id", userId),
   ]);
+  if (predError || scoreError)
+    console.error("[data:fixture-board] query failed", predError ?? scoreError);
 
   const teamById = new Map<string, TeamLite>(teams.map((t) => [t.id, t]));
   const predByFixture = new Map((predictions ?? []).map((p) => [p.fixture_id, p]));

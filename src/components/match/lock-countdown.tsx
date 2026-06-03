@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCountdown } from "@/lib/hooks/use-countdown";
+import { de } from "@/messages/de";
 
 /**
  * Live ticking countdown to a target time (the tip deadline = kickoff). Renders
@@ -8,32 +9,17 @@ import { useEffect, useState } from "react";
  * deadline passes.
  */
 export function LockCountdown({ target, className }: { target: string; className?: string }) {
-  const [now, setNow] = useState<number | null>(null);
+  const remaining = useCountdown(new Date(target).getTime());
 
-  useEffect(() => {
-    const tick = () => setNow(Date.now());
-    const initial = setTimeout(tick, 0);
-    const id = setInterval(tick, 1000);
-    return () => {
-      clearTimeout(initial);
-      clearInterval(id);
-    };
-  }, []);
+  if (remaining === undefined) return <span className={className} suppressHydrationWarning />;
+  if (remaining === null) return null;
 
-  if (now === null) return <span className={className} suppressHydrationWarning />;
-
-  const diff = new Date(target).getTime() - now;
-  if (diff <= 0) return null;
-
-  const totalSeconds = Math.floor(diff / 1000);
-  const days = Math.floor(totalSeconds / 86_400);
-  const hours = Math.floor((totalSeconds % 86_400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
+  const { days, hours, minutes, seconds } = remaining;
   const pad = (n: number) => String(n).padStart(2, "0");
-
   const label =
-    days > 0 ? `${days} T ${hours} Std` : `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    days > 0
+      ? de.fixtures.lockCountdown(days, hours)
+      : `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 
   return (
     <span className={className} aria-live="off">

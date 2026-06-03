@@ -4,16 +4,14 @@ import { useActionState } from "react";
 
 import { requestPasswordResetAction } from "@/actions/auth";
 import { initialActionState } from "@/actions/types";
-import { Button } from "@/components/ui/button";
+import { FormMessage } from "@/components/ui/form-message";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { de } from "@/messages/de";
 
 export function ResetRequestForm() {
-  const [state, formAction, pending] = useActionState(
-    requestPasswordResetAction,
-    initialActionState,
-  );
+  const [state, formAction] = useActionState(requestPasswordResetAction, initialActionState);
   const sent = Boolean(state.info);
 
   return (
@@ -23,17 +21,9 @@ export function ResetRequestForm() {
         <Input id="email" name="email" type="email" required autoComplete="email" disabled={sent} />
       </div>
 
-      {state.info && (
-        <p role="status" className="text-sm text-emerald-600">
-          {state.info}
-        </p>
-      )}
+      <FormMessage info={state.info} />
 
-      {!sent && (
-        <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? de.common.loading : de.auth.resetSubmit}
-        </Button>
-      )}
+      {!sent && <SubmitButton label={de.auth.resetSubmit} className="w-full" />}
     </form>
   );
 }

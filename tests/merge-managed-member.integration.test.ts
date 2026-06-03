@@ -167,6 +167,38 @@ suite("merge managed member (integration)", () => {
     expect(error).not.toBeNull();
   });
 
+  it("rejects merging onto an account that is not a member of the group", async () => {
+    // A tenant admin must not be able to pull a non-consenting stranger into the
+    // group (and overwrite their tips) by targeting their email.
+    const OUTSIDER_EMAIL = "itest_merge_outsider@example.com";
+    await deleteUserByEmail(OUTSIDER_EMAIL);
+    const { data: outsider, error: oErr } = await admin.auth.admin.createUser({
+      email: OUTSIDER_EMAIL,
+      password: "password123",
+      email_confirm: true,
+    });
+    if (oErr || !outsider.user) throw oErr ?? new Error("outsider createUser failed");
+
+    const { error } = await admin.rpc("merge_managed_member", {
+      p_tenant: tenantId,
+      p_managed_user: managedUserId,
+      p_target_email: OUTSIDER_EMAIL,
+    });
+    expect(error).not.toBeNull();
+
+    // The outsider was not added to the group and the placeholder survives.
+    const { count: memberCount } = await admin
+      .from("tenant_member")
+      .select("user_id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("user_id", outsider.user.id);
+    expect(memberCount).toBe(0);
+    const { data: stillThere } = await admin.auth.admin.getUserById(managedUserId);
+    expect(stillThere.user).not.toBeNull();
+
+    await deleteUserByEmail(OUTSIDER_EMAIL);
+  });
+
   it("merges the placeholder's tips into the existing account and deletes it", async () => {
     const { error } = await admin.rpc("merge_managed_member", {
       p_tenant: tenantId,

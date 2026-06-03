@@ -14,10 +14,11 @@ import {
 import { LiveRefresher } from "@/components/match/live-refresher";
 import { MatchShareCard } from "@/components/share/match-share-card";
 import { requireMembership } from "@/lib/auth/membership";
+import { getMemberNames } from "@/lib/data/members";
 import { getScoringConfig } from "@/lib/data/scoring-config";
 import { getTipPulse } from "@/lib/data/tip-pulse";
 import { scorePrediction, type ScoreCategory, type StageKind } from "@/lib/scoring/engine";
-import { formatDateTime, hasKickedOff } from "@/lib/format";
+import { formatDateTime, formatResult, hasKickedOff } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { de } from "@/messages/de";
 
@@ -56,9 +57,11 @@ export default async function FixtureDetailPage({
   const hasResult = fixture.regular_home != null && fixture.regular_away != null;
   const isLive = fixture.status === "live";
   const isFinished = fixture.status === "finished";
-  const resultLabel = hasResult
-    ? `${fixture.regular_home}:${fixture.regular_away}${fixture.after_extra_time ? " n.V." : ""}`
-    : "–:–";
+  const resultLabel = formatResult({
+    regularHome: fixture.regular_home,
+    regularAway: fixture.regular_away,
+    afterExtraTime: fixture.after_extra_time,
+  });
   // While a match is live and has a score, show a provisional projection of the
   // points each tip would earn IF the current scoreline held. Display only —
   // the authoritative scores are written by score_fixture at full time.
@@ -83,11 +86,7 @@ export default async function FixtureDetailPage({
       getTipPulse(tenantId),
     ]);
 
-  const userIds = (predictions ?? []).map((p) => p.user_id);
-  const { data: profiles } = userIds.length
-    ? await supabase.from("profile").select("user_id, display_name").in("user_id", userIds)
-    : { data: [] };
-  const nameById = new Map((profiles ?? []).map((p) => [p.user_id, p.display_name]));
+  const nameById = await getMemberNames(supabase, tenantId);
   const scoreByUser = new Map((scores ?? []).map((s) => [s.user_id, s]));
 
   // Provisional points per member at the current live scoreline (display only).
@@ -147,9 +146,7 @@ export default async function FixtureDetailPage({
                 isLive && "text-live",
               )}
             >
-              {hasResult
-                ? `${fixture.regular_home}:${fixture.regular_away}${fixture.after_extra_time ? " n.V." : ""}`
-                : "–:–"}
+              {resultLabel}
             </span>
             <TeamIdentity team={away} className="flex-1" />
           </div>
@@ -163,7 +160,7 @@ export default async function FixtureDetailPage({
             </p>
           ) : (
             <p className="text-muted-foreground text-center text-xs">
-              {formatDateTime(fixture.kickoff_at)} Uhr
+              {formatDateTime(fixture.kickoff_at)}
             </p>
           )}
         </CardContent>

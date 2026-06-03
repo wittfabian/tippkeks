@@ -1,7 +1,7 @@
-import type { createClient } from "@/lib/supabase/server";
-import { DEFAULT_SCORING_CONFIG, type ScoringConfig } from "@/lib/scoring/engine";
+import "server-only";
 
-type ServerClient = Awaited<ReturnType<typeof createClient>>;
+import type { ServerClient } from "@/lib/supabase/server";
+import { DEFAULT_SCORING_CONFIG, type ScoringConfig } from "@/lib/scoring/engine";
 
 /**
  * A tenant's active scoring config, merged onto the defaults. Used for the live

@@ -1,26 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
+import { useCountdown } from "@/lib/hooks/use-countdown";
 import { de } from "@/messages/de";
 
 // Opening match of the FIFA World Cup 2026 (Estadio Azteca). Purely decorative;
 // a few minutes' drift either way is irrelevant.
 const KICKOFF_MS = new Date("2026-06-11T19:00:00Z").getTime();
-
-type Remaining = { days: number; hours: number; minutes: number; seconds: number };
-
-function remainingUntilKickoff(): Remaining | null {
-  const ms = KICKOFF_MS - Date.now();
-  if (ms <= 0) return null;
-  const total = Math.floor(ms / 1000);
-  return {
-    days: Math.floor(total / 86_400),
-    hours: Math.floor((total % 86_400) / 3_600),
-    minutes: Math.floor((total % 3_600) / 60),
-    seconds: total % 60,
-  };
-}
 
 function Tile({ value, label }: { value: number; label: string }) {
   return (
@@ -37,18 +22,8 @@ function Tile({ value, label }: { value: number; label: string }) {
 
 export function Countdown() {
   // `undefined` = not yet computed (server render + first client paint, so there
-  // is no hydration mismatch); `null` = kickoff reached. The clock is an external
-  // source, so all updates happen through the interval subscription.
-  const [remaining, setRemaining] = useState<Remaining | null | undefined>(undefined);
-
-  useEffect(() => {
-    function tick() {
-      setRemaining(remainingUntilKickoff());
-    }
-    tick();
-    const id = setInterval(tick, 1_000);
-    return () => clearInterval(id);
-  }, []);
+  // is no hydration mismatch); `null` = kickoff reached.
+  const remaining = useCountdown(KICKOFF_MS);
 
   if (remaining === undefined) return <div className="h-[4.5rem]" aria-hidden />;
 

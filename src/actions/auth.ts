@@ -26,6 +26,11 @@ async function getClientIp(): Promise<string> {
  */
 async function resolveOrigin(): Promise<string> {
   if (serverEnv.SITE_URL) return serverEnv.SITE_URL;
+  // In production SITE_URL is mandatory: never build auth-mail links from the
+  // attacker-controllable Host / X-Forwarded-Host header (host-header injection).
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SITE_URL must be set in production to build auth redirect links");
+  }
   const h = await headers();
   const proto = h.get("x-forwarded-proto") ?? "http";
   const host = h.get("x-forwarded-host") ?? h.get("host");
@@ -137,6 +142,11 @@ export async function signUpAction(_prev: ActionState, formData: FormData): Prom
     const issue = parsed.error.issues[0];
     return { error: issue?.path[0] === "password" ? de.auth.passwordHint : de.auth.errorGeneric };
   }
+
+  // Throttle per IP to prevent mass account creation / confirmation-mail spam
+  // (defense in depth — Supabase/GoTrue also rate-limits).
+  const { allowed } = await rateLimit(`signup:ip:${await getClientIp()}`, 10, 900);
+  if (!allowed) return { error: de.auth.tooManyRequests };
 
   const supabase = await createClient();
 

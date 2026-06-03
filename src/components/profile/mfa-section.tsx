@@ -3,12 +3,25 @@
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { FormMessage } from "@/components/ui/form-message";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { de } from "@/messages/de";
 
 type Enrolling = { factorId: string; qrCode: string; secret: string };
+
+/** The id of the account's verified TOTP factor, or null if none. Throws on a list error. */
+async function getVerifiedTotpId(
+  supabase: ReturnType<typeof createClient>,
+): Promise<string | null> {
+  const { data, error } = await supabase.auth.mfa.listFactors();
+  if (error) throw error;
+  const verified = (data?.all ?? []).find(
+    (f) => f.factor_type === "totp" && f.status === "verified",
+  );
+  return verified?.id ?? null;
+}
 
 /**
  * Manage TOTP two-factor auth for the current account (browser-side, since the
@@ -24,39 +37,30 @@ export function MfaSection() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  // Reload the verified-factor state after an enrol/remove (event handlers only,
-  // never an effect — see the inlined initial load below).
+  // Reload the verified-factor state after an enrol/remove.
   async function refresh() {
     const supabase = createClient();
-    const { data, error: listError } = await supabase.auth.mfa.listFactors();
-    if (listError) {
+    try {
+      setActiveFactorId(await getVerifiedTotpId(supabase));
+    } catch {
       setError(de.profile.mfaError);
+    } finally {
       setLoading(false);
-      return;
     }
-    const verified = (data?.all ?? []).find(
-      (f) => f.factor_type === "totp" && f.status === "verified",
-    );
-    setActiveFactorId(verified?.id ?? null);
-    setLoading(false);
   }
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const supabase = createClient();
-      const { data, error: listError } = await supabase.auth.mfa.listFactors();
-      if (cancelled) return;
-      if (listError) {
-        setError(de.profile.mfaError);
-        setLoading(false);
-        return;
+      try {
+        const id = await getVerifiedTotpId(supabase);
+        if (!cancelled) setActiveFactorId(id);
+      } catch {
+        if (!cancelled) setError(de.profile.mfaError);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      const verified = (data?.all ?? []).find(
-        (f) => f.factor_type === "totp" && f.status === "verified",
-      );
-      setActiveFactorId(verified?.id ?? null);
-      setLoading(false);
     })();
     return () => {
       cancelled = true;
@@ -176,11 +180,7 @@ export function MfaSection() {
             className="w-32 text-center tracking-widest tabular-nums"
           />
         </div>
-        {error && (
-          <p role="alert" className="text-destructive text-sm">
-            {error}
-          </p>
-        )}
+        <FormMessage error={error} />
         <div className="flex gap-2">
           <Button
             type="button"
@@ -206,16 +206,7 @@ export function MfaSection() {
           <span className="font-medium text-emerald-600">{de.profile.mfaActive}</span>{" "}
           <span className="text-muted-foreground">{de.profile.mfaActiveHint}</span>
         </p>
-        {info && (
-          <p role="status" className="text-sm text-emerald-600">
-            {info}
-          </p>
-        )}
-        {error && (
-          <p role="alert" className="text-destructive text-sm">
-            {error}
-          </p>
-        )}
+        <FormMessage error={error} info={info} />
         <Button type="button" size="sm" variant="outline" onClick={removeFactor} disabled={busy}>
           {busy ? de.common.loading : de.profile.mfaRemove}
         </Button>
@@ -227,16 +218,7 @@ export function MfaSection() {
   return (
     <div className="space-y-3">
       <p className="text-muted-foreground text-sm">{de.profile.mfaIntro}</p>
-      {info && (
-        <p role="status" className="text-sm text-emerald-600">
-          {info}
-        </p>
-      )}
-      {error && (
-        <p role="alert" className="text-destructive text-sm">
-          {error}
-        </p>
-      )}
+      <FormMessage error={error} info={info} />
       <Button type="button" size="sm" onClick={startEnroll} disabled={busy}>
         {busy ? de.common.loading : de.profile.mfaEnable}
       </Button>

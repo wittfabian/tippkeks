@@ -4,6 +4,12 @@ import { cached } from "@/lib/cache/cache";
 import { summariseForm } from "@/lib/domain/form";
 import { createServiceClient } from "@/lib/supabase/service";
 
+/**
+ * One leaderboard row. The DB view types every column as nullable (Postgres
+ * can't prove non-null through a view), but a real ranked row always has these
+ * values — so we coalesce at the data boundary and expose a clean non-null shape
+ * downstream rather than leaking the view's nullability via an `as` cast.
+ */
 export interface LeaderboardRow {
   user_id: string;
   display_name: string;
@@ -37,12 +43,28 @@ export async function getLeaderboard(tenantId: string): Promise<LeaderboardRow[]
     },
     async () => {
       const service = createServiceClient();
-      const { data } = await service
+      const { data, error } = await service
         .from("leaderboard")
         .select("user_id, display_name, total_points, exact_count, hit_count, rank")
         .eq("tenant_id", tenantId)
         .order("rank", { ascending: true });
-      return (data ?? []) as LeaderboardRow[];
+      if (error) console.error("[data:leaderboard] query failed", error);
+      // flatMap drops any row with a null user_id (shouldn't occur) and narrows
+      // user_id to string in the kept branch, so no non-null cast is needed.
+      return (data ?? []).flatMap((row) =>
+        row.user_id == null
+          ? []
+          : [
+              {
+                user_id: row.user_id,
+                display_name: row.display_name ?? "—",
+                total_points: row.total_points ?? 0,
+                exact_count: row.exact_count ?? 0,
+                hit_count: row.hit_count ?? 0,
+                rank: row.rank ?? 0,
+              },
+            ],
+      );
     },
   );
 }
@@ -63,10 +85,11 @@ export async function getLeaderboardForm(tenantId: string): Promise<MemberForm[]
     },
     async () => {
       const service = createServiceClient();
-      const { data: scores } = await service
+      const { data: scores, error } = await service
         .from("prediction_score")
         .select("user_id, fixture_id, category")
         .eq("tenant_id", tenantId);
+      if (error) console.error("[data:leaderboard-form] query failed", error);
       if (!scores || scores.length === 0) return [];
 
       const fixtureIds = [...new Set(scores.map((s) => s.fixture_id))];

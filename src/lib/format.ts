@@ -5,6 +5,8 @@
  * North-American kickoff that lands after midnight CEST appears on the correct
  * German date.
  */
+import { de } from "@/messages/de";
+
 const BERLIN = "Europe/Berlin";
 
 const dayKeyFormatter = new Intl.DateTimeFormat("en-CA", {
@@ -51,14 +53,42 @@ export function formatDayHeading(value: string | Date): string {
   return dayHeadingFormatter.format(toDate(value));
 }
 
-/** Kickoff time only, e.g. "21:00". */
+/** Kickoff time only, e.g. "21:00" (no clock suffix). */
 export function formatTime(value: string | Date): string {
   return timeFormatter.format(toDate(value));
 }
 
-/** Full date and time, e.g. "11.06.2026, 21:00". */
+/** Kickoff time with the German clock suffix, e.g. "21:00 Uhr". */
+export function formatKickoffTime(value: string | Date): string {
+  return `${formatTime(value)} ${de.common.clock}`;
+}
+
+/** Full date and time with the German clock suffix, e.g. "11.06.2026, 21:00 Uhr". */
 export function formatDateTime(value: string | Date): string {
-  return dateTimeFormatter.format(toDate(value));
+  return `${dateTimeFormatter.format(toDate(value))} ${de.common.clock}`;
+}
+
+/** Score/result label used by match views (in-app and shareable images). */
+export interface ResultParts {
+  regularHome: number | null;
+  regularAway: number | null;
+  afterExtraTime?: boolean | null;
+  penaltyHome?: number | null;
+  penaltyAway?: number | null;
+}
+
+/**
+ * Final-result label, e.g. "2:1", "2:1 n.V." (after extra time) or
+ * "2:2 (4:3 i.E.)" (penalty shoot-out). "–:–" when the match has no result yet.
+ */
+export function formatResult(r: ResultParts): string {
+  if (r.regularHome == null || r.regularAway == null) return "–:–";
+  const et = r.afterExtraTime ? ` ${de.fixtures.afterExtraTime}` : "";
+  const pens =
+    r.penaltyHome != null && r.penaltyAway != null
+      ? ` (${r.penaltyHome}:${r.penaltyAway} ${de.fixtures.penaltiesShort})`
+      : "";
+  return `${r.regularHome}:${r.regularAway}${et}${pens}`;
 }
 
 /** Whether a kickoff time has passed (the prediction deadline). */

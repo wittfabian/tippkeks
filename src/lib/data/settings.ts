@@ -1,8 +1,8 @@
+import "server-only";
+
 import { cached } from "@/lib/cache/cache";
 import type { Json } from "@/lib/supabase/database.types";
-import type { createClient } from "@/lib/supabase/server";
-
-type ServerClient = Awaited<ReturnType<typeof createClient>>;
+import type { ServerClient } from "@/lib/supabase/server";
 
 /** App-wide feature toggles, with safe-on defaults when a row is missing. */
 export interface AppSettings {
