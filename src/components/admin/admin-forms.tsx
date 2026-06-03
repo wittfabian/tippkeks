@@ -327,10 +327,10 @@ export function MemberTipTable({
       <div className="flex items-center justify-between gap-2">
         <Message error={state.error} info={state.info} />
         <div className="flex items-center gap-2">
-          {actions}
           <Button type="submit" size="sm" disabled={pending}>
             {pending ? de.common.loading : de.admin.tipsSave}
           </Button>
+          {actions}
         </div>
       </div>
     </form>

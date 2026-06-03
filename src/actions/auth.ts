@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { rateLimit } from "@/lib/cache/rate-limit";
 import { getAppSettings } from "@/lib/data/settings";
+import { serverEnv } from "@/lib/env.server";
 import { createClient } from "@/lib/supabase/server";
 import { de } from "@/messages/de";
 import { logActionError, type ActionState } from "@/actions/types";
@@ -15,6 +16,20 @@ async function getClientIp(): Promise<string> {
   const h = await headers();
   const forwarded = h.get("x-forwarded-for")?.split(",")[0]?.trim();
   return forwarded || h.get("x-real-ip") || "unknown";
+}
+
+/**
+ * Public origin for building the email-confirmation redirect link. Mirrors the
+ * resolution in /auth/confirm: prefer the configured SITE_URL, then the proxy's
+ * forwarded host/proto, and fall back to local dev. The just-built URL is handed
+ * to GoTrue as `emailRedirectTo`, so it must be on the Supabase redirect allow-list.
+ */
+async function resolveOrigin(): Promise<string> {
+  if (serverEnv.SITE_URL) return serverEnv.SITE_URL;
+  const h = await headers();
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  return host ? `${proto}://${host}` : "http://127.0.0.1:3000";
 }
 
 const credentialsSchema = z.object({
@@ -129,10 +144,22 @@ export async function signUpAction(_prev: ActionState, formData: FormData): Prom
   const { registrationEnabled } = await getAppSettings(supabase);
   if (!registrationEnabled) return { error: de.auth.registrationClosed };
 
+  // A signup begun from a shared invite link must survive the email-confirmation
+  // round-trip (production): there is no session yet, so the code can't be redeemed
+  // here. Carry it as the confirmation link's redirect target (/join/<code>) — once
+  // /auth/confirm verifies the OTP and establishes the session, it redeems the invite
+  // and lands the user straight in the group. Without confirmation (local dev) the
+  // session exists immediately and postAuthDestination below redeems it.
+  const rawInvite = formData.get("invite");
+  const inviteCode = typeof rawInvite === "string" ? rawInvite.trim().toUpperCase() : "";
+  const emailRedirectTo = inviteCode
+    ? `${await resolveOrigin()}/join/${encodeURIComponent(inviteCode)}`
+    : undefined;
+
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: { data: { display_name: parsed.data.displayName } },
+    options: { data: { display_name: parsed.data.displayName }, emailRedirectTo },
   });
   if (error) {
     const taken = /registered|exists/i.test(error.message);
@@ -146,7 +173,7 @@ export async function signUpAction(_prev: ActionState, formData: FormData): Prom
   // When email confirmation is enabled (production) there is no session yet.
   if (!data.session) return { error: null, info: de.auth.checkEmail };
 
-  redirect(await postAuthDestination(supabase, formData.get("invite")));
+  redirect(await postAuthDestination(supabase, rawInvite));
 }
 
 export async function signOutAction(): Promise<void> {
