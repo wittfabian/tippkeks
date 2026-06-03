@@ -475,11 +475,17 @@ const convertManagedSchema = tenantField.extend({
 });
 
 /**
- * Upgrade a managed member to a real login account: assign the real email the
- * admin collected, clear the managed flag, and send a recovery link so the
- * person sets their own password and takes over their tip history (user_id is
- * stable, so all existing predictions/scores stay attached). Admin/site-admin
- * only; refuses non-managed targets so it can't hijack a real account's email.
+ * Upgrade a managed member to a real login account. Two outcomes by email:
+ *  - New email → assign it, clear the managed flag, and send a recovery link so
+ *    the person sets a password and takes over their tip history (user_id is
+ *    stable, so all predictions/scores stay attached).
+ *  - Email already belongs to a real account → MERGE: a tip's identity is
+ *    (tenant, user, fixture), so the placeholder's tips are reassigned onto the
+ *    existing account and the placeholder is deleted (merge_managed_member RPC).
+ *    This is irreversible, so the first submit only signals `needsMergeConfirm`;
+ *    the second (with confirmMerge) performs it.
+ * Admin/site-admin only; refuses non-managed targets so it can't hijack a real
+ * account's email.
  */
 export async function convertManagedMemberAction(
   _prev: ActionState,
@@ -491,6 +497,7 @@ export async function convertManagedMemberAction(
     email: formData.get("email"),
   });
   if (!parsed.success) return { error: de.admin.managedConvertError };
+  const confirmMerge = formData.get("confirmMerge") === "1";
 
   const supabase = await createClient();
   const actorId = await adminOrSiteAdminUserId(supabase, parsed.data.tenantId);
@@ -514,6 +521,48 @@ export async function convertManagedMemberAction(
     .maybeSingle();
   if (!profile?.managed) return { error: de.admin.managedConvertNotManaged };
 
+  // Pre-check for an email collision. GoTrue only maps a duplicate to the
+  // friendly `email_exists` code on sign-up/create; on the updateUserById path it
+  // raises a raw `unexpected_failure` (500) from the auth.users unique violation,
+  // indistinguishable from a genuine fault — so detect it deterministically here.
+  const { data: emailTaken, error: lookupError } = await service.rpc("email_in_use", {
+    p_email: parsed.data.email,
+  });
+  if (lookupError) {
+    logActionError("convertManagedMember.lookup", lookupError);
+    return { error: de.admin.managedConvertError };
+  }
+
+  // Email already in use → the merge path. First submit just asks to confirm
+  // (irreversible: it deletes the placeholder); the confirm submit performs it.
+  if (emailTaken) {
+    if (!confirmMerge) {
+      return { error: null, needsMergeConfirm: true, mergeEmail: parsed.data.email };
+    }
+    const { error: mergeError } = await service.rpc("merge_managed_member", {
+      p_tenant: parsed.data.tenantId,
+      p_managed_user: parsed.data.targetUserId,
+      p_target_email: parsed.data.email,
+    });
+    if (mergeError) {
+      logActionError("convertManagedMember.merge", mergeError);
+      return { error: de.admin.managedConvertError };
+    }
+    await service.from("admin_audit_log").insert({
+      tenant_id: parsed.data.tenantId,
+      actor_id: actorId,
+      action: "member_convert_managed",
+      target_type: "user",
+      target_id: parsed.data.targetUserId,
+      detail: { merged_into: parsed.data.email },
+    });
+    revalidatePath(`/${parsed.data.tenantId}/admin`);
+    revalidatePath(`/${parsed.data.tenantId}/leaderboard`);
+    revalidatePath(`/${parsed.data.tenantId}/tips`);
+    revalidatePath(`/${parsed.data.tenantId}/matches`);
+    return { error: null, info: de.admin.managedMerged(parsed.data.email) };
+  }
+
   // Assign the real email (confirmed immediately — there is no old inbox to
   // verify against, the synthetic address is non-deliverable).
   const { error: updateError } = await service.auth.admin.updateUserById(parsed.data.targetUserId, {
@@ -521,6 +570,9 @@ export async function convertManagedMemberAction(
     email_confirm: true,
   });
   if (updateError) {
+    // Defence-in-depth for the tiny race window between the pre-check and here
+    // (a real account registering this email in between). The pre-check already
+    // ruled out a pre-existing collision, so a genuine fault is reported honestly.
     if (updateError.code === EMAIL_EXISTS) return { error: de.admin.managedConvertEmailTaken };
     logActionError("convertManagedMember.update", updateError);
     return { error: de.admin.managedConvertError };

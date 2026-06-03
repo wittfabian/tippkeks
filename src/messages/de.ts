@@ -358,6 +358,11 @@ export const de = {
     managedConvertEmailTaken: "Diese E-Mail-Adresse wird bereits verwendet.",
     managedConvertMailFailed:
       "Adresse gespeichert, aber die Einladungs-E-Mail konnte nicht gesendet werden. Bitte später erneut versuchen.",
+    managedMergeConfirm: (email: string) =>
+      `Es gibt bereits ein Konto mit ${email}. Sollen die Tipps dieses verwalteten Mitglieds in das bestehende Konto übernommen und der Platzhalter gelöscht werden? Das lässt sich nicht rückgängig machen.`,
+    managedMergeSubmit: "Zusammenführen",
+    managedMergeCancel: "Abbrechen",
+    managedMerged: (email: string) => `Tipps wurden in das Konto ${email} übernommen.`,
     memberSearch: "Mitglied suchen",
     memberSearchPlaceholder: "Name …",
     memberCount: (n: number) => (n === 1 ? "1 Mitglied" : `${n} Mitglieder`),

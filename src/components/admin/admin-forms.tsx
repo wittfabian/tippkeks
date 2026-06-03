@@ -1,7 +1,7 @@
 "use client";
 
 import { Info } from "lucide-react";
-import { useActionState, type ReactNode } from "react";
+import { useActionState, useState, type ReactNode } from "react";
 
 import {
   convertManagedMemberAction,
@@ -130,28 +130,65 @@ export function ConvertMemberForm({
     convertManagedMemberAction,
     initialActionState,
   );
+  // The email already belongs to a real account → server asks to confirm a merge.
+  // `cancelled` lets the admin back out to the email field; a fresh submit (whose
+  // button resets it) re-arms the prompt if the new address also collides.
+  const [cancelled, setCancelled] = useState(false);
+  const confirming = state.needsMergeConfirm && state.mergeEmail && !cancelled;
   return (
     <details className="mt-2 border-t pt-2">
       <summary className="text-primary cursor-pointer text-xs">{de.admin.managedConvert}</summary>
-      <form action={formAction} className="mt-2 space-y-2">
-        <input type="hidden" name="tenantId" value={tenantId} />
-        <input type="hidden" name="targetUserId" value={targetUserId} />
-        <p className="text-muted-foreground text-xs">{de.admin.managedConvertHint}</p>
-        <div className="flex gap-2">
-          <Input
-            name="email"
-            type="email"
-            required
-            placeholder={de.admin.managedConvertEmailPlaceholder}
-            aria-label={de.admin.managedConvertEmailPlaceholder}
-            className="max-w-xs"
-          />
-          <Button type="submit" size="sm" variant="secondary" disabled={pending}>
-            {pending ? de.common.loading : de.admin.managedConvertSubmit}
-          </Button>
-        </div>
-        <Message error={state.error} info={state.info} />
-      </form>
+      {confirming ? (
+        <form action={formAction} className="mt-2 space-y-2">
+          <input type="hidden" name="tenantId" value={tenantId} />
+          <input type="hidden" name="targetUserId" value={targetUserId} />
+          <input type="hidden" name="email" value={state.mergeEmail} />
+          <input type="hidden" name="confirmMerge" value="1" />
+          <p className="text-muted-foreground text-xs">
+            {de.admin.managedMergeConfirm(state.mergeEmail!)}
+          </p>
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" variant="destructive" disabled={pending}>
+              {pending ? de.common.loading : de.admin.managedMergeSubmit}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={pending}
+              onClick={() => setCancelled(true)}
+            >
+              {de.admin.managedMergeCancel}
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <form action={formAction} className="mt-2 space-y-2">
+          <input type="hidden" name="tenantId" value={tenantId} />
+          <input type="hidden" name="targetUserId" value={targetUserId} />
+          <p className="text-muted-foreground text-xs">{de.admin.managedConvertHint}</p>
+          <div className="flex gap-2">
+            <Input
+              name="email"
+              type="email"
+              required
+              placeholder={de.admin.managedConvertEmailPlaceholder}
+              aria-label={de.admin.managedConvertEmailPlaceholder}
+              className="max-w-xs"
+            />
+            <Button
+              type="submit"
+              size="sm"
+              variant="secondary"
+              disabled={pending}
+              onClick={() => setCancelled(false)}
+            >
+              {pending ? de.common.loading : de.admin.managedConvertSubmit}
+            </Button>
+          </div>
+          <Message error={state.error} info={state.info} />
+        </form>
+      )}
     </details>
   );
 }
