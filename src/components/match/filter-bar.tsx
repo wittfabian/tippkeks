@@ -54,7 +54,7 @@ export function FilterBar({ stages, nations, openCount }: FilterBarProps) {
         ))}
       </div>
 
-      <div className="flex items-center gap-1.5 overflow-x-auto">
+      <div className="scrollbar-hide flex items-center gap-1.5 overflow-x-auto">
         <ChipButton active={stage === "all"} onClick={() => setParam("stage", "all", true)}>
           {de.filters.stageAll}
         </ChipButton>

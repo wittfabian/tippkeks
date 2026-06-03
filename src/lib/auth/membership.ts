@@ -1,6 +1,7 @@
+import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, type ServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
 
 export type MemberRole = Database["public"]["Enums"]["member_role"];
@@ -34,7 +35,7 @@ export type Membership = {
   /** Whether members may submit their own predictions (admins always may). */
   memberTippingEnabled: boolean;
   /** The cookie-aware client, reused so callers avoid creating another. */
-  supabase: Awaited<ReturnType<typeof createClient>>;
+  supabase: ServerClient;
 };
 
 /**
@@ -42,8 +43,11 @@ export type Membership = {
  * Redirects to /login when unauthenticated and 404s when the tenant does not
  * exist or the user is not a member (RLS already hides non-member tenants).
  * A malformed id (not a uuid) also 404s rather than erroring.
+ *
+ * Memoised per request (React `cache`) so the layout and the page it wraps —
+ * which both resolve the same tenant — share one set of DB round-trips.
  */
-export async function requireMembership(tenantId: string): Promise<Membership> {
+export const requireMembership = cache(async (tenantId: string): Promise<Membership> => {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const userId = data?.claims?.sub;
@@ -72,7 +76,7 @@ export async function requireMembership(tenantId: string): Promise<Membership> {
     memberTippingEnabled: tenant.member_tipping_enabled,
     supabase,
   };
-}
+});
 
 /** Require admin role for a tenant; 404s for non-admins. */
 export async function requireAdmin(tenantId: string): Promise<Membership> {
@@ -87,16 +91,14 @@ export async function requireAdmin(tenantId: string): Promise<Membership> {
  * answer to "am I a site admin?". Site admins are provisioned out-of-band via
  * scripts/set-site-admin.ts, never self-service.
  */
-export async function isSiteAdmin(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-): Promise<boolean> {
+export async function isSiteAdmin(supabase: ServerClient): Promise<boolean> {
   const { data } = await supabase.from("site_admin").select("user_id").limit(1).maybeSingle();
   return Boolean(data);
 }
 
 export type SiteAdmin = {
   userId: string;
-  supabase: Awaited<ReturnType<typeof createClient>>;
+  supabase: ServerClient;
 };
 
 /** Require site-admin rights; redirects unauthenticated, 404s non-site-admins. */

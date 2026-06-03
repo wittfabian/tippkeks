@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { signOutAction } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
+import { FormMessage } from "@/components/ui/form-message";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
@@ -119,11 +120,7 @@ export function MfaChallenge({ invite, redirectTo }: { invite?: string; redirect
           className="text-center text-lg tracking-[0.4em] tabular-nums"
         />
       </div>
-      {error && (
-        <p role="alert" className="text-destructive text-sm">
-          {error}
-        </p>
-      )}
+      <FormMessage error={error} />
       <Button
         type="button"
         className="w-full"

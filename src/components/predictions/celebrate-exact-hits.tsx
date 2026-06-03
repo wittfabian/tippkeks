@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
 
+import { de } from "@/messages/de";
+
 export interface ExactHit {
   id: string;
   label: string;
@@ -20,7 +22,8 @@ export function CelebrateExactHits({ hits }: { hits: ExactHit[] }) {
     const key = "tippspiel:celebrated-exact";
     let seen: string[] = [];
     try {
-      seen = JSON.parse(localStorage.getItem(key) ?? "[]");
+      const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? "[]");
+      if (Array.isArray(parsed)) seen = parsed.filter((id): id is string => typeof id === "string");
     } catch {
       seen = [];
     }
@@ -28,7 +31,7 @@ export function CelebrateExactHits({ hits }: { hits: ExactHit[] }) {
     if (fresh.length === 0) return;
 
     for (const hit of fresh) {
-      toast.success(`🎯 Exakt! +${hit.points} Punkte`, {
+      toast.success(de.predictions.exactHitToast(hit.points), {
         description: hit.label,
         duration: 6000,
       });

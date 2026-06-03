@@ -124,6 +124,27 @@ suite("managed members (integration)", () => {
     expect(data).toEqual({ home_goals: 3, away_goals: 0 });
   });
 
+  // Backs convertManagedMemberAction's pre-check: assigning a real email that is
+  // already taken must fail clearly rather than as a raw GoTrue 500.
+  it("email_in_use reports an existing address case-insensitively (service role)", async () => {
+    const exact = await admin.rpc("email_in_use", { p_email: ADMIN_EMAIL });
+    expect(exact.error).toBeNull();
+    expect(exact.data).toBe(true);
+
+    const upper = await admin.rpc("email_in_use", { p_email: ADMIN_EMAIL.toUpperCase() });
+    expect(upper.data).toBe(true);
+
+    const unknown = await admin.rpc("email_in_use", {
+      p_email: "definitely-not-here-itest@example.com",
+    });
+    expect(unknown.data).toBe(false);
+  });
+
+  it("email_in_use is not callable by an authenticated user (no email enumeration)", async () => {
+    const { error } = await cAdmin.rpc("email_in_use", { p_email: ADMIN_EMAIL });
+    expect(error).not.toBeNull();
+  });
+
   it("cannot sign in (no password set)", async () => {
     const anon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },

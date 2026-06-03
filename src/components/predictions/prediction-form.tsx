@@ -6,7 +6,9 @@ import { useActionState, useState } from "react";
 import { submitPredictionAction } from "@/actions/predictions";
 import { initialActionState } from "@/actions/types";
 import { Button } from "@/components/ui/button";
+import { FormMessage } from "@/components/ui/form-message";
 import { Input } from "@/components/ui/input";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { TeamFlag } from "@/components/match/team-flag";
 import { cn } from "@/lib/utils";
 import { de } from "@/messages/de";
@@ -88,7 +90,7 @@ function Stepper({
 }
 
 export function PredictionForm(props: PredictionFormProps) {
-  const [state, formAction, pending] = useActionState(submitPredictionAction, initialActionState);
+  const [state, formAction] = useActionState(submitPredictionAction, initialActionState);
   const [home, setHome] = useState(props.initial ? String(props.initial.homeGoals) : "");
   const [away, setAway] = useState(props.initial ? String(props.initial.awayGoals) : "");
   const [advancing, setAdvancing] = useState(
@@ -173,20 +175,8 @@ export function PredictionForm(props: PredictionFormProps) {
       )}
 
       <div className="flex items-center justify-between gap-2">
-        {state.error ? (
-          <p role="alert" className="text-destructive text-xs">
-            {state.error}
-          </p>
-        ) : state.info ? (
-          <p role="status" className="text-xs text-emerald-600 dark:text-emerald-400">
-            {state.info}
-          </p>
-        ) : (
-          <span />
-        )}
-        <Button type="submit" size="sm" disabled={pending}>
-          {pending ? de.common.loading : de.fixtures.save}
-        </Button>
+        <FormMessage error={state.error} info={state.info} size="xs" />
+        <SubmitButton label={de.fixtures.save} size="sm" className="ml-auto" />
       </div>
     </form>
   );

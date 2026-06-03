@@ -22,7 +22,7 @@ export function TenantNav({ tenantId, isAdmin }: { tenantId: string; isAdmin: bo
   ];
 
   return (
-    <nav className="bg-background/80 sticky top-[3.25rem] z-20 -mx-4 flex gap-1 overflow-x-auto border-b px-4 pt-1 pb-2 text-sm backdrop-blur">
+    <nav className="bg-background/80 scrollbar-hide sticky top-[3.25rem] z-20 -mx-4 flex gap-1 overflow-x-auto border-b px-4 pt-1 pb-2 text-sm backdrop-blur">
       {items.map((item) => {
         const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
         return (

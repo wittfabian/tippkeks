@@ -4,21 +4,19 @@ import { useActionState, useState } from "react";
 
 import { resendConfirmationAction, signInAction, signUpAction } from "@/actions/auth";
 import { initialActionState } from "@/actions/types";
-import { Button } from "@/components/ui/button";
+import { FormMessage } from "@/components/ui/form-message";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { de } from "@/messages/de";
 
 export function AuthForm({ mode, invite }: { mode: "login" | "register"; invite?: string }) {
   const action = mode === "login" ? signInAction : signUpAction;
-  const [state, formAction, pending] = useActionState(action, initialActionState);
+  const [state, formAction] = useActionState(action, initialActionState);
   // Controlled so the "resend confirmation" form (a sibling, not nestable inside
   // this one) can reuse the address the user just typed.
   const [email, setEmail] = useState("");
-  const [resendState, resendAction, resendPending] = useActionState(
-    resendConfirmationAction,
-    initialActionState,
-  );
+  const [resendState, resendAction] = useActionState(resendConfirmationAction, initialActionState);
 
   return (
     <div className="space-y-4">
@@ -65,38 +63,24 @@ export function AuthForm({ mode, invite }: { mode: "login" | "register"; invite?
           )}
         </div>
 
-        {state.error && (
-          <p role="alert" className="text-destructive text-sm">
-            {state.error}
-          </p>
-        )}
-        {state.info && (
-          <p role="status" className="text-sm text-emerald-600">
-            {state.info}
-          </p>
-        )}
+        <FormMessage error={state.error} info={state.info} />
 
-        <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? de.common.loading : mode === "login" ? de.auth.signIn : de.auth.signUp}
-        </Button>
+        <SubmitButton
+          label={mode === "login" ? de.auth.signIn : de.auth.signUp}
+          className="w-full"
+        />
       </form>
 
       {mode === "login" && state.needsConfirmation && (
         <form action={resendAction} className="space-y-2">
           <input type="hidden" name="email" value={email} />
-          <Button
-            type="submit"
+          <SubmitButton
+            label={de.auth.resendConfirmation}
             variant="outline"
             className="w-full"
-            disabled={resendPending || !email}
-          >
-            {resendPending ? de.common.loading : de.auth.resendConfirmation}
-          </Button>
-          {resendState.info && (
-            <p role="status" className="text-sm text-emerald-600">
-              {resendState.info}
-            </p>
-          )}
+            disabled={!email}
+          />
+          <FormMessage info={resendState.info} />
         </form>
       )}
     </div>

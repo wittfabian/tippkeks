@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { signOutAction } from "@/actions/auth";
 import { Wordmark } from "@/components/brand/logo";
+import { LegalFooterNav } from "@/components/legal/legal-footer-nav";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { isSiteAdmin } from "@/lib/auth/membership";
@@ -36,7 +37,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const siteAdmin = await isSiteAdmin(supabase);
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex min-h-full flex-1 flex-col">
       <header className="bg-background/80 sticky top-0 z-30 border-b backdrop-blur">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 py-3">
           <Link href="/groups" aria-label={de.app.name}>
@@ -73,19 +74,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">{children}</main>
       <footer className="text-muted-foreground border-t">
         <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-3 text-center text-xs">
-          <Link href="/info" className="hover:text-foreground transition">
-            {de.legal.footerNav.info}
-          </Link>
-          <span aria-hidden>·</span>
-          <Link href="/privacy" className="hover:text-foreground transition">
-            {de.legal.footerNav.privacy}
-          </Link>
-          <span aria-hidden>·</span>
-          <Link href="/imprint" className="hover:text-foreground transition">
-            {de.legal.footerNav.impressum}
-          </Link>
-          <span aria-hidden>·</span>
-          <span>{de.common.poweredBy}</span>
+          <LegalFooterNav trailing={<span>{de.common.poweredBy}</span>} />
         </div>
       </footer>
     </div>

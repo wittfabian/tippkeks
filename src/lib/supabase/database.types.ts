@@ -717,6 +717,19 @@ export type Database = {
         }
       }
       delete_own_account: { Args: never; Returns: undefined }
+      email_in_use: { Args: { p_email: string }; Returns: boolean }
+      email_member_of: {
+        Args: { p_email: string; p_tenant: string }
+        Returns: boolean
+      }
+      merge_managed_member: {
+        Args: {
+          p_managed_user: string
+          p_target_email: string
+          p_tenant: string
+        }
+        Returns: undefined
+      }
       recompute_tenant: { Args: { p_tenant: string }; Returns: undefined }
       redeem_invite: {
         Args: { p_code: string }

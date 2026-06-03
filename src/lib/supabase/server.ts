@@ -34,3 +34,6 @@ export async function createClient() {
     },
   );
 }
+
+/** The cookie-aware (RLS-scoped) client returned by `createClient`. */
+export type ServerClient = Awaited<ReturnType<typeof createClient>>;

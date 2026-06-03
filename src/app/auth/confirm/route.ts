@@ -47,6 +47,11 @@ function inviteCodeFromPath(path: string): string | null {
  */
 function resolveOrigin(request: NextRequest): string {
   if (serverEnv.SITE_URL) return serverEnv.SITE_URL;
+  // In production SITE_URL is mandatory: never derive the redirect origin from the
+  // attacker-controllable Host / X-Forwarded-Host header (host-header injection).
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SITE_URL must be set in production to resolve the redirect origin");
+  }
   const proto = request.headers.get("x-forwarded-proto");
   const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
   if (proto && host) return `${proto}://${host}`;

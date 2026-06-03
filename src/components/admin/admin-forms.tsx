@@ -1,7 +1,7 @@
 "use client";
 
 import { Info } from "lucide-react";
-import { useActionState, type ReactNode } from "react";
+import { useActionState, useState, type ReactNode } from "react";
 
 import {
   convertManagedMemberAction,
@@ -17,29 +17,16 @@ import {
 import { deleteGroupAction } from "@/actions/tenant";
 import { initialActionState } from "@/actions/types";
 import { Button } from "@/components/ui/button";
+import { FormMessage } from "@/components/ui/form-message";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { ToggleRow } from "@/components/ui/toggle-row";
 import { de } from "@/messages/de";
 
-function Message({ error, info }: { error: string | null; info?: string | null }) {
-  if (error)
-    return (
-      <p role="alert" className="text-destructive text-xs">
-        {error}
-      </p>
-    );
-  if (info)
-    return (
-      <p role="status" className="text-xs text-emerald-600">
-        {info}
-      </p>
-    );
-  return null;
-}
-
 export function CreateInviteForm({ tenantId }: { tenantId: string }) {
-  const [state, formAction, pending] = useActionState(createInviteAction, initialActionState);
+  const [state, formAction] = useActionState(createInviteAction, initialActionState);
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="tenantId" value={tenantId} />
@@ -62,10 +49,8 @@ export function CreateInviteForm({ tenantId }: { tenantId: string }) {
         </label>
       </div>
       <p className="text-muted-foreground text-xs">{de.admin.inviteMaxUsesHint}</p>
-      <Button type="submit" size="sm" disabled={pending}>
-        {pending ? de.common.loading : de.admin.createInvite}
-      </Button>
-      <Message error={state.error} info={state.info} />
+      <SubmitButton label={de.admin.createInvite} size="sm" />
+      <FormMessage error={state.error} info={state.info} size="xs" />
     </form>
   );
 }
@@ -89,10 +74,7 @@ export function DeleteInviteButton({ tenantId, code }: { tenantId: string; code:
 }
 
 export function CreateManagedMemberForm({ tenantId }: { tenantId: string }) {
-  const [state, formAction, pending] = useActionState(
-    createManagedMemberAction,
-    initialActionState,
-  );
+  const [state, formAction] = useActionState(createManagedMemberAction, initialActionState);
   return (
     <form action={formAction} className="space-y-2">
       <input type="hidden" name="tenantId" value={tenantId} />
@@ -110,11 +92,9 @@ export function CreateManagedMemberForm({ tenantId }: { tenantId: string }) {
           placeholder={de.admin.managedNamePlaceholder}
           className="max-w-xs"
         />
-        <Button type="submit" size="sm" disabled={pending}>
-          {pending ? de.common.loading : de.admin.managedCreate}
-        </Button>
+        <SubmitButton label={de.admin.managedCreate} size="sm" />
       </div>
-      <Message error={state.error} info={state.info} />
+      <FormMessage error={state.error} info={state.info} size="xs" />
     </form>
   );
 }
@@ -126,32 +106,56 @@ export function ConvertMemberForm({
   tenantId: string;
   targetUserId: string;
 }) {
-  const [state, formAction, pending] = useActionState(
-    convertManagedMemberAction,
-    initialActionState,
-  );
+  const [state, formAction] = useActionState(convertManagedMemberAction, initialActionState);
+  // The email already belongs to a real account → server asks to confirm a merge.
+  // `cancelled` lets the admin back out to the email field; a fresh submit (whose
+  // button resets it) re-arms the prompt if the new address also collides.
+  const [cancelled, setCancelled] = useState(false);
+  // Narrow to a defined email here so the confirm branch needs no non-null assert.
+  const mergeEmail = !cancelled && state.needsMergeConfirm ? state.mergeEmail : undefined;
   return (
     <details className="mt-2 border-t pt-2">
       <summary className="text-primary cursor-pointer text-xs">{de.admin.managedConvert}</summary>
-      <form action={formAction} className="mt-2 space-y-2">
-        <input type="hidden" name="tenantId" value={tenantId} />
-        <input type="hidden" name="targetUserId" value={targetUserId} />
-        <p className="text-muted-foreground text-xs">{de.admin.managedConvertHint}</p>
-        <div className="flex gap-2">
-          <Input
-            name="email"
-            type="email"
-            required
-            placeholder={de.admin.managedConvertEmailPlaceholder}
-            aria-label={de.admin.managedConvertEmailPlaceholder}
-            className="max-w-xs"
-          />
-          <Button type="submit" size="sm" variant="secondary" disabled={pending}>
-            {pending ? de.common.loading : de.admin.managedConvertSubmit}
-          </Button>
-        </div>
-        <Message error={state.error} info={state.info} />
-      </form>
+      {mergeEmail ? (
+        <form action={formAction} className="mt-2 space-y-2">
+          <input type="hidden" name="tenantId" value={tenantId} />
+          <input type="hidden" name="targetUserId" value={targetUserId} />
+          <input type="hidden" name="email" value={mergeEmail} />
+          <input type="hidden" name="confirmMerge" value="1" />
+          <p className="text-muted-foreground text-xs">
+            {de.admin.managedMergeConfirm(mergeEmail)}
+          </p>
+          <div className="flex gap-2">
+            <SubmitButton label={de.admin.managedMergeSubmit} size="sm" variant="destructive" />
+            <Button type="button" size="sm" variant="ghost" onClick={() => setCancelled(true)}>
+              {de.admin.managedMergeCancel}
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <form action={formAction} className="mt-2 space-y-2">
+          <input type="hidden" name="tenantId" value={tenantId} />
+          <input type="hidden" name="targetUserId" value={targetUserId} />
+          <p className="text-muted-foreground text-xs">{de.admin.managedConvertHint}</p>
+          <div className="flex gap-2">
+            <Input
+              name="email"
+              type="email"
+              required
+              placeholder={de.admin.managedConvertEmailPlaceholder}
+              aria-label={de.admin.managedConvertEmailPlaceholder}
+              className="max-w-xs"
+            />
+            <SubmitButton
+              label={de.admin.managedConvertSubmit}
+              size="sm"
+              variant="secondary"
+              onClick={() => setCancelled(false)}
+            />
+          </div>
+          <FormMessage error={state.error} info={state.info} size="xs" />
+        </form>
+      )}
     </details>
   );
 }
@@ -194,38 +198,30 @@ export function MemberRowActions({
           </Button>
         </form>
       </div>
-      <Message error={roleState.error ?? removeState.error} />
+      <FormMessage error={roleState.error ?? removeState.error} size="xs" />
     </div>
   );
 }
 
 export function MemberTippingForm({ tenantId, enabled }: { tenantId: string; enabled: boolean }) {
-  const [state, formAction, pending] = useActionState(setMemberTippingAction, initialActionState);
+  const [state, formAction] = useActionState(setMemberTippingAction, initialActionState);
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="tenantId" value={tenantId} />
-      <label className="flex cursor-pointer items-start gap-3">
-        <input
-          type="checkbox"
-          name="enabled"
-          defaultChecked={enabled}
-          className="accent-primary mt-0.5 size-4 cursor-pointer"
-        />
-        <span className="space-y-0.5">
-          <span className="block text-sm font-medium">{de.admin.memberTipping}</span>
-          <span className="text-muted-foreground block text-xs">{de.admin.memberTippingHint}</span>
-        </span>
-      </label>
-      <Message error={state.error} info={state.info} />
-      <Button type="submit" size="sm" disabled={pending}>
-        {pending ? de.common.loading : de.common.save}
-      </Button>
+      <ToggleRow
+        name="enabled"
+        label={de.admin.memberTipping}
+        hint={de.admin.memberTippingHint}
+        defaultChecked={enabled}
+      />
+      <FormMessage error={state.error} info={state.info} size="xs" />
+      <SubmitButton label={de.common.save} size="sm" />
     </form>
   );
 }
 
 export function DeleteGroupForm({ tenantId, groupName }: { tenantId: string; groupName: string }) {
-  const [state, formAction, pending] = useActionState(deleteGroupAction, initialActionState);
+  const [state, formAction] = useActionState(deleteGroupAction, initialActionState);
   return (
     <form action={formAction} className="space-y-3">
       <p className="text-muted-foreground text-sm">{de.admin.deleteGroupHint}</p>
@@ -241,10 +237,8 @@ export function DeleteGroupForm({ tenantId, groupName }: { tenantId: string; gro
           className="max-w-sm"
         />
       </div>
-      <Message error={state.error} info={state.info} />
-      <Button type="submit" variant="destructive" disabled={pending}>
-        {pending ? de.common.loading : de.admin.deleteGroupSubmit}
-      </Button>
+      <FormMessage error={state.error} info={state.info} size="xs" />
+      <SubmitButton label={de.admin.deleteGroupSubmit} variant="destructive" />
     </form>
   );
 }
@@ -272,7 +266,7 @@ export function MemberTipTable({
   /** Extra controls rendered next to the save button (e.g. the image download). */
   actions?: ReactNode;
 }) {
-  const [state, formAction, pending] = useActionState(saveMemberTipsAction, initialActionState);
+  const [state, formAction] = useActionState(saveMemberTipsAction, initialActionState);
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="tenantId" value={tenantId} />
@@ -325,11 +319,9 @@ export function MemberTipTable({
         </table>
       </div>
       <div className="flex items-center justify-between gap-2">
-        <Message error={state.error} info={state.info} />
+        <FormMessage error={state.error} info={state.info} size="xs" />
         <div className="flex items-center gap-2">
-          <Button type="submit" size="sm" disabled={pending}>
-            {pending ? de.common.loading : de.admin.tipsSave}
-          </Button>
+          <SubmitButton label={de.admin.tipsSave} size="sm" />
           {actions}
         </div>
       </div>
@@ -345,7 +337,7 @@ export interface ScoringValues {
 }
 
 export function ScoringForm({ tenantId, values }: { tenantId: string; values: ScoringValues }) {
-  const [state, formAction, pending] = useActionState(saveScoringAction, initialActionState);
+  const [state, formAction] = useActionState(saveScoringAction, initialActionState);
   const fields: { name: keyof ScoringValues; label: string; info: string }[] = [
     { name: "exact", label: de.admin.scoringExact, info: de.admin.scoringExactInfo },
     { name: "goalDiff", label: de.admin.scoringDiff, info: de.admin.scoringDiffInfo },
@@ -387,10 +379,8 @@ export function ScoringForm({ tenantId, values }: { tenantId: string; values: Sc
           </div>
         ))}
       </div>
-      <Message error={state.error} info={state.info} />
-      <Button type="submit" disabled={pending}>
-        {pending ? de.common.loading : de.admin.scoringSave}
-      </Button>
+      <FormMessage error={state.error} info={state.info} size="xs" />
+      <SubmitButton label={de.admin.scoringSave} />
     </form>
   );
 }

@@ -5,6 +5,7 @@ import { MatchCard } from "@/components/match/match-card";
 import { CelebrateExactHits } from "@/components/predictions/celebrate-exact-hits";
 import { requireMembership } from "@/lib/auth/membership";
 import { getFixtureBoard, type FixtureVM } from "@/lib/data/fixtures";
+import { getTipPulse } from "@/lib/data/tip-pulse";
 import { STAGE_META } from "@/lib/domain/stages";
 import { berlinDayKey, formatDayHeading } from "@/lib/format";
 import { de } from "@/messages/de";
@@ -35,7 +36,10 @@ export default async function FixturesPage({
   const { tenantId } = await params;
   const { status = "open", stage = "all", team = "all" } = await searchParams;
   const membership = await requireMembership(tenantId);
-  const board = await getFixtureBoard(membership.supabase, membership.tenantId, membership.userId);
+  const [board, pulse] = await Promise.all([
+    getFixtureBoard(membership.supabase, membership.tenantId, membership.userId),
+    getTipPulse(membership.tenantId),
+  ]);
   const canTip = membership.role === "admin" || membership.memberTippingEnabled;
 
   // Filter options derived from the full board.
@@ -108,7 +112,12 @@ export default async function FixturesPage({
             <ul className="space-y-2">
               {group.items.map((f) => (
                 <li key={f.id}>
-                  <MatchCard fixture={f} tenantId={membership.tenantId} canTip={canTip} />
+                  <MatchCard
+                    fixture={f}
+                    tenantId={membership.tenantId}
+                    canTip={canTip}
+                    pulse={{ tipped: pulse.counts[f.id] ?? 0, members: pulse.members }}
+                  />
                 </li>
               ))}
             </ul>

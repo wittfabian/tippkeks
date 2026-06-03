@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { invalidateTags } from "@/lib/cache/cache";
 import { createClient } from "@/lib/supabase/server";
 import { de } from "@/messages/de";
 import type { ActionState } from "@/actions/types";
@@ -71,6 +72,8 @@ export async function submitPredictionAction(
   );
   if (error) return { error: de.fixtures.saveError };
 
+  // The tip-pulse count ("5 von 8 haben getippt") just changed for the group.
+  await invalidateTags(`tip-pulse:${parsed.data.tenantId}`);
   revalidatePath(`/${parsed.data.tenantId}/matches`);
   return { error: null, info: de.fixtures.saved };
 }

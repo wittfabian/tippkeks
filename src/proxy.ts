@@ -18,6 +18,9 @@ const PUBLIC_PREFIXES = [
   "/info",
   // Shared invite links must greet logged-out friends (they register from here).
   "/join",
+  // The generated link-preview image: extensionless, so the matcher catches it;
+  // crawlers fetch it logged-out, so a redirect to /login would yield no preview.
+  "/opengraph-image",
 ];
 
 function isPublic(pathname: string): boolean {

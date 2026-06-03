@@ -5,6 +5,12 @@ export type ActionState = {
   /** Set by signInAction when the account exists but its email is unconfirmed —
    *  the login form then offers a "resend confirmation email" button. */
   needsConfirmation?: boolean;
+  /** Set by convertManagedMemberAction when the assigned email already belongs to
+   *  a real account: the convert form then asks to confirm merging the managed
+   *  member's tips into it. `mergeEmail` carries the address back for the confirm
+   *  submit (the original input is replaced by the confirmation prompt). */
+  needsMergeConfirm?: boolean;
+  mergeEmail?: string;
 };
 
 export const initialActionState: ActionState = { error: null, info: null };

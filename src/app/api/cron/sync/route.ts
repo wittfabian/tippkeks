@@ -1,3 +1,5 @@
+import { timingSafeEqual } from "node:crypto";
+
 import { NextResponse, type NextRequest } from "next/server";
 
 import { serverEnv } from "@/lib/env.server";
@@ -6,6 +8,13 @@ import { runSync } from "@/lib/sync/run";
 
 // Always run on request; never cached.
 export const dynamic = "force-dynamic";
+
+/** Constant-time string compare so the Bearer secret can't be timing-probed. */
+function secretsMatch(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ab.length === bb.length && timingSafeEqual(ab, bb);
+}
 
 /**
  * Secret-protected sync trigger for the OS/container scheduler. Authenticated by
@@ -19,7 +28,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const authorized = request.headers.get("authorization") === `Bearer ${secret}`;
+  const authorized = secretsMatch(request.headers.get("authorization") ?? "", `Bearer ${secret}`);
   if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

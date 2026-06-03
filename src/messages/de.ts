@@ -51,6 +51,15 @@ export const de = {
     upcoming: "Nächste Spiele",
     closesToday: (n: number) => (n === 1 ? "1 Tipp schließt heute" : `${n} Tipps schließen heute`),
     allDone: "Für heute durch ✓ – alle offenen Tipps abgegeben.",
+    groupPace: (n: number) =>
+      n === 1
+        ? "Heute ist in der Gruppe noch 1 Tipp offen"
+        : `Heute sind in der Gruppe noch ${n} Tipps offen`,
+    recapTitle: (n: number) => `Spieltag ${n} – Rückblick`,
+    recapWinner: (name: string, points: number) => `Tagessieger: ${name} (${points} Pkt.)`,
+    recapNobody: "An diesem Spieltag gab es keine Punkte.",
+    recapExacts: (n: number) =>
+      n === 1 ? "1 Volltreffer in der Gruppe 🎯" : `${n} Volltreffer in der Gruppe 🎯`,
   },
   nav: {
     dashboard: "Übersicht",
@@ -110,15 +119,12 @@ export const de = {
   groups: {
     title: "Meine Gruppen",
     none: "Du bist noch in keiner Gruppe.",
-    create: "Gruppe erstellen",
     createTitle: "Neue Gruppe",
-    join: "Gruppe beitreten",
     joinTitle: "Mit Einladungscode beitreten",
     name: "Gruppenname",
     code: "Einladungscode",
     createSubmit: "Gruppe anlegen",
     joinSubmit: "Beitreten",
-    open: "Öffnen",
     role: { admin: "Admin", member: "Mitglied" },
     createError: "Gruppe konnte nicht erstellt werden. Bitte versuche es erneut.",
     createDisabled: "Das Erstellen neuer Gruppen ist derzeit deaktiviert.",
@@ -163,6 +169,11 @@ export const de = {
     viewAll: "Alle Tipps ansehen",
     pointsPreview: (n: number) => `Dafür gäbe es ${n} Punkte`,
     saveError: "Tipp konnte nicht gespeichert werden – evtl. ist der Anpfiff schon vorbei.",
+    // Result-label abbreviations: nach Verlängerung / im Elfmeterschießen.
+    afterExtraTime: "n.V.",
+    penaltiesShort: "i.E.",
+    // Tip-deadline countdown when more than a day remains, e.g. "3 T 5 Std".
+    lockCountdown: (days: number, hours: number) => `${days} T ${hours} Std`,
   },
   predictions: {
     allTitle: "Alle Tipps",
@@ -172,6 +183,11 @@ export const de = {
     noPredictions: "Für dieses Spiel wurden noch keine Tipps abgegeben.",
     consensus: "Häufigster Tipp",
     submittedCount: (n: number, total: number) => `${n} von ${total} haben getippt`,
+    pulse: (n: number, total: number) => `${n}/${total} getippt`,
+    pulseTitle: (n: number, total: number) => `${n} von ${total} Mitgliedern haben getippt`,
+    liveProjection: "Zwischenstand",
+    liveProjectionNote: "Vorläufige Punkte beim aktuellen Spielstand – ändern sich mit jedem Tor.",
+    exactHitToast: (points: number) => `🎯 Exakt! +${points} Punkte`,
   },
   categories: {
     exact: "Exakt",
@@ -209,6 +225,22 @@ export const de = {
       "Bei Punktgleichheit entscheiden: exakte Tipps, dann richtige Treffer, dann früheste Tippabgabe.",
     liveHeading: (n: number) => (n === 1 ? "Spiel läuft gerade" : "Spiele laufen gerade"),
     liveHint: "Die Wertung folgt nach Abpfiff – die Rangliste aktualisiert sich dann automatisch.",
+    formHit: "Treffer",
+    formMiss: "Daneben",
+    streakTitle: (n: number) => `${n} Spiele in Folge getroffen`,
+    duelsTitle: "Deine Duelle",
+    duelsHint: "Direkter Vergleich pro Spiel, das ihr beide getippt habt.",
+    duelTitle: (wins: number, losses: number, draws: number) =>
+      `${wins} vorn, ${losses} hinten, ${draws} gleichauf`,
+  },
+  share: {
+    matchDownload: "Als Bild herunterladen",
+    leaderboardDownload: "Rangliste als Bild",
+    busy: "Bild wird erstellt …",
+    error: "Bild konnte nicht erstellt werden. Bitte erneut versuchen.",
+    footer: "tippkeks.de · FIFA WM 2026",
+    leaderboardSubtitle: "Rangliste",
+    matchPoints: (n: number) => (n === 1 ? "1 Pkt." : `${n} Pkt.`),
   },
   profile: {
     title: "Profil",
@@ -286,12 +318,9 @@ export const de = {
     tipsSaved: (n: number) => (n === 1 ? "1 Tipp gespeichert." : `${n} Tipps gespeichert.`),
     tipsError: "Tipps konnten nicht gespeichert werden (evtl. ist der Anpfiff schon vorbei).",
     tipImageDownload: "Tipps als Bild herunterladen",
-    tipImageBusy: "Bild wird erstellt …",
-    tipImageError: "Bild konnte nicht erstellt werden. Bitte erneut versuchen.",
     tipImageHint:
       "Lädt die gespeicherten Tipps aller Mitglieder zu diesem Spiel als Bild herunter.",
     tipImageNoTip: "offen",
-    tipImageFooter: "tippkeks.de · FIFA WM 2026",
     createInvite: "Einladungscode erstellen",
     inviteCreated: "Einladungscode erstellt.",
     inviteDelete: "Löschen",
@@ -328,6 +357,13 @@ export const de = {
     managedConvertEmailTaken: "Diese E-Mail-Adresse wird bereits verwendet.",
     managedConvertMailFailed:
       "Adresse gespeichert, aber die Einladungs-E-Mail konnte nicht gesendet werden. Bitte später erneut versuchen.",
+    managedMergeConfirm: (email: string) =>
+      `Es gibt bereits ein Konto mit ${email} in dieser Gruppe. Sollen die für den Platzhalter eingetragenen Tipps in dieses Konto übernommen und der Platzhalter danach gelöscht werden? Bei Spielen, die das Konto schon selbst getippt hat, gewinnt der Platzhalter-Tipp. Das lässt sich nicht rückgängig machen.`,
+    managedMergeSubmit: "Zusammenführen",
+    managedMergeCancel: "Abbrechen",
+    managedMergeNotMember:
+      "Es gibt bereits ein Konto mit dieser E-Mail-Adresse, aber es ist noch nicht in dieser Gruppe. Lass die Person zuerst über einen Einladungslink beitreten – danach kannst du die Tipps zusammenführen.",
+    managedMerged: (email: string) => `Tipps wurden in das Konto ${email} übernommen.`,
     memberSearch: "Mitglied suchen",
     memberSearchPlaceholder: "Name …",
     memberCount: (n: number) => (n === 1 ? "1 Mitglied" : `${n} Mitglieder`),
@@ -363,7 +399,18 @@ export const de = {
   empty: {
     tournamentStarts: "Das Turnier startet am 11.06.2026.",
     noFixtures: "Es sind noch keine Spiele vorhanden.",
-    noOpenTips: "Du hast aktuell keine offenen Tipps.",
+  },
+  // Tournament stage display names (also written to stage.name during sync).
+  stages: {
+    group: "Gruppenphase",
+    last_32: "Sechzehntelfinale",
+    last_16: "Achtelfinale",
+    quarter_final: "Viertelfinale",
+    semi_final: "Halbfinale",
+    third_place: "Spiel um Platz 3",
+    final: "Finale",
+    matchday: "Spieltag",
+    other: "Sonstige",
   },
   legal: {
     backHome: "Zur Startseite",
@@ -508,6 +555,8 @@ export const de = {
     loading: "Lädt …",
     save: "Speichern",
     poweredBy: "Daten von football-data.org",
+    // German clock suffix appended to a formatted time, e.g. "21:00 Uhr".
+    clock: "Uhr",
   },
 } as const;
 

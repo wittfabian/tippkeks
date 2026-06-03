@@ -86,11 +86,11 @@ export async function createInviteAction(
   if (!parsed.success) return { error: de.auth.errorGeneric };
 
   const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const userId = claims?.claims?.sub;
+  // Re-resolve admin in the action (the trust boundary), not only via RLS.
+  const userId = await adminUserId(supabase, parsed.data.tenantId);
   if (!userId) return { error: de.auth.errorGeneric };
 
-  // RLS only lets a tenant admin insert here.
+  // RLS also enforces that only a tenant admin may insert here.
   const { error } = await supabase.from("tenant_invite").insert({
     tenant_id: parsed.data.tenantId,
     code: generateInviteCode(),
@@ -123,11 +123,10 @@ export async function deleteInviteAction(
   if (!parsed.success) return { error: de.auth.errorGeneric };
 
   const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const userId = claims?.claims?.sub;
-  if (!userId) return { error: de.auth.errorGeneric };
+  // Re-resolve admin in the action (the trust boundary), not only via RLS.
+  if (!(await adminUserId(supabase, parsed.data.tenantId))) return { error: de.auth.errorGeneric };
 
-  // RLS only lets a tenant admin delete here.
+  // RLS also enforces that only a tenant admin may delete here.
   const { error } = await supabase
     .from("tenant_invite")
     .delete()
@@ -240,6 +239,7 @@ export async function saveMemberTipsAction(
     return { error: de.admin.tipsError };
   }
 
+  await invalidateTags(`tip-pulse:${parsed.data.tenantId}`);
   revalidatePath(`/${parsed.data.tenantId}/admin`);
   revalidatePath(`/${parsed.data.tenantId}/matches`);
   return { error: null, info: de.admin.tipsSaved(rows.length) };
@@ -262,8 +262,8 @@ export async function setMemberRoleAction(
   if (!parsed.success) return { error: de.auth.errorGeneric };
 
   const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const actorId = claims?.claims?.sub;
+  // Re-resolve admin in the action (the trust boundary), not only via RLS.
+  const actorId = await adminUserId(supabase, parsed.data.tenantId);
   if (!actorId) return { error: de.auth.errorGeneric };
 
   const { error } = await supabase
@@ -304,8 +304,8 @@ export async function removeMemberAction(
   if (!parsed.success) return { error: de.auth.errorGeneric };
 
   const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const actorId = claims?.claims?.sub;
+  // Re-resolve admin in the action (the trust boundary), not only via RLS.
+  const actorId = await adminUserId(supabase, parsed.data.tenantId);
   if (!actorId) return { error: de.auth.errorGeneric };
 
   const { error } = await supabase
@@ -352,6 +352,9 @@ export async function saveScoringAction(
   if (!parsed.success) return { error: de.auth.errorGeneric };
 
   const supabase = await createClient();
+  // Re-resolve admin in the action (the trust boundary); the recompute_tenant
+  // RPC re-checks admin under definer rights and RLS gates the rule-set update.
+  if (!(await adminUserId(supabase, parsed.data.tenantId))) return { error: de.auth.errorGeneric };
 
   // Preserve any configured per-stage multipliers.
   const { data: active } = await supabase
@@ -474,11 +477,17 @@ const convertManagedSchema = tenantField.extend({
 });
 
 /**
- * Upgrade a managed member to a real login account: assign the real email the
- * admin collected, clear the managed flag, and send a recovery link so the
- * person sets their own password and takes over their tip history (user_id is
- * stable, so all existing predictions/scores stay attached). Admin/site-admin
- * only; refuses non-managed targets so it can't hijack a real account's email.
+ * Upgrade a managed member to a real login account. Two outcomes by email:
+ *  - New email → assign it, clear the managed flag, and send a recovery link so
+ *    the person sets a password and takes over their tip history (user_id is
+ *    stable, so all predictions/scores stay attached).
+ *  - Email already belongs to a real account → MERGE: a tip's identity is
+ *    (tenant, user, fixture), so the placeholder's tips are reassigned onto the
+ *    existing account and the placeholder is deleted (merge_managed_member RPC).
+ *    This is irreversible, so the first submit only signals `needsMergeConfirm`;
+ *    the second (with confirmMerge) performs it.
+ * Admin/site-admin only; refuses non-managed targets so it can't hijack a real
+ * account's email.
  */
 export async function convertManagedMemberAction(
   _prev: ActionState,
@@ -490,6 +499,7 @@ export async function convertManagedMemberAction(
     email: formData.get("email"),
   });
   if (!parsed.success) return { error: de.admin.managedConvertError };
+  const confirmMerge = formData.get("confirmMerge") === "1";
 
   const supabase = await createClient();
   const actorId = await adminOrSiteAdminUserId(supabase, parsed.data.tenantId);
@@ -513,6 +523,65 @@ export async function convertManagedMemberAction(
     .maybeSingle();
   if (!profile?.managed) return { error: de.admin.managedConvertNotManaged };
 
+  // Pre-check for an email collision. GoTrue only maps a duplicate to the
+  // friendly `email_exists` code on sign-up/create; on the updateUserById path it
+  // raises a raw `unexpected_failure` (500) from the auth.users unique violation,
+  // indistinguishable from a genuine fault — so detect it deterministically here.
+  const { data: emailTaken, error: lookupError } = await service.rpc("email_in_use", {
+    p_email: parsed.data.email,
+  });
+  if (lookupError) {
+    logActionError("convertManagedMember.lookup", lookupError);
+    return { error: de.admin.managedConvertError };
+  }
+
+  // Email already in use → the merge path. The merge requires the target to
+  // already be a member of this group (it never silently pulls a stranger in),
+  // so check that up front and give a clear, actionable message rather than
+  // failing only after the merge confirmation.
+  if (emailTaken) {
+    const { data: targetIsMember, error: memberLookupError } = await service.rpc(
+      "email_member_of",
+      {
+        p_tenant: parsed.data.tenantId,
+        p_email: parsed.data.email,
+      },
+    );
+    if (memberLookupError) {
+      logActionError("convertManagedMember.memberLookup", memberLookupError);
+      return { error: de.admin.managedConvertError };
+    }
+    if (!targetIsMember) return { error: de.admin.managedMergeNotMember };
+
+    // First submit just asks to confirm (irreversible: it deletes the
+    // placeholder); the confirm submit performs it.
+    if (!confirmMerge) {
+      return { error: null, needsMergeConfirm: true, mergeEmail: parsed.data.email };
+    }
+    const { error: mergeError } = await service.rpc("merge_managed_member", {
+      p_tenant: parsed.data.tenantId,
+      p_managed_user: parsed.data.targetUserId,
+      p_target_email: parsed.data.email,
+    });
+    if (mergeError) {
+      logActionError("convertManagedMember.merge", mergeError);
+      return { error: de.admin.managedConvertError };
+    }
+    await service.from("admin_audit_log").insert({
+      tenant_id: parsed.data.tenantId,
+      actor_id: actorId,
+      action: "member_convert_managed",
+      target_type: "user",
+      target_id: parsed.data.targetUserId,
+      detail: { merged_into: parsed.data.email },
+    });
+    revalidatePath(`/${parsed.data.tenantId}/admin`);
+    revalidatePath(`/${parsed.data.tenantId}/leaderboard`);
+    revalidatePath(`/${parsed.data.tenantId}/tips`);
+    revalidatePath(`/${parsed.data.tenantId}/matches`);
+    return { error: null, info: de.admin.managedMerged(parsed.data.email) };
+  }
+
   // Assign the real email (confirmed immediately — there is no old inbox to
   // verify against, the synthetic address is non-deliverable).
   const { error: updateError } = await service.auth.admin.updateUserById(parsed.data.targetUserId, {
@@ -520,6 +589,9 @@ export async function convertManagedMemberAction(
     email_confirm: true,
   });
   if (updateError) {
+    // Defence-in-depth for the tiny race window between the pre-check and here
+    // (a real account registering this email in between). The pre-check already
+    // ruled out a pre-existing collision, so a genuine fault is reported honestly.
     if (updateError.code === EMAIL_EXISTS) return { error: de.admin.managedConvertEmailTaken };
     logActionError("convertManagedMember.update", updateError);
     return { error: de.admin.managedConvertError };

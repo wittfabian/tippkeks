@@ -9,29 +9,14 @@ import {
   updatePasswordAction,
 } from "@/actions/profile";
 import { initialActionState } from "@/actions/types";
-import { Button } from "@/components/ui/button";
+import { FormMessage } from "@/components/ui/form-message";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { de } from "@/messages/de";
 
-function Message({ error, info }: { error: string | null; info?: string | null }) {
-  if (error)
-    return (
-      <p role="alert" className="text-destructive text-sm">
-        {error}
-      </p>
-    );
-  if (info)
-    return (
-      <p role="status" className="text-sm text-emerald-600">
-        {info}
-      </p>
-    );
-  return null;
-}
-
 export function DisplayNameForm({ displayName }: { displayName: string }) {
-  const [state, formAction, pending] = useActionState(updateDisplayNameAction, initialActionState);
+  const [state, formAction] = useActionState(updateDisplayNameAction, initialActionState);
   return (
     <form action={formAction} className="space-y-3">
       <div className="space-y-1.5">
@@ -45,16 +30,14 @@ export function DisplayNameForm({ displayName }: { displayName: string }) {
           defaultValue={displayName}
         />
       </div>
-      <Message error={state.error} info={state.info} />
-      <Button type="submit" disabled={pending}>
-        {pending ? de.common.loading : de.profile.save}
-      </Button>
+      <FormMessage error={state.error} info={state.info} />
+      <SubmitButton label={de.profile.save} />
     </form>
   );
 }
 
 export function EmailForm({ email }: { email: string }) {
-  const [state, formAction, pending] = useActionState(updateEmailAction, initialActionState);
+  const [state, formAction] = useActionState(updateEmailAction, initialActionState);
   return (
     <form action={formAction} className="space-y-3">
       <div className="space-y-1.5">
@@ -68,16 +51,14 @@ export function EmailForm({ email }: { email: string }) {
           defaultValue={email}
         />
       </div>
-      <Message error={state.error} info={state.info} />
-      <Button type="submit" variant="secondary" disabled={pending}>
-        {pending ? de.common.loading : de.profile.emailSave}
-      </Button>
+      <FormMessage error={state.error} info={state.info} />
+      <SubmitButton label={de.profile.emailSave} variant="secondary" />
     </form>
   );
 }
 
 export function PasswordForm() {
-  const [state, formAction, pending] = useActionState(updatePasswordAction, initialActionState);
+  const [state, formAction] = useActionState(updatePasswordAction, initialActionState);
   return (
     <form action={formAction} className="space-y-3">
       <div className="space-y-1.5">
@@ -102,16 +83,14 @@ export function PasswordForm() {
         />
         <p className="text-muted-foreground text-xs">{de.profile.passwordHint}</p>
       </div>
-      <Message error={state.error} info={state.info} />
-      <Button type="submit" variant="secondary" disabled={pending}>
-        {pending ? de.common.loading : de.profile.passwordSave}
-      </Button>
+      <FormMessage error={state.error} info={state.info} />
+      <SubmitButton label={de.profile.passwordSave} variant="secondary" />
     </form>
   );
 }
 
 export function DeleteAccountForm() {
-  const [state, formAction, pending] = useActionState(deleteAccountAction, initialActionState);
+  const [state, formAction] = useActionState(deleteAccountAction, initialActionState);
   return (
     <form action={formAction} className="space-y-3">
       <p className="text-muted-foreground text-sm">{de.profile.dangerHint}</p>
@@ -126,10 +105,8 @@ export function DeleteAccountForm() {
           className="max-w-sm"
         />
       </div>
-      <Message error={state.error} info={state.info} />
-      <Button type="submit" variant="destructive" disabled={pending}>
-        {pending ? de.common.loading : de.profile.deleteSubmit}
-      </Button>
+      <FormMessage error={state.error} info={state.info} />
+      <SubmitButton label={de.profile.deleteSubmit} variant="destructive" />
     </form>
   );
 }

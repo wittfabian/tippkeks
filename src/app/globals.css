@@ -4,6 +4,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Hide the scrollbar on horizontally-scrollable strips (tab nav, filter chips)
+   while keeping them scrollable/swipeable — the visible bar otherwise overlaps
+   content on small screens. */
+@utility scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge/IE */
+  &::-webkit-scrollbar {
+    display: none; /* WebKit (Chrome/Safari) */
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
