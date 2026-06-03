@@ -14,10 +14,12 @@
 #  - NEXT_SERVER_ACTIONS_ENCRYPTION_KEY (base64 32 bytes, `openssl rand -base64 32`)
 #    encrypts Server Action arguments. `next build` consumes it and EMBEDS it into
 #    the build output (and compiles it into any Edge bundle, where it can NOT be
-#    overridden at runtime), so it is a BUILD ARG. If unset, next build generates a
-#    random per-build key that rotates on every rebuild. Pass the SAME value at
-#    runtime too: the Node server reads it at runtime and it must match across all
-#    replicas (otherwise "Failed to find Server Action" after a rebuild/rollout).
+#    overridden at runtime). It is a genuine secret, so it is passed as a BuildKit
+#    SECRET (`--mount=type=secret`, not ARG/ENV — which would persist it in image
+#    layers/history). If unset, next build generates a random per-build key that
+#    rotates on every rebuild. Pass the SAME value at runtime too: the Node server
+#    reads it at runtime and it must match across all replicas (otherwise "Failed
+#    to find Server Action" after a rebuild/rollout).
 
 FROM node:22-alpine AS base
 RUN apk add --no-cache libc6-compat
@@ -43,13 +45,16 @@ ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 # (No SUPABASE_SERVICE_ROLE_KEY here: the build never needs it — it is asserted
 # at runtime in createServiceClient. Inject the real key into the running container.)
-# Server Actions encryption key — embedded into the build output here. Provide a
-# stable value (and the SAME value at runtime); empty ⇒ Next generates a random
-# per-build key.
-ARG NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
-ENV NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
 
-RUN pnpm build
+# Server Actions encryption key — consumed by `next build` and embedded into the
+# build output (and any Edge bundle, where runtime can't override it). Passed as a
+# BuildKit secret (not ARG/ENV) so the value never lands in image layers/history;
+# it is exported into the env only for the lifetime of this one RUN. Empty/absent
+# (e.g. a plain `docker build` with no --secret) ⇒ Next generates a random per-build
+# key that rotates each rebuild. Provide the SAME value at runtime (see header).
+RUN --mount=type=secret,id=next_server_actions_encryption_key \
+    NEXT_SERVER_ACTIONS_ENCRYPTION_KEY="$(cat /run/secrets/next_server_actions_encryption_key 2>/dev/null || true)" \
+    pnpm build
 
 # --- Runtime ---
 FROM node:22-alpine AS runner
