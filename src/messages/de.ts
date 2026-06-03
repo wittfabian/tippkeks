@@ -9,6 +9,28 @@ export const de = {
     tagline: "Tippen, mitfiebern, Kekse kassieren – WM 2026",
     description: "TippKeks – privates Fußball-Tippspiel für Freundesgruppen zur WM 2026.",
   },
+  errors: {
+    // 404 – route not found.
+    notFoundTitle: "404 – Daneben getippt",
+    notFoundHeading: "Diese Seite steht im Abseits",
+    notFoundBody:
+      "Die Seite, die du suchst, gibt es hier nicht. Wahrscheinlich ist sie in der Halbzeitpause kurz Kekse holen – oder du hast dich bei der Adresse vertippt. Passiert den Besten.",
+    notFoundHome: "Zurück zum Anstoß",
+    // error.tsx – a route segment threw at runtime.
+    errorTitle: "Eigentor!",
+    errorHeading: "Da ist uns ein Krümel ins Getriebe gefallen",
+    errorBody:
+      "Irgendetwas ist schiefgelaufen – unser Server hat die Flanke nicht verwertet. Kein Drama: einmal kurz neu anstoßen, dann läuft das Spiel meistens wieder.",
+    errorRetry: "Nochmal anstoßen",
+    errorHome: "Zur Übersicht",
+    errorDigest: (digest: string) => `Fehlercode für die Technik-Bank: ${digest}`,
+    // global-error.tsx – the root layout itself crashed.
+    globalTitle: "Totalausfall",
+    globalHeading: "Der Schiri hat das Spiel abgepfiffen",
+    globalBody:
+      "Hier ist so gründlich etwas schiefgelaufen, dass selbst der VAR nur ratlos mit den Schultern zuckt. Lade die Seite neu – wir schicken frische Kekse aufs Feld.",
+    globalRetry: "Seite neu laden",
+  },
   landing: {
     eyebrow: "Privates Tippspiel · FIFA WM 2026",
     headlineLead: "Tippen. Mitfiebern.",

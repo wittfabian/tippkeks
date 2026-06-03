@@ -10,14 +10,33 @@ import { createClient } from "@/lib/supabase/server";
  * cookies, then redirects. No-op for local dev where confirmation is disabled.
  */
 /**
- * Only same-origin, non-protocol-relative paths are accepted as a redirect
- * target. `new URL(next, base)` would otherwise honour an absolute
- * (`https://evil.com`) or protocol-relative (`//evil.com`) value and bounce the
- * just-authenticated user off-site — an open redirect. Anything else falls to "/".
+ * Reduce the `next` redirect target to a safe same-origin path. Accepts a relative
+ * path (`/foo`) directly, and an absolute URL only when its origin matches ours —
+ * collapsed to pathname+search. The signup confirmation template now carries the
+ * GoTrue redirect (`{{ .RedirectTo }}`, an absolute URL) here, so we must handle
+ * both forms. Anything else (cross-origin, protocol-relative `//evil.com`) is an
+ * open-redirect attempt and falls to "/".
  */
-function safeNext(next: string | null): string {
-  if (next && next.startsWith("/") && !next.startsWith("//")) return next;
+function safeNext(next: string | null, origin: string): string {
+  if (!next) return "/";
+  if (next.startsWith("/") && !next.startsWith("//")) return next;
+  try {
+    const url = new URL(next);
+    if (url.origin === new URL(origin).origin) return `${url.pathname}${url.search}`;
+  } catch {
+    // Not a parseable absolute URL — fall through to the safe default.
+  }
   return "/";
+}
+
+/**
+ * Extract the invite code from a `/join/<code>` redirect path, if present. A signup
+ * that began from a shared invite link routes its confirmation here with this path
+ * as `next`; redeeming the code after verifyOtp lands the user straight in the group.
+ */
+function inviteCodeFromPath(path: string): string | null {
+  const match = /^\/join\/([^/?#]+)/.exec(path);
+  return match?.[1] ? decodeURIComponent(match[1]).trim().toUpperCase() : null;
 }
 
 /**
@@ -38,13 +57,23 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = safeNext(searchParams.get("next"));
   const origin = resolveOrigin(request);
+  const next = safeNext(searchParams.get("next"), origin);
 
   if (tokenHash && type) {
     const supabase = await createClient();
     const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
     if (!error) {
+      // verifyOtp has set the session cookies, so this cookie-aware client is now
+      // authenticated. If the confirmation originated from an invite link, redeem
+      // the code and land the user directly in the group. Redemption failure is
+      // non-fatal — fall back to the /join page, which shows the invalid/expired
+      // state and a manual accept button.
+      const code = inviteCodeFromPath(next);
+      if (code) {
+        const { data } = await supabase.rpc("redeem_invite", { p_code: code });
+        if (data?.id) return NextResponse.redirect(new URL(`/${data.id}`, origin));
+      }
       return NextResponse.redirect(new URL(next, origin));
     }
   }
