@@ -51,6 +51,15 @@ export const de = {
     upcoming: "Nächste Spiele",
     closesToday: (n: number) => (n === 1 ? "1 Tipp schließt heute" : `${n} Tipps schließen heute`),
     allDone: "Für heute durch ✓ – alle offenen Tipps abgegeben.",
+    groupPace: (n: number) =>
+      n === 1
+        ? "Heute ist in der Gruppe noch 1 Tipp offen"
+        : `Heute sind in der Gruppe noch ${n} Tipps offen`,
+    recapTitle: (n: number) => `Spieltag ${n} – Rückblick`,
+    recapWinner: (name: string, points: number) => `Tagessieger: ${name} (${points} Pkt.)`,
+    recapNobody: "An diesem Spieltag gab es keine Punkte.",
+    recapExacts: (n: number) =>
+      n === 1 ? "1 Volltreffer in der Gruppe 🎯" : `${n} Volltreffer in der Gruppe 🎯`,
   },
   nav: {
     dashboard: "Übersicht",
@@ -172,6 +181,10 @@ export const de = {
     noPredictions: "Für dieses Spiel wurden noch keine Tipps abgegeben.",
     consensus: "Häufigster Tipp",
     submittedCount: (n: number, total: number) => `${n} von ${total} haben getippt`,
+    pulse: (n: number, total: number) => `${n}/${total} getippt`,
+    pulseTitle: (n: number, total: number) => `${n} von ${total} Mitgliedern haben getippt`,
+    liveProjection: "Zwischenstand",
+    liveProjectionNote: "Vorläufige Punkte beim aktuellen Spielstand – ändern sich mit jedem Tor.",
   },
   categories: {
     exact: "Exakt",
@@ -209,6 +222,23 @@ export const de = {
       "Bei Punktgleichheit entscheiden: exakte Tipps, dann richtige Treffer, dann früheste Tippabgabe.",
     liveHeading: (n: number) => (n === 1 ? "Spiel läuft gerade" : "Spiele laufen gerade"),
     liveHint: "Die Wertung folgt nach Abpfiff – die Rangliste aktualisiert sich dann automatisch.",
+    form: "Form",
+    formHit: "Treffer",
+    formMiss: "Daneben",
+    streakTitle: (n: number) => `${n} Spiele in Folge getroffen`,
+    duelsTitle: "Deine Duelle",
+    duelsHint: "Direkter Vergleich pro Spiel, das ihr beide getippt habt.",
+    duelTitle: (wins: number, losses: number, draws: number) =>
+      `${wins} vorn, ${losses} hinten, ${draws} gleichauf`,
+  },
+  share: {
+    matchDownload: "Als Bild herunterladen",
+    leaderboardDownload: "Rangliste als Bild",
+    busy: "Bild wird erstellt …",
+    error: "Bild konnte nicht erstellt werden. Bitte erneut versuchen.",
+    footer: "tippkeks.de · FIFA WM 2026",
+    leaderboardSubtitle: "Rangliste",
+    matchPoints: (n: number) => (n === 1 ? "1 Pkt." : `${n} Pkt.`),
   },
   profile: {
     title: "Profil",

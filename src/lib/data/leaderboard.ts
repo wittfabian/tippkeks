@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cached } from "@/lib/cache/cache";
+import { summariseForm } from "@/lib/domain/form";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export interface LeaderboardRow {
@@ -10,6 +11,14 @@ export interface LeaderboardRow {
   exact_count: number;
   hit_count: number;
   rank: number;
+}
+
+export interface MemberForm {
+  user_id: string;
+  /** Up to 5 most recent scored predictions, oldest → newest. */
+  recent: ("hit" | "miss")[];
+  /** Consecutive hits ending at the most recent scored match (0 if it missed). */
+  streak: number;
 }
 
 /**
@@ -34,6 +43,53 @@ export async function getLeaderboard(tenantId: string): Promise<LeaderboardRow[]
         .eq("tenant_id", tenantId)
         .order("rank", { ascending: true });
       return (data ?? []) as LeaderboardRow[];
+    },
+  );
+}
+
+/**
+ * Per-member recent form: the last 5 scored predictions as hit/miss plus the
+ * current hit streak. Derived from already-public scored results (not secret
+ * tips), so it is tenant-uniform and cached under the SAME tags as the
+ * leaderboard — the sync job and result overrides that invalidate "leaderboard"
+ * refresh the form in lockstep. Read with the service role; `tenant_id` scopes.
+ */
+export async function getLeaderboardForm(tenantId: string): Promise<MemberForm[]> {
+  return cached(
+    {
+      key: `leaderboard-form:${tenantId}`,
+      ttlSeconds: 60,
+      tags: ["leaderboard", `leaderboard:${tenantId}`],
+    },
+    async () => {
+      const service = createServiceClient();
+      const { data: scores } = await service
+        .from("prediction_score")
+        .select("user_id, fixture_id, category")
+        .eq("tenant_id", tenantId);
+      if (!scores || scores.length === 0) return [];
+
+      const fixtureIds = [...new Set(scores.map((s) => s.fixture_id))];
+      const { data: fixtures } = await service
+        .from("fixture")
+        .select("id, kickoff_at")
+        .in("id", fixtureIds);
+      const kickoffById = new Map((fixtures ?? []).map((f) => [f.id, f.kickoff_at]));
+
+      // Collect each member's scored results; summariseForm sorts + reduces them.
+      const byUser = new Map<string, { kickoff: string; hit: boolean }[]>();
+      for (const s of scores) {
+        const kickoff = kickoffById.get(s.fixture_id);
+        if (!kickoff) continue;
+        const list = byUser.get(s.user_id) ?? [];
+        list.push({ kickoff, hit: s.category !== "miss" });
+        byUser.set(s.user_id, list);
+      }
+
+      return [...byUser.entries()].map(([user_id, results]) => ({
+        user_id,
+        ...summariseForm(results),
+      }));
     },
   );
 }

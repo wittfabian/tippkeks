@@ -11,8 +11,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { LiveRefresher } from "@/components/match/live-refresher";
+import { MatchShareCard } from "@/components/share/match-share-card";
 import { requireMembership } from "@/lib/auth/membership";
-import type { ScoreCategory } from "@/lib/scoring/engine";
+import { getScoringConfig } from "@/lib/data/scoring-config";
+import { getTipPulse } from "@/lib/data/tip-pulse";
+import { scorePrediction, type ScoreCategory, type StageKind } from "@/lib/scoring/engine";
 import { formatDateTime, hasKickedOff } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { de } from "@/messages/de";
@@ -25,13 +29,13 @@ export default async function FixtureDetailPage({
   const { tenantId: tenantIdParam, fixtureId } = await params;
   const membership = await requireMembership(tenantIdParam);
 
-  const { supabase, tenantId, userId } = membership;
+  const { supabase, tenantId, tenantName, userId } = membership;
   const id = fixtureId;
 
   const { data: fixture } = await supabase
     .from("fixture")
     .select(
-      "id, kickoff_at, regular_home, regular_away, after_extra_time, home_team_id, away_team_id, stage:stage_id(name)",
+      "id, kickoff_at, status, regular_home, regular_away, after_extra_time, home_team_id, away_team_id, stage:stage_id(kind, name)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -50,23 +54,34 @@ export default async function FixtureDetailPage({
   const away = fixture.away_team_id != null ? (teamById.get(fixture.away_team_id) ?? null) : null;
   const kickedOff = hasKickedOff(fixture.kickoff_at);
   const hasResult = fixture.regular_home != null && fixture.regular_away != null;
+  const isLive = fixture.status === "live";
+  const isFinished = fixture.status === "finished";
+  const resultLabel = hasResult
+    ? `${fixture.regular_home}:${fixture.regular_away}${fixture.after_extra_time ? " n.V." : ""}`
+    : "–:–";
+  // While a match is live and has a score, show a provisional projection of the
+  // points each tip would earn IF the current scoreline held. Display only —
+  // the authoritative scores are written by score_fixture at full time.
+  const useProjection = isLive && hasResult;
 
-  const [{ data: predictions }, { data: scores }, { count: memberCount }] = await Promise.all([
-    supabase
-      .from("prediction")
-      .select("user_id, home_goals, away_goals")
-      .eq("tenant_id", tenantId)
-      .eq("fixture_id", id),
-    supabase
-      .from("prediction_score")
-      .select("user_id, points, category")
-      .eq("tenant_id", tenantId)
-      .eq("fixture_id", id),
-    supabase
-      .from("tenant_member")
-      .select("user_id", { count: "exact", head: true })
-      .eq("tenant_id", tenantId),
-  ]);
+  const [{ data: predictions }, { data: scores }, { count: memberCount }, pulse] =
+    await Promise.all([
+      supabase
+        .from("prediction")
+        .select("user_id, home_goals, away_goals, advancing_team_id")
+        .eq("tenant_id", tenantId)
+        .eq("fixture_id", id),
+      supabase
+        .from("prediction_score")
+        .select("user_id, points, category")
+        .eq("tenant_id", tenantId)
+        .eq("fixture_id", id),
+      supabase
+        .from("tenant_member")
+        .select("user_id", { count: "exact", head: true })
+        .eq("tenant_id", tenantId),
+      getTipPulse(tenantId),
+    ]);
 
   const userIds = (predictions ?? []).map((p) => p.user_id);
   const { data: profiles } = userIds.length
@@ -74,6 +89,28 @@ export default async function FixtureDetailPage({
     : { data: [] };
   const nameById = new Map((profiles ?? []).map((p) => [p.user_id, p.display_name]));
   const scoreByUser = new Map((scores ?? []).map((s) => [s.user_id, s]));
+
+  // Provisional points per member at the current live scoreline (display only).
+  const projByUser = new Map<string, { points: number; category: ScoreCategory }>();
+  if (useProjection) {
+    const config = await getScoringConfig(supabase, tenantId);
+    const stage = (fixture.stage?.kind ?? "other") as StageKind;
+    for (const p of predictions ?? []) {
+      projByUser.set(
+        p.user_id,
+        scorePrediction({
+          predHome: p.home_goals,
+          predAway: p.away_goals,
+          predAdvancing: p.advancing_team_id,
+          resHome: fixture.regular_home,
+          resAway: fixture.regular_away,
+          resWinner: null, // not decided mid-match → no advancing bonus yet
+          stage,
+          config,
+        }),
+      );
+    }
+  }
 
   // Consensus (most-common scoreline).
   const tally = new Map<string, number>();
@@ -84,46 +121,101 @@ export default async function FixtureDetailPage({
   const consensus = [...tally.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 
   const rows = (predictions ?? [])
-    .map((p) => ({
-      userId: p.user_id,
-      name: nameById.get(p.user_id) ?? "—",
-      tip: `${p.home_goals}:${p.away_goals}`,
-      points: scoreByUser.get(p.user_id)?.points ?? null,
-      category: (scoreByUser.get(p.user_id)?.category ?? null) as ScoreCategory | null,
-      isMe: p.user_id === userId,
-    }))
+    .map((p) => {
+      const graded = useProjection ? projByUser.get(p.user_id) : scoreByUser.get(p.user_id);
+      return {
+        userId: p.user_id,
+        name: nameById.get(p.user_id) ?? "—",
+        tip: `${p.home_goals}:${p.away_goals}`,
+        points: graded?.points ?? null,
+        category: (graded?.category ?? null) as ScoreCategory | null,
+        isMe: p.user_id === userId,
+      };
+    })
     .sort((a, b) => (b.points ?? -1) - (a.points ?? -1));
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className={cn(isLive && "border-live/40")}>
         <CardContent className="space-y-2 py-4">
           <p className="text-muted-foreground text-center text-xs">{fixture.stage?.name}</p>
           <div className="flex items-center justify-center gap-3">
             <TeamIdentity team={home} align="end" className="flex-1" />
-            <span className="font-heading shrink-0 text-2xl font-extrabold tabular-nums">
+            <span
+              className={cn(
+                "font-heading shrink-0 text-2xl font-extrabold tabular-nums",
+                isLive && "text-live",
+              )}
+            >
               {hasResult
                 ? `${fixture.regular_home}:${fixture.regular_away}${fixture.after_extra_time ? " n.V." : ""}`
                 : "–:–"}
             </span>
             <TeamIdentity team={away} className="flex-1" />
           </div>
-          <p className="text-muted-foreground text-center text-xs">
-            {formatDateTime(fixture.kickoff_at)} Uhr
-          </p>
+          {isLive ? (
+            <p className="text-live flex items-center justify-center gap-1 text-center text-xs font-semibold">
+              <span
+                className="bg-live size-1.5 rounded-full motion-safe:animate-pulse"
+                aria-hidden
+              />
+              {de.status.live}
+            </p>
+          ) : (
+            <p className="text-muted-foreground text-center text-xs">
+              {formatDateTime(fixture.kickoff_at)} Uhr
+            </p>
+          )}
         </CardContent>
       </Card>
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="font-heading text-lg font-bold">{de.predictions.allTitle}</h2>
-          {kickedOff && (
+          {useProjection ? (
+            <span className="text-live text-xs font-semibold">{de.predictions.liveProjection}</span>
+          ) : kickedOff ? (
             <span className="text-muted-foreground text-xs">
               {de.predictions.submittedCount(rows.length, memberCount ?? rows.length)}
               {consensus && ` · ${de.predictions.consensus} ${consensus}`}
             </span>
+          ) : (
+            pulse.members > 0 && (
+              <span className="text-muted-foreground text-xs">
+                {de.predictions.submittedCount(pulse.counts[id] ?? 0, pulse.members)}
+              </span>
+            )
           )}
         </div>
+
+        {isFinished && rows.length > 0 && (
+          <MatchShareCard
+            groupName={tenantName}
+            fixture={{
+              homeName: home?.name ?? "?",
+              homeCode: home?.shortName ?? null,
+              awayName: away?.name ?? "?",
+              awayCode: away?.shortName ?? null,
+              kickoffAt: fixture.kickoff_at,
+              stageName: fixture.stage?.name ?? "",
+              resultLabel,
+            }}
+            rows={rows.map((r) => ({
+              userId: r.userId,
+              name: r.name,
+              tip: r.tip,
+              points: r.points,
+              category: r.category,
+            }))}
+          />
+        )}
+
+        {useProjection && (
+          <>
+            <p className="text-muted-foreground text-xs">{de.predictions.liveProjectionNote}</p>
+            <LiveRefresher />
+          </>
+        )}
 
         {!kickedOff ? (
           <p className="text-muted-foreground text-sm">{de.predictions.notVisibleYet}</p>

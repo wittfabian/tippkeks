@@ -35,11 +35,14 @@ export function MatchCard({
   fixture: f,
   tenantId,
   canTip,
+  pulse,
 }: {
   fixture: FixtureVM;
   tenantId: string;
   /** Whether the current user may submit a tip (members in view-only mode can't). */
   canTip: boolean;
+  /** Pre-kickoff group tip count (aggregate only — never reveals tip content). */
+  pulse?: { tipped: number; members: number };
 }) {
   const hasResult = f.regularHome != null && f.regularAway != null;
   const isLive = f.status === "live";
@@ -66,7 +69,18 @@ export function MatchCard({
           ) : f.locked ? (
             <span>{formatTime(f.kickoffAt)} Uhr</span>
           ) : (
-            <span className="inline-flex items-center gap-1">{formatTime(f.kickoffAt)} Uhr</span>
+            <span className="inline-flex items-center gap-2">
+              {pulse && pulse.members > 0 && (
+                <span
+                  className="inline-flex items-center gap-1"
+                  title={de.predictions.pulseTitle(pulse.tipped, pulse.members)}
+                >
+                  <span className="bg-primary/70 size-1.5 rounded-full" aria-hidden />
+                  {de.predictions.pulse(pulse.tipped, pulse.members)}
+                </span>
+              )}
+              <span>{formatTime(f.kickoffAt)} Uhr</span>
+            </span>
           )}
         </div>
 

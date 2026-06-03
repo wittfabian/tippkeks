@@ -240,6 +240,7 @@ export async function saveMemberTipsAction(
     return { error: de.admin.tipsError };
   }
 
+  await invalidateTags(`tip-pulse:${parsed.data.tenantId}`);
   revalidatePath(`/${parsed.data.tenantId}/admin`);
   revalidatePath(`/${parsed.data.tenantId}/matches`);
   return { error: null, info: de.admin.tipsSaved(rows.length) };
