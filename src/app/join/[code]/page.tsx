@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Wordmark } from "@/components/brand/logo";
@@ -7,7 +8,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth/membership";
 import { de } from "@/messages/de";
 
-export const metadata = { title: de.invite.confirmTitle };
+// Invite-flavoured preview copy so a shared link reads like an invitation.
+// Next merges metadata shallowly, so redefining openGraph/twitter here replaces
+// the whole object inherited from the root — the brand image must be re-stated
+// (resolved against metadataBase) or the shared link would show no preview image.
+const previewImage = { url: "/opengraph-image", width: 1200, height: 630, alt: de.app.name };
+export const metadata: Metadata = {
+  title: de.invite.confirmTitle,
+  openGraph: {
+    title: de.invite.welcomeTitle,
+    description: de.invite.welcomeBody,
+    images: [previewImage],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: de.invite.welcomeTitle,
+    description: de.invite.welcomeBody,
+    images: [previewImage],
+  },
+};
 
 /**
  * Public landing for a shared invite link. Sits at the top level (outside the

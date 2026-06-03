@@ -5,7 +5,14 @@ import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { serverEnv } from "@/lib/env.server";
 import { de } from "@/messages/de";
+
+// Absolute base for Open Graph / icon URLs. Link-preview crawlers (Teams, Slack,
+// WhatsApp) require absolute og:image URLs, so the relative opengraph-image route
+// must resolve against the public origin — same SITE_URL the auth redirects use,
+// falling back to localhost in dev (where SITE_URL is intentionally unset).
+const siteUrl = serverEnv.SITE_URL ?? "http://localhost:3000";
 
 const geistSans = Geist({
   variable: "--font-sans",
@@ -25,12 +32,29 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: de.app.name,
     template: `%s · ${de.app.name}`,
   },
   description: de.app.description,
   applicationName: de.app.name,
+  // Link-preview cards. The opengraph-image route auto-fills og:image +
+  // twitter:image (with dimensions); these set the surrounding copy. Per-page
+  // metadata (e.g. the invite page) overrides title/description but inherits the
+  // image, so every shared link shows the brand mark.
+  openGraph: {
+    type: "website",
+    siteName: de.app.name,
+    locale: "de_DE",
+    title: de.app.name,
+    description: de.app.description,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: de.app.name,
+    description: de.app.description,
+  },
   // Full-screen launch + correct title when added to the iOS home screen.
   appleWebApp: {
     capable: true,
