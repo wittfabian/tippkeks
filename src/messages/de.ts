@@ -479,6 +479,29 @@ export const de = {
       contact: "Fragen oder Feedback? Schreib uns:",
     },
   },
+  pwa: {
+    // Short label for the home-screen icon (manifest short_name) — keep it short.
+    shortName: "TippKeks",
+    // Install affordance on the profile page.
+    sectionTitle: "App installieren",
+    description:
+      "Leg dir TippKeks auf den Startbildschirm und nutze es wie eine App – im Vollbild, mit eigenem Icon und ganz ohne App Store.",
+    installButton: "App installieren",
+    // Shown when the app is already running as an installed PWA (standalone).
+    installed: "TippKeks ist als App installiert. Viel Spaß beim Tippen!",
+    // iOS/iPadOS has no install prompt — guide the user through Safari's menu.
+    iosTitle: "Auf dem iPhone oder iPad installieren",
+    iosSteps: [
+      "Tippe in Safari unten (oder oben) auf das Teilen-Symbol.",
+      "Wähle „Zum Home-Bildschirm“.",
+      "Bestätige mit „Hinzufügen“ – fertig.",
+    ],
+    // Offline fallback page (public/offline.html, generated from these strings).
+    offlineTitle: "Keine Verbindung",
+    offlineBody:
+      "TippKeks braucht eine Internetverbindung. Sobald du wieder online bist, geht's weiter.",
+    offlineRetry: "Erneut versuchen",
+  },
   common: {
     cancel: "Abbrechen",
     back: "Zurück",
