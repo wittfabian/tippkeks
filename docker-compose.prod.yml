@@ -4,21 +4,29 @@
 # network (`redis://valkey:6379`). The app publishes on loopback only; terminate
 # TLS with a reverse proxy on the host (Caddy/nginx/Traefik) upstreaming to it.
 #
-# Bring up (build args + runtime secrets both come from .env.prod):
-#   podman compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+# Bring up (pulls the pre-built image; runtime secrets come from .env.prod):
+#   podman compose --env-file .env.prod -f docker-compose.prod.yml up -d
+#
+# This file only RUNS the finished image — it does NOT build. The app image is built
+# and published by CI (.github/workflows/release.yml); NEXT_PUBLIC_* and
+# NEXT_SERVER_ACTIONS_ENCRYPTION_KEY are baked in there (from GitHub Variables /
+# Secrets). To roll out a new build, push a new tag and bump `image:` below (or pull).
 #
 # .env.prod is git-ignored — never commit it. See .env.example for the keys.
-# Required in .env.prod:
-#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY   (build-time + runtime)
-#   NEXT_SERVER_ACTIONS_ENCRYPTION_KEY  (build-time + runtime; openssl rand -base64
-#       32 — `next build` embeds it, keep stable, MANDATORY once you run >1 replica)
-#   SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET                    (runtime secrets)
+# Required in .env.prod (all RUNTIME — injected into the container; nothing here is
+# build-time):
+#   NEXT_SERVER_ACTIONS_ENCRYPTION_KEY  (openssl rand -base64 32 — must be the SAME
+#       value baked into the image at CI build, else "Failed to find Server Action"
+#       after a rollout; MANDATORY once you run >1 replica)
+#   SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET
 #   SITE_URL  (public origin, e.g. https://tippkeks.de — builds absolute auth
 #       redirect links; without it the email-confirmation link points at the
 #       internal container address 0.0.0.0:3000)
 #   FOOTBALL_DATA_API_TOKEN, FOOTBALL_DATA_COMPETITION        (sync)
 #   REDIS_PASSWORD  (Valkey auth — openssl rand -hex 32; keep it URL-safe so it
 #       can be embedded in REDIS_URL without percent-encoding)
+# NEXT_PUBLIC_SUPABASE_URL / _ANON_KEY are NOT needed here — Next inlines them into
+# the bundle at CI build time (they live as GitHub Variables, not in .env.prod).
 # REDIS_PASSWORD is consumed at RUNTIME as a container env var (not interpolated
 # into this file): Valkey reads it in its shell entrypoint and the app assembles
 # REDIS_URL from it at startup. Supply it via `--env-file .env.prod` or an
@@ -28,21 +36,12 @@ name: tippkeks
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        # NEXT_PUBLIC_* are inlined into the CLIENT bundle at build time, so they
-        # must be present for `--env-file .env.prod` interpolation here.
-        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-        # Embedded by `next build` (also into any Edge bundle, where runtime can't
-        # override it). The same value is injected at runtime via env_file below.
-        NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY}
-    image: tippkeks-app:latest
+    # Pre-built image published by CI (release.yml). Bump the tag to roll out a new
+    # build; `podman compose pull app` fetches it. This file never builds.
+    image: ghcr.io/wittfabian/tippkeks:latest
     restart: unless-stopped
-    # Runtime secrets are injected into the container (distinct from the
-    # build-arg interpolation above).
+    # Runtime secrets injected into the container (see the header for the required
+    # keys). The encryption key here must match the value baked in at CI build time.
     env_file:
       - .env.prod
     ports:

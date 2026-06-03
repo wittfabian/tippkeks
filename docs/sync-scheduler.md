@@ -34,7 +34,7 @@ it needs neither the host loopback port nor TLS.
 It comes up with the rest of the stack:
 
 ```bash
-podman compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+podman compose --env-file .env.prod -f docker-compose.prod.yml up -d
 ```
 
 Only `CRON_SECRET` is injected into the sidecar (interpolated from `.env.prod`),

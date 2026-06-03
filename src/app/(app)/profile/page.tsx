@@ -5,6 +5,7 @@ import {
   EmailForm,
   PasswordForm,
 } from "@/components/profile/profile-form";
+import { InstallButton } from "@/components/pwa/install-button";
 import { requireUser } from "@/lib/auth/membership";
 import { createClient } from "@/lib/supabase/server";
 import { de } from "@/messages/de";
@@ -55,6 +56,13 @@ export default async function ProfilePage() {
         <h2 className="text-muted-foreground text-sm font-medium">{de.profile.mfaTitle}</h2>
         <div className="rounded-md border p-4">
           <MfaSection />
+        </div>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-muted-foreground text-sm font-medium">{de.pwa.sectionTitle}</h2>
+        <div className="rounded-md border p-4">
+          <InstallButton />
         </div>
       </section>
 

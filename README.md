@@ -80,10 +80,11 @@ with the migrations applied.
 ### 2. Release image — `release.yml` (manual, builds & pushes a Docker image to GHCR)
 
 Triggered from the **Actions** tab → _Release image_ → enter a tag (e.g. `v1.0.0` or `latest`). It
-builds the production image with the two `NEXT_PUBLIC_*` Variables and the
-`NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` Secret above as build args, and pushes it to
-`ghcr.io/<owner>/<repo>`. The encryption key is embedded into the build, so it must be set as a
-Secret (not provided only at runtime) — see the table above.
+builds the production image with the two `NEXT_PUBLIC_*` Variables as build args and the
+`NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` Secret above as a **BuildKit secret** (mounted during
+`next build`, never persisted in image layers/history), and pushes it to `ghcr.io/<owner>/<repo>`.
+The encryption key is embedded into the build, so it must be set as a Secret (not provided only at
+runtime) — see the table above.
 
 ### Runtime secrets (NOT configured in GitHub)
 

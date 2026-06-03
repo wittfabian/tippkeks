@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Archivo, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { de } from "@/messages/de";
@@ -29,6 +30,26 @@ export const metadata: Metadata = {
     template: `%s · ${de.app.name}`,
   },
   description: de.app.description,
+  applicationName: de.app.name,
+  // Full-screen launch + correct title when added to the iOS home screen.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: de.app.name,
+  },
+  // Next emits the modern `mobile-web-app-capable`; the apple-prefixed legacy
+  // tag is added explicitly so iOS < 16.4 also launches full-screen.
+  other: { "apple-mobile-web-app-capable": "yes" },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbfdfb" },
+    { media: "(prefers-color-scheme: dark)", color: "#16201c" },
+  ],
 };
 
 export default function RootLayout({
@@ -51,6 +72,7 @@ export default function RootLayout({
         >
           {children}
           <Toaster position="top-center" />
+          <ServiceWorkerRegister />
         </ThemeProvider>
       </body>
     </html>

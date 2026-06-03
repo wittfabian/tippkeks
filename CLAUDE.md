@@ -51,6 +51,7 @@ pnpm format         # prettier --write .
 
 pnpm sync                       # run the football-data.org sync once (needs FOOTBALL_DATA_API_TOKEN)
 pnpm tsx scripts/generate-seed.ts   # regenerate supabase/seed.sql from data/openfootball/
+pnpm tsx scripts/generate-pwa-assets.ts  # regenerate PWA icons (from src/app/icon.svg) + public/offline.html (from de.ts)
 pnpm tsx scripts/set-site-admin.ts <email> [--revoke]  # grant/revoke site-admin (service role)
 pnpm tsx scripts/seed-mock.ts [group-id]   # DEV-ONLY: mock players + tips + finished results → leaderboard (defaults to newest group)
 

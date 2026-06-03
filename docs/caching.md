@@ -92,12 +92,15 @@ app); the app publishes on `127.0.0.1:3000` for a host reverse proxy to
 TLS-terminate and upstream to.
 
 ```bash
-podman compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+podman compose --env-file .env.prod -f docker-compose.prod.yml pull
+podman compose --env-file .env.prod -f docker-compose.prod.yml up -d
 ```
 
-`--env-file .env.prod` serves both roles: compose interpolates the build-time
-`NEXT_PUBLIC_*` args from it, and the app's `env_file` injects the runtime
-secrets. You set only `REDIS_PASSWORD` in `.env.prod` (not `REDIS_URL`); the app
+The compose file runs the **pre-built** image from GHCR (published by CI,
+`release.yml`) — it does not build. The app's `env_file` injects the runtime
+secrets; `NEXT_PUBLIC_*` and `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` are already baked
+into the image at CI build time. You set only `REDIS_PASSWORD` in `.env.prod` (not
+`REDIS_URL`); the app
 assembles `redis://:<password>@valkey:6379` at startup (see `src/lib/env.server.ts`),
 so the connection always points at the private service. An explicit `REDIS_URL`,
 if set, takes precedence (that is the local-dev path against `127.0.0.1:6379`).
