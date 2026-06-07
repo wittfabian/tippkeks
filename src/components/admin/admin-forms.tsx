@@ -337,12 +337,14 @@ export function MemberTipTable({
           </tbody>
         </table>
       </div>
-      <div className="flex items-center justify-between gap-2">
-        <FormMessage error={state.error} info={state.info} size="xs" />
-        <div className="flex items-center gap-2">
-          <SubmitButton label={de.admin.tipsSave} size="sm" />
-          {actions}
+      <div className="flex items-center gap-2">
+        {/* flex-1 wrapper always occupies the left space so the buttons stay put;
+            the message is shown right-aligned next to them and never reflows the row. */}
+        <div className="min-w-0 flex-1 text-right">
+          <FormMessage error={state.error} info={state.info} size="xs" />
         </div>
+        <SubmitButton label={de.admin.tipsSave} size="sm" />
+        {actions}
       </div>
     </form>
   );
