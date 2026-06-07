@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import {
   deleteAccountAction,
@@ -17,6 +17,9 @@ import { de } from "@/messages/de";
 
 export function DisplayNameForm({ displayName }: { displayName: string }) {
   const [state, formAction] = useActionState(updateDisplayNameAction, initialActionState);
+  // Controlled: the action re-renders the profile page, changing the prop (and
+  // thus an uncontrolled input's defaultValue) after init — which Base UI warns about.
+  const [value, setValue] = useState(displayName);
   return (
     <form action={formAction} className="space-y-3">
       <div className="space-y-1.5">
@@ -27,7 +30,8 @@ export function DisplayNameForm({ displayName }: { displayName: string }) {
           required
           minLength={1}
           maxLength={60}
-          defaultValue={displayName}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
         />
       </div>
       <FormMessage error={state.error} info={state.info} />
@@ -38,6 +42,8 @@ export function DisplayNameForm({ displayName }: { displayName: string }) {
 
 export function EmailForm({ email }: { email: string }) {
   const [state, formAction] = useActionState(updateEmailAction, initialActionState);
+  // Controlled: see DisplayNameForm — the prop changes after the action re-renders.
+  const [value, setValue] = useState(email);
   return (
     <form action={formAction} className="space-y-3">
       <div className="space-y-1.5">
@@ -48,7 +54,8 @@ export function EmailForm({ email }: { email: string }) {
           type="email"
           required
           autoComplete="email"
-          defaultValue={email}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
         />
       </div>
       <FormMessage error={state.error} info={state.info} />

@@ -267,6 +267,23 @@ export function MemberTipTable({
   actions?: ReactNode;
 }) {
   const [state, formAction] = useActionState(saveMemberTipsAction, initialActionState);
+  // Controlled inputs (not defaultValue): the score values are dynamic server
+  // data, and an uncontrolled FieldControl warns when its default changes after
+  // init. The parent keys this table on fixtureId, so switching fixtures remounts
+  // and re-seeds this state from the new members' predictions.
+  const [scores, setScores] = useState(() =>
+    Object.fromEntries(
+      members.map((m) => [
+        m.userId,
+        { home: m.home?.toString() ?? "", away: m.away?.toString() ?? "" },
+      ]),
+    ),
+  );
+  const setScore = (userId: string, side: "home" | "away", value: string) =>
+    setScores((prev) => ({
+      ...prev,
+      [userId]: { ...(prev[userId] ?? { home: "", away: "" }), [side]: value },
+    }));
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="tenantId" value={tenantId} />
@@ -293,7 +310,8 @@ export function MemberTipTable({
                     min={0}
                     max={99}
                     name={`home_${m.userId}`}
-                    defaultValue={m.home ?? ""}
+                    value={scores[m.userId]?.home ?? ""}
+                    onChange={(e) => setScore(m.userId, "home", e.target.value)}
                     aria-label={`${m.name} ${homeName}`}
                     className="mx-auto w-14 text-center tabular-nums"
                   />
@@ -308,7 +326,8 @@ export function MemberTipTable({
                     min={0}
                     max={99}
                     name={`away_${m.userId}`}
-                    defaultValue={m.away ?? ""}
+                    value={scores[m.userId]?.away ?? ""}
+                    onChange={(e) => setScore(m.userId, "away", e.target.value)}
                     aria-label={`${m.name} ${awayName}`}
                     className="mx-auto w-14 text-center tabular-nums"
                   />
@@ -338,6 +357,15 @@ export interface ScoringValues {
 
 export function ScoringForm({ tenantId, values }: { tenantId: string; values: ScoringValues }) {
   const [state, formAction] = useActionState(saveScoringAction, initialActionState);
+  // Controlled: a server action re-renders this page, so the `values` prop (and
+  // thus an uncontrolled input's defaultValue) would change after init, which a
+  // Base UI FieldControl warns about.
+  const [vals, setVals] = useState<Record<keyof ScoringValues, string>>(() => ({
+    exact: String(values.exact),
+    goalDiff: String(values.goalDiff),
+    tendency: String(values.tendency),
+    advanceBonus: String(values.advanceBonus),
+  }));
   const fields: { name: keyof ScoringValues; label: string; info: string }[] = [
     { name: "exact", label: de.admin.scoringExact, info: de.admin.scoringExactInfo },
     { name: "goalDiff", label: de.admin.scoringDiff, info: de.admin.scoringDiffInfo },
@@ -373,7 +401,8 @@ export function ScoringForm({ tenantId, values }: { tenantId: string; values: Sc
               min={0}
               max={100}
               required
-              defaultValue={values[f.name]}
+              value={vals[f.name]}
+              onChange={(e) => setVals((v) => ({ ...v, [f.name]: e.target.value }))}
               className="mt-auto"
             />
           </div>

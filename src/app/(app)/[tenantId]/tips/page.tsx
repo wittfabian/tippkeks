@@ -71,10 +71,9 @@ export default async function EnterTipsPage({
           <p className="text-muted-foreground text-sm">{de.admin.tipsPickFixture}</p>
           <FixturePicker base={base} selectedId={selected?.id ?? ""} groups={groups} />
           {selected && (
-            // key forces a remount on fixture change: the score inputs are
-            // uncontrolled (defaultValue), and their names key on userId only —
-            // without a remount they keep the previous fixture's typed values,
-            // which would then be saved onto whatever fixture is selected next.
+            // key forces a remount on fixture change so the table re-seeds its
+            // controlled score state from the new fixture's predictions; without
+            // it the state would persist and be saved onto the next fixture.
             <MemberTipTable
               key={selected.id}
               tenantId={tenantId}
