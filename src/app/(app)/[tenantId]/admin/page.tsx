@@ -146,6 +146,9 @@ async function MembersTab({
         <form method="get" className="flex flex-1 gap-2">
           <input type="hidden" name="tab" value="members" />
           <Input
+            // key remounts on query change so the uncontrolled defaultValue
+            // re-seeds cleanly (a Base UI FieldControl warns if it changes after init).
+            key={query}
             name="q"
             defaultValue={query}
             placeholder={de.admin.memberSearchPlaceholder}

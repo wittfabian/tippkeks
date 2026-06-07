@@ -71,7 +71,11 @@ export default async function EnterTipsPage({
           <p className="text-muted-foreground text-sm">{de.admin.tipsPickFixture}</p>
           <FixturePicker base={base} selectedId={selected?.id ?? ""} groups={groups} />
           {selected && (
+            // key forces a remount on fixture change so the table re-seeds its
+            // controlled score state from the new fixture's predictions; without
+            // it the state would persist and be saved onto the next fixture.
             <MemberTipTable
+              key={selected.id}
               tenantId={tenantId}
               fixtureId={selected.id}
               homeName={selected.home?.name ?? "?"}

@@ -8,11 +8,21 @@ import { createClient } from "@/lib/supabase/server";
 import { de } from "@/messages/de";
 import type { ActionState } from "@/actions/types";
 
+// z.coerce.number() turns "" into 0, so a blank goal field would silently save a
+// 0:0 tip. The visible inputs guard this client-side via `required`, but the
+// action is the trust boundary — require 1–2 digits explicitly (which also bounds
+// the value to 0–99) and reject blank/missing/non-numeric.
+const goals = z
+  .string()
+  .trim()
+  .regex(/^\d{1,2}$/)
+  .transform(Number);
+
 const schema = z.object({
   tenantId: z.string().uuid(),
   fixtureId: z.string().uuid(),
-  homeGoals: z.coerce.number().int().min(0).max(99),
-  awayGoals: z.coerce.number().int().min(0).max(99),
+  homeGoals: goals,
+  awayGoals: goals,
   advancingTeamId: z.string().uuid().optional(),
 });
 
