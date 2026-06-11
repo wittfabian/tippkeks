@@ -22,6 +22,27 @@ only provide the two pages and the email template.
    required — possession of the emailed token is the proof. The session stays
    valid, so the user continues straight into the app.
 
+### MFA (two-factor) accounts
+
+A recovery token only yields an **aal1** session, but GoTrue refuses to change a
+password below **aal2** when a TOTP factor is enrolled (`AAL2 session is required
+to update password`). So when the `verifyOtp` response shows a verified factor,
+`setNewPasswordAction` returns `needsMfa` (plus the factor id) instead of updating;
+the form reveals a TOTP field and the user submits again. The second submit
+verifies the code (`mfa.challengeAndVerify` → aal2) and only then updates the
+password. The aal1 session persists between the two submits, so the single-use
+token is spent exactly once — on the first submit, which is also the only place a
+server client reliably sees the factor (`listFactors` /
+`getAuthenticatorAssuranceLevel` read the cached session user, empty on the
+cookie-only second submit under asymmetric JWTs), hence the factor id is
+round-tripped via a hidden field.
+
+The user re-enters the new password on the second submit (`newPasswordMfaIntro`
+explains why): React re-runs this route's server component after the first action,
+remounting the form and clearing the field. Persisting the value client-side
+fought both that remount and Base UI's `Field.Control` reset behaviour, so it is
+simply collected again.
+
 ### Why the token is verified on submit, not on a GET
 
 The recovery `token_hash` is **single-use**. Email security gateways and browser

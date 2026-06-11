@@ -230,6 +230,12 @@ const newPasswordSchema = z.object({
   // /auth/confirm GET. Absent for the legacy path where /auth/confirm already
   // established the session.
   tokenHash: z.string().min(1).optional(),
+  // Both only present on the MFA second submit. mfaFactorId is carried back from
+  // the first submit because it cannot be rediscovered then: listFactors reads
+  // the session user's factors, which a cookie-only (no fresh verifyOtp) session
+  // does not carry under asymmetric JWTs.
+  mfaCode: z.string().trim().optional(),
+  mfaFactorId: z.string().min(1).optional(),
 });
 
 /**
@@ -240,6 +246,15 @@ const newPasswordSchema = z.object({
  * verifyOtp establishes the session; updateUser then sets the password. The
  * legacy path (session already set by /auth/confirm, no tokenHash) still works.
  * The (reset) layout, unlike (public), does not bounce the signed-in user away.
+ *
+ * MFA: a recovery token only yields an aal1 session, but GoTrue refuses to
+ * change a password below aal2 when a factor is enrolled. When the verifyOtp
+ * response shows a verified factor we return `needsMfa` (the form reveals a TOTP
+ * field) plus the factor id, and step up to aal2 on the next submit. The aal1
+ * session persists in the cookie between the two, so the single-use token is
+ * spent exactly once (the first submit). The factor id is round-tripped because
+ * it can't be rediscovered on the second submit — listFactors reads the cached
+ * session user, which a cookie-only session doesn't carry under asymmetric JWTs.
  */
 export async function setNewPasswordAction(
   _prev: ActionState,
@@ -248,6 +263,8 @@ export async function setNewPasswordAction(
   const parsed = newPasswordSchema.safeParse({
     password: formData.get("password"),
     tokenHash: formData.get("token_hash") ?? undefined,
+    mfaCode: formData.get("mfaCode") ?? undefined,
+    mfaFactorId: formData.get("mfaFactorId") ?? undefined,
   });
   if (!parsed.success) {
     // A bad/expired token_hash never reaches Zod (it accepts any non-empty
@@ -257,17 +274,43 @@ export async function setNewPasswordAction(
 
   const supabase = await createClient();
 
-  if (parsed.data.tokenHash) {
-    const { error } = await supabase.auth.verifyOtp({
+  // Spend the recovery token only when there is no session yet — i.e. on the
+  // first submit. On the MFA second submit the aal1 session already exists, so
+  // we skip verifyOtp and never reuse the (now consumed) single-use token. The
+  // verifyOtp response is also the one place a server client reliably sees the
+  // user's enrolled factors, so capture the verified TOTP id from it.
+  let verifiedTotpId: string | null = null;
+  const { data: existing } = await supabase.auth.getClaims();
+  if (!existing?.claims?.sub) {
+    if (!parsed.data.tokenHash) return { error: de.auth.newPasswordNoSession };
+    const { data: verified, error } = await supabase.auth.verifyOtp({
       type: "recovery",
       token_hash: parsed.data.tokenHash,
     });
     // Spent or expired link — same message as the page's no-session state.
     if (error) return { error: de.auth.newPasswordNoSession };
+    verifiedTotpId =
+      verified?.user?.factors?.find((f) => f.factor_type === "totp" && f.status === "verified")
+        ?.id ?? null;
   }
 
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims?.sub) return { error: de.auth.newPasswordNoSession };
+
+  // Step up to aal2 when a factor is enrolled, otherwise updateUser is rejected
+  // with "AAL2 session is required to update password". currentLevel comes from
+  // the JWT (reliable on any session); the factor id comes from this submit's
+  // verifyOtp, or is carried back from the first submit.
+  const factorId = verifiedTotpId ?? parsed.data.mfaFactorId ?? null;
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (factorId && aal?.currentLevel !== "aal2") {
+    if (!parsed.data.mfaCode) return { error: null, needsMfa: true, mfaFactorId: factorId };
+    const { error } = await supabase.auth.mfa.challengeAndVerify({
+      factorId,
+      code: parsed.data.mfaCode,
+    });
+    if (error) return { error: de.auth.mfaCodeError, needsMfa: true, mfaFactorId: factorId };
+  }
 
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) {
