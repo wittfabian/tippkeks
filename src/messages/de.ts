@@ -100,6 +100,8 @@ export const de = {
     backToLogin: "Zur Anmeldung",
     newPasswordTitle: "Neues Passwort",
     newPasswordIntro: "Vergib jetzt ein neues Passwort für dein Konto.",
+    newPasswordMfaIntro:
+      "Dein Konto ist mit Zwei-Faktor-Authentifizierung geschützt. Gib dein neues Passwort noch einmal ein und bestätige mit dem Code aus deiner Authenticator-App.",
     newPassword: "Neues Passwort",
     newPasswordSubmit: "Passwort speichern",
     newPasswordSaved: "Passwort aktualisiert.",

@@ -11,6 +11,13 @@ export type ActionState = {
    *  submit (the original input is replaced by the confirmation prompt). */
   needsMergeConfirm?: boolean;
   mergeEmail?: string;
+  /** Set by setNewPasswordAction when the recovering user has MFA enabled: the
+   *  recovery token only yields an aal1 session, but GoTrue requires aal2 to
+   *  change a password, so the reset form then asks for the TOTP code.
+   *  `mfaFactorId` is the factor to challenge, carried back so the second submit
+   *  (a cookie-only session that can't list factors) can still step up. */
+  needsMfa?: boolean;
+  mfaFactorId?: string;
 };
 
 export const initialActionState: ActionState = { error: null, info: null };
