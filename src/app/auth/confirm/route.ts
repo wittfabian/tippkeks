@@ -83,5 +83,13 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(new URL("/login", origin));
+  // verifyOtp failed, or the token/type was missing. For a recovery link this is
+  // almost always a single-use token that was already spent (email link-scanners
+  // and prefetchers fetch the URL before the user clicks), or one that expired.
+  // Land them on /reset-password — it detects the absent session and offers to
+  // request a fresh link, rather than dumping them on /login with no explanation
+  // (the reported "link just goes to login, can't change my password"). Other
+  // confirmation types keep the /login fallback.
+  const failurePath = type === "recovery" ? "/reset-password" : "/login";
+  return NextResponse.redirect(new URL(failurePath, origin));
 }
