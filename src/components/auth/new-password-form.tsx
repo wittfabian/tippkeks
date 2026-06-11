@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { de } from "@/messages/de";
 
-export function NewPasswordForm() {
+export function NewPasswordForm({ tokenHash }: { tokenHash: string | null }) {
   const [state, formAction] = useActionState(setNewPasswordAction, initialActionState);
 
   // On success the recovery session is still valid, so send the user straight
@@ -30,6 +30,9 @@ export function NewPasswordForm() {
 
   return (
     <form action={formAction} className="space-y-4">
+      {/* The recovery OTP, carried from the email link and spent server-side on
+          submit (not on the prefetchable page load). */}
+      {tokenHash ? <input type="hidden" name="token_hash" value={tokenHash} /> : null}
       <div className="space-y-2">
         <Label htmlFor="password">{de.auth.newPassword}</Label>
         <Input

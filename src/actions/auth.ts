@@ -223,22 +223,49 @@ export async function requestPasswordResetAction(
   return { error: null, info: de.auth.resetSent };
 }
 
-const newPasswordSchema = z.object({ password: z.string().min(8) });
+const newPasswordSchema = z.object({
+  password: z.string().min(8),
+  // The recovery link now carries its single-use OTP to this form (see the
+  // recovery email template) instead of spending it on the prefetchable
+  // /auth/confirm GET. Absent for the legacy path where /auth/confirm already
+  // established the session.
+  tokenHash: z.string().min(1).optional(),
+});
 
 /**
- * Set a new password during recovery. The recovery link established a session
- * via /auth/confirm; without it we refuse (no current-password reauth is needed
- * — possession of the emailed token is the proof). The (reset) layout, unlike
- * (public), does not bounce the now-signed-in user away before this runs.
+ * Set a new password during recovery. Possession of the emailed token is the
+ * proof (no current-password reauth). The token is verified HERE, on submit — a
+ * POST that email link-scanners and browser prefetchers don't trigger — so a
+ * scanned link no longer spends the single-use token before the user clicks.
+ * verifyOtp establishes the session; updateUser then sets the password. The
+ * legacy path (session already set by /auth/confirm, no tokenHash) still works.
+ * The (reset) layout, unlike (public), does not bounce the signed-in user away.
  */
 export async function setNewPasswordAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const parsed = newPasswordSchema.safeParse({ password: formData.get("password") });
-  if (!parsed.success) return { error: de.auth.passwordHint };
+  const parsed = newPasswordSchema.safeParse({
+    password: formData.get("password"),
+    tokenHash: formData.get("token_hash") ?? undefined,
+  });
+  if (!parsed.success) {
+    // A bad/expired token_hash never reaches Zod (it accepts any non-empty
+    // string); only a too-short password does, so this is the password hint.
+    return { error: de.auth.passwordHint };
+  }
 
   const supabase = await createClient();
+
+  if (parsed.data.tokenHash) {
+    const { error } = await supabase.auth.verifyOtp({
+      type: "recovery",
+      token_hash: parsed.data.tokenHash,
+    });
+    // Spent or expired link — same message as the page's no-session state.
+    if (error) return { error: de.auth.newPasswordNoSession };
+  }
+
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims?.sub) return { error: de.auth.newPasswordNoSession };
 

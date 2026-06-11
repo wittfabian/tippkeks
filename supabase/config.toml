@@ -240,11 +240,12 @@ otp_length = 6
 # for email delivery while limiting the window a leaked link is usable.
 otp_expiry = 1800
 
-# Custom recovery (password-reset) email. Uses the token_hash flow so the link
-# hits our own /auth/confirm route (verifyOtp) and lands on /reset-password.
-# IMPORTANT: configure the SAME template in the hosted Supabase dashboard
-# (Authentication → Email Templates → Reset Password) — config.toml only applies
-# to the local stack.
+# Custom recovery (password-reset) email. The link carries the single-use OTP
+# straight to /reset-password, which spends it only on submit (a POST) — not via
+# /auth/confirm, whose prefetchable GET would let email link-scanners consume the
+# token before the user clicks. IMPORTANT: configure the SAME template in the
+# hosted Supabase dashboard (Authentication → Email Templates → Reset Password) —
+# config.toml only applies to the local stack.
 [auth.email.template.recovery]
 subject = "Passwort zurücksetzen – TippKeks"
 content_path = "./supabase/templates/recovery.html"
