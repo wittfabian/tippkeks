@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { invalidateTags } from "@/lib/cache/cache";
 import { isSiteAdmin } from "@/lib/auth/membership";
+import { hasKickedOff } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { de } from "@/messages/de";
@@ -26,9 +27,13 @@ const MANAGED_EMAIL_DOMAIN = "managed.tippkeks.de";
 /** Supabase auth error code when an email is already taken by another account. */
 const EMAIL_EXISTS = "email_exists";
 
-/** Generate a short, readable invite code. */
+/**
+ * Generate an invite code. 16 hex chars ≈ 64 bits of entropy: an invite link is
+ * a bearer token, so the code space must be far too large to guess/enumerate
+ * online (the 8-char ≈ 32-bit code it replaced was brute-forceable in principle).
+ */
 function generateInviteCode(): string {
-  return crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase();
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 16).toUpperCase();
 }
 
 /**
@@ -98,7 +103,10 @@ export async function createInviteAction(
     max_uses: parsed.data.maxUses ?? null,
     created_by: userId,
   });
-  if (error) return { error: de.auth.errorGeneric };
+  if (error) {
+    logActionError("createInvite", error);
+    return { error: de.auth.errorGeneric };
+  }
 
   await supabase.from("admin_audit_log").insert({
     tenant_id: parsed.data.tenantId,
@@ -132,7 +140,10 @@ export async function deleteInviteAction(
     .delete()
     .eq("tenant_id", parsed.data.tenantId)
     .eq("code", parsed.data.code);
-  if (error) return { error: de.auth.errorGeneric };
+  if (error) {
+    logActionError("deleteInvite", error);
+    return { error: de.auth.errorGeneric };
+  }
 
   revalidatePath(`/${parsed.data.tenantId}/admin`);
   return { error: null, info: de.admin.inviteDeleted };
@@ -176,10 +187,11 @@ const memberTipsSchema = tenantField.extend({
 
 /**
  * Bulk-enter predictions for members of a fixture (one row per member in the
- * admin table). Empty rows are skipped; a half-filled row is rejected. The
- * deadline trigger and RLS (admin-writes-for-members) remain the real gates.
- * advancing_team_id is intentionally omitted so an existing knockout pick is
- * preserved on update.
+ * admin table). Empty rows are skipped; a half-filled row is rejected. RLS
+ * (admin-writes-for-members) is the real gate; admins are exempt from the
+ * deadline trigger, so this also corrects tips after kickoff — those writes are
+ * audited and trigger a rescore of finished fixtures. advancing_team_id is
+ * intentionally omitted so an existing knockout pick is preserved on update.
  */
 export async function saveMemberTipsAction(
   _prev: ActionState,
@@ -193,7 +205,8 @@ export async function saveMemberTipsAction(
   if (!parsed.success) return { error: de.admin.tipsError };
 
   const supabase = await createClient();
-  if (!(await adminUserId(supabase, parsed.data.tenantId))) return { error: de.admin.tipsError };
+  const actorId = await adminUserId(supabase, parsed.data.tenantId);
+  if (!actorId) return { error: de.admin.tipsError };
 
   // userIds is a client-supplied hidden field — validate each is a real UUID
   // before trusting it (RLS still rejects non-members, this fails fast/clearer).
@@ -228,15 +241,34 @@ export async function saveMemberTipsAction(
 
   if (rows.length === 0) return { error: null, info: de.admin.tipsSaved(0) };
 
-  // RLS lets an admin write for any member; the deadline trigger still applies.
-  // The upsert is one statement: if any row trips the deadline, the whole batch
-  // fails (acceptable — every row shares the same fixture/kickoff).
+  // Whether this is a post-kickoff correction (vs normal pre-kickoff entry).
+  // Admins are exempt from the deadline trigger, so this is the case we audit;
+  // a finished fixture's scores are also rescored by a DB trigger, so the
+  // leaderboard cache must be dropped below.
+  const { data: fixture } = await supabase
+    .from("fixture")
+    .select("kickoff_at")
+    .eq("id", parsed.data.fixtureId)
+    .maybeSingle();
+  const isCorrection = fixture != null && hasKickedOff(fixture.kickoff_at);
+
+  // RLS lets an admin write for any member; the deadline trigger exempts admins
+  // so corrections after kickoff go through. The upsert is one statement.
   const { error } = await supabase
     .from("prediction")
     .upsert(rows, { onConflict: "tenant_id,user_id,fixture_id" });
   if (error) {
     logActionError("saveMemberTips", error);
     return { error: de.admin.tipsError };
+  }
+
+  if (isCorrection) {
+    // Each post-kickoff content change is audited at the DB layer by the deadline
+    // trigger (so a correction made directly via PostgREST is covered too). Here
+    // we only refresh the leaderboard (the DB rescore trigger already updated a
+    // finished fixture).
+    await invalidateTags(`leaderboard:${parsed.data.tenantId}`);
+    revalidatePath(`/${parsed.data.tenantId}/leaderboard`);
   }
 
   await invalidateTags(`tip-pulse:${parsed.data.tenantId}`);
@@ -363,7 +395,11 @@ export async function saveScoringAction(
     .eq("tenant_id", parsed.data.tenantId)
     .eq("is_active", true)
     .maybeSingle();
-  if (!active) return { error: de.auth.errorGeneric };
+  if (!active) {
+    // No active rule set is a data-integrity signal (every tenant should have one).
+    logActionError("saveScoring.noActiveRuleSet", { tenantId: parsed.data.tenantId });
+    return { error: de.auth.errorGeneric };
+  }
 
   const existing = (active.config ?? {}) as { stage_multipliers?: Record<string, number> };
   const config = {
@@ -378,13 +414,20 @@ export async function saveScoringAction(
     .from("scoring_rule_set")
     .update({ config })
     .eq("id", active.id);
-  if (updateError) return { error: de.auth.errorGeneric };
+  if (updateError) {
+    logActionError("saveScoring.update", updateError);
+    return { error: de.auth.errorGeneric };
+  }
 
-  // Recompute every finished fixture for this tenant (admin-checked in SQL).
+  // Recompute every finished fixture for this tenant (admin-checked in SQL). A
+  // failure here leaves the rule set saved but scores stale — must be diagnosable.
   const { error: recomputeError } = await supabase.rpc("recompute_tenant", {
     p_tenant: parsed.data.tenantId,
   });
-  if (recomputeError) return { error: de.auth.errorGeneric };
+  if (recomputeError) {
+    logActionError("saveScoring.recompute", recomputeError);
+    return { error: de.auth.errorGeneric };
+  }
 
   // Recompute only touched this tenant's scores.
   await invalidateTags(`leaderboard:${parsed.data.tenantId}`);

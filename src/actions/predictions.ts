@@ -6,7 +6,7 @@ import { z } from "zod";
 import { invalidateTags } from "@/lib/cache/cache";
 import { createClient } from "@/lib/supabase/server";
 import { de } from "@/messages/de";
-import type { ActionState } from "@/actions/types";
+import { logActionError, type ActionState } from "@/actions/types";
 
 // z.coerce.number() turns "" into 0, so a blank goal field would silently save a
 // 0:0 tip. The visible inputs guard this client-side via `required`, but the
@@ -65,7 +65,10 @@ export async function submitPredictionAction(
       .eq("user_id", userId)
       .maybeSingle(),
   ]);
-  if (member?.role !== "admin" && tenant && !tenant.member_tipping_enabled) {
+  // Re-resolve membership at the trust boundary (RLS is the final gate, but the
+  // action should not lean on it alone): a non-member has no business writing here.
+  if (!member) return { error: de.fixtures.saveError };
+  if (member.role !== "admin" && tenant && !tenant.member_tipping_enabled) {
     return { error: de.fixtures.tippingDisabled };
   }
 
@@ -80,7 +83,10 @@ export async function submitPredictionAction(
     },
     { onConflict: "tenant_id,user_id,fixture_id" },
   );
-  if (error) return { error: de.fixtures.saveError };
+  if (error) {
+    logActionError("submitPrediction", error);
+    return { error: de.fixtures.saveError };
+  }
 
   // The tip-pulse count ("5 von 8 haben getippt") just changed for the group.
   await invalidateTags(`tip-pulse:${parsed.data.tenantId}`);

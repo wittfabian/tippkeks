@@ -21,6 +21,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      // The real `server-only` package throws on import in plain Node; stub it so
+      // tests can import server modules (env.server, service client, dispatcher).
+      "server-only": fileURLToPath(new URL("./tests/stubs/server-only.ts", import.meta.url)),
     },
   },
 });

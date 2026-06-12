@@ -6,7 +6,9 @@ import {
   PasswordForm,
 } from "@/components/profile/profile-form";
 import { InstallButton } from "@/components/pwa/install-button";
+import { NotificationToggle } from "@/components/pwa/notification-toggle";
 import { requireUser } from "@/lib/auth/membership";
+import { publicEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { de } from "@/messages/de";
 
@@ -65,6 +67,15 @@ export default async function ProfilePage() {
           <InstallButton />
         </div>
       </section>
+
+      {publicEnv.NEXT_PUBLIC_VAPID_PUBLIC_KEY && (
+        <section className="space-y-2">
+          <h2 className="text-muted-foreground text-sm font-medium">{de.pwa.notifyTitle}</h2>
+          <div className="rounded-md border p-4">
+            <NotificationToggle />
+          </div>
+        </section>
+      )}
 
       <section className="space-y-2">
         <h2 className="text-destructive text-sm font-medium">{de.profile.dangerTitle}</h2>

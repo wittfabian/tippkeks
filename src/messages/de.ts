@@ -315,7 +315,9 @@ export const de = {
       "Wenn deaktiviert, sehen Mitglieder alles, können aber nicht selbst tippen – nur Admins tragen dann Tipps ein.",
     memberTippingSaved: "Einstellung gespeichert.",
     tipsPickFixture: "Wähle ein Spiel, um Tipps für alle Mitglieder einzutragen.",
-    tipsNoFixtures: "Keine offenen Spiele zum Tippen.",
+    tipsNoFixtures: "Noch keine Spiele vorhanden.",
+    tipsCorrectionNote:
+      "Dieses Spiel hat bereits begonnen. Als Admin kannst du die Tipps hier nachträglich korrigieren – Punkte und Tabelle werden danach automatisch neu berechnet.",
     tipsSave: "Tipps speichern",
     tipsSaved: (n: number) => (n === 1 ? "1 Tipp gespeichert." : `${n} Tipps gespeichert.`),
     tipsError: "Tipps konnten nicht gespeichert werden (evtl. ist der Anpfiff schon vorbei).",
@@ -550,6 +552,43 @@ export const de = {
     offlineBody:
       "TippKeks braucht eine Internetverbindung. Sobald du wieder online bist, geht's weiter.",
     offlineRetry: "Erneut versuchen",
+    // Push-notification toggle on the profile page (next to the install button).
+    notifyTitle: "Benachrichtigungen",
+    notifyDescription:
+      "Lass dich erinnern, wenn ein Spiel bald angepfiffen wird und du noch nicht getippt hast – und erfahre direkt das Ergebnis samt deiner Punkte.",
+    notifyEnable: "Benachrichtigungen aktivieren",
+    notifyDisable: "Benachrichtigungen ausschalten",
+    notifyEnabled: "Benachrichtigungen sind aktiv.",
+    notifyDeviceHint: "Gilt nur für dieses Gerät – aktiviere es auf jedem Gerät separat.",
+    notifyTest: "Testbenachrichtigung senden",
+    notifyTestSent: "Gesendet! Schau auf deine Benachrichtigungen.",
+    notifyTestFailed: "Konnte keine Testbenachrichtigung senden.",
+    notifyBlocked:
+      "Benachrichtigungen sind im Browser blockiert. Erlaube sie in den Einstellungen deines Geräts für TippKeks.",
+    notifyUnsupported: "Dieses Gerät unterstützt keine Push-Benachrichtigungen.",
+    // iOS only delivers push to a PWA added to the home screen (iOS 16.4+).
+    notifyIosHint:
+      "Auf iPhone/iPad nur möglich, wenn TippKeks zum Home-Bildschirm hinzugefügt wurde (iOS 16.4 oder neuer).",
+    notifyError: "Das hat nicht geklappt. Bitte versuche es erneut.",
+  },
+  // Web Push payloads (built server-side in the notification dispatcher). Kept
+  // here so every German string stays on the language boundary. No other
+  // player's tip ever appears here — only the recipient's own reminder/result.
+  notifications: {
+    reminderTitle: "Noch nicht getippt! ⏰",
+    reminderBody: (home: string, away: string) =>
+      `${home} – ${away} wird bald angepfiffen. Gib schnell noch deinen Tipp ab!`,
+    resultTitle: (home: string, away: string, homeGoals: number, awayGoals: number) =>
+      `${home} ${homeGoals}:${awayGoals} ${away}`,
+    // Result body varies by how well the tip did.
+    resultBody: (category: "exact" | "goal_diff" | "tendency" | "miss", points: number) => {
+      if (category === "exact") return `🎯 Volltreffer! Du holst ${points} Punkte.`;
+      if (category === "miss") return "Diesmal leider daneben – 0 Punkte.";
+      const label = category === "goal_diff" ? "Tordifferenz" : "Tendenz";
+      return `${label} getroffen – ${points} Punkte für dich.`;
+    },
+    testTitle: "TippKeks Test 🔔",
+    testBody: "Geschafft! So sehen deine Benachrichtigungen aus.",
   },
   common: {
     cancel: "Abbrechen",

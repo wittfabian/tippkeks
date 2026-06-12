@@ -67,7 +67,7 @@ export default async function FixtureDetailPage({
   // the authoritative scores are written by score_fixture at full time.
   const useProjection = isLive && hasResult;
 
-  const [{ data: predictions }, { data: scores }, { count: memberCount }, pulse] =
+  const [{ data: predictions }, { data: scores }, { count: memberCount }, pulse, nameById] =
     await Promise.all([
       supabase
         .from("prediction")
@@ -84,9 +84,9 @@ export default async function FixtureDetailPage({
         .select("user_id", { count: "exact", head: true })
         .eq("tenant_id", tenantId),
       getTipPulse(tenantId),
+      getMemberNames(supabase, tenantId),
     ]);
 
-  const nameById = await getMemberNames(supabase, tenantId);
   const scoreByUser = new Map((scores ?? []).map((s) => [s.user_id, s]));
 
   // Provisional points per member at the current live scoreline (display only).

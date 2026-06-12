@@ -230,6 +230,48 @@ export type Database = {
           },
         ]
       }
+      notification_delivery: {
+        Row: {
+          fixture_id: string
+          id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          sent_at: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          fixture_id: string
+          id?: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          sent_at?: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          fixture_id?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          sent_at?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_delivery_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixture"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_delivery_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenant"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prediction: {
         Row: {
           advancing_team_id: string | null
@@ -370,6 +412,39 @@ export type Database = {
           display_name?: string
           managed?: boolean
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_subscription: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_seen_at: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_seen_at?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_seen_at?: string
+          p256dh?: string
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: []
@@ -780,6 +855,7 @@ export type Database = {
         | "invite_redeem"
         | "member_create_managed"
         | "member_convert_managed"
+        | "tip_correction"
       fixture_status:
         | "scheduled"
         | "live"
@@ -788,6 +864,7 @@ export type Database = {
         | "abandoned"
         | "cancelled"
       member_role: "admin" | "member"
+      notification_kind: "tip_reminder" | "result"
       score_category: "exact" | "goal_diff" | "tendency" | "miss"
       stage_kind:
         | "group"
@@ -943,6 +1020,7 @@ export const Constants = {
         "invite_redeem",
         "member_create_managed",
         "member_convert_managed",
+        "tip_correction",
       ],
       fixture_status: [
         "scheduled",
@@ -953,6 +1031,7 @@ export const Constants = {
         "cancelled",
       ],
       member_role: ["admin", "member"],
+      notification_kind: ["tip_reminder", "result"],
       score_category: ["exact", "goal_diff", "tendency", "miss"],
       stage_kind: [
         "group",

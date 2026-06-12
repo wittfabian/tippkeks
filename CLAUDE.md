@@ -54,6 +54,7 @@ pnpm tsx scripts/generate-seed.ts   # regenerate supabase/seed.sql from data/ope
 pnpm tsx scripts/generate-pwa-assets.ts  # regenerate PWA icons (from src/app/icon.svg) + public/offline.html (from de.ts)
 pnpm tsx scripts/set-site-admin.ts <email> [--revoke]  # grant/revoke site-admin (service role)
 pnpm tsx scripts/seed-mock.ts [group-id]   # DEV-ONLY: mock players + tips + finished results → leaderboard (defaults to newest group)
+pnpm tsx scripts/generate-vapid-keys.ts    # generate a Web Push VAPID key pair (once per deploy)
 
 # Supabase (CLI is a dev dependency → use `pnpm exec supabase`/the db:* scripts)
 pnpm db:start       # supabase start
@@ -163,6 +164,16 @@ Invalidation is application-level (not `revalidateTag`) because the sync also ru
 process. Same store rate-limits `signInAction` + `requestPasswordResetAction`. Absent `REDIS_URL`,
 the cache no-ops and limits fail open. Local: `podman compose up -d` (`docker-compose.yml`).
 
+**Push notifications** (Web Push, optional — needs VAPID keys; see `docs/push-notifications.md`):
+`src/lib/notifications/dispatch.ts` (service role) runs **after `runSync`** in the cron route, so it
+shares the 120 s sync cadence. Two kinds only — a tip reminder ~1 h before kickoff (skips members
+who already tipped and view-only groups) and a result push with the member's own points. The
+`notification_delivery` ledger (`unique (tenant, user, fixture, kind)`) makes it idempotent across
+ticks; dead endpoints (404/410) are pruned. Payloads carry **only the recipient's own data** — never
+a fellow member's pre-kickoff tip. Browser subscriptions live in `push_subscription` (own-rows RLS +
+MFA gate). Absent VAPID keys the profile toggle hides and the dispatcher no-ops. iOS: installed PWA
+only, 16.4+.
+
 ## Source layout
 
 ```
@@ -176,7 +187,7 @@ src/app/api/cron/sync/route.ts     # secret-protected sync trigger
 src/app/(legal)/{info,privacy,imprint}  # public legal/info pages (own chrome; reachable signed-in + out)
 src/actions/                       # "use server" mutations (auth, tenant, predictions, profile, admin)
 src/components/{ui,...}            # shadcn primitives + feature components
-src/lib/{supabase,auth,data,providers,sync,scoring,domain,i18n}/
+src/lib/{supabase,auth,data,providers,sync,scoring,domain,i18n,cache,notifications}/
 src/messages/de.ts                 # all German UI strings
 supabase/migrations/               # schema + RLS + triggers + functions (source of truth)
 supabase/seed.sql                  # GENERATED — edit scripts/generate-seed.ts, not this file
@@ -189,7 +200,9 @@ tests/                             # vitest integration (RLS/deadline/scoring); 
 `.env.local` (git-ignored, from `supabase status -o env`): `NEXT_PUBLIC_SUPABASE_URL`,
 `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (server-only — never `NEXT_PUBLIC_`),
 `FOOTBALL_DATA_API_TOKEN` (free key from football-data.org), `FOOTBALL_DATA_COMPETITION` (default
-`WC`), `CRON_SECRET`. `.env.example` documents the keys. Env is Zod-validated: public in
+`WC`), `CRON_SECRET`. Optional Web Push: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (public, build-time +
+runtime) + `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` (server-only) — generate with
+`scripts/generate-vapid-keys.ts`. `.env.example` documents the keys. Env is Zod-validated: public in
 `src/lib/env.ts`, server-only in `src/lib/env.server.ts` (guarded by `server-only`).
 
 ## Testing

@@ -41,8 +41,12 @@ COPY . .
 # Public (client-inlined) env — real values required for a working image.
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+# Optional: the Web Push public VAPID key. Omit to build an image without push
+# (the toggle hides itself and the dispatcher no-ops).
+ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY
 # (No SUPABASE_SERVICE_ROLE_KEY here: the build never needs it — it is asserted
 # at runtime in createServiceClient. Inject the real key into the running container.)
 

@@ -23,8 +23,13 @@ export default async function EnterTipsPage({
   const base = `/${tenantId}/tips`;
 
   const board = await getFixtureBoard(supabase, tenantId, userId);
-  const upcoming = board.filter((f) => !f.locked && f.home && f.away);
-  const selected = upcoming.find((f) => f.id === fixtureParam) ?? upcoming[0];
+  // Locked (already-kicked-off) fixtures stay selectable so an admin can correct
+  // a mistyped tip after kickoff; only fixtures without both teams are excluded.
+  const selectable = board.filter((f) => f.home && f.away);
+  // Default to the next still-open fixture, falling back to the most recent past
+  // one — not the very first match of the tournament.
+  const defaultFixture = selectable.find((f) => !f.locked) ?? selectable.at(-1);
+  const selected = selectable.find((f) => f.id === fixtureParam) ?? defaultFixture;
 
   const nameById = await getMemberNames(supabase, tenantId);
 
@@ -46,14 +51,19 @@ export default async function EnterTipsPage({
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
 
-  // Group the (already chronological) upcoming fixtures by German calendar day
-  // for the picker's optgroups. No truncation — the full schedule is selectable.
+  // Group the (already chronological) fixtures by German calendar day for the
+  // picker's optgroups. No truncation — the full schedule is selectable. A
+  // finished match shows its result so past games are easy to spot for a fix.
   const groups: FixtureGroup[] = [];
-  for (const f of upcoming) {
+  for (const f of selectable) {
     const heading = formatDayHeading(f.kickoffAt);
+    const result =
+      f.status === "finished" && f.regularHome != null && f.regularAway != null
+        ? ` · ${f.regularHome}:${f.regularAway}`
+        : "";
     const label = `${formatTime(f.kickoffAt)} · ${f.home?.shortName ?? f.home?.name ?? "?"} – ${
       f.away?.shortName ?? f.away?.name ?? "?"
-    }`;
+    }${result}`;
     const key = berlinDayKey(f.kickoffAt);
     const last = groups.at(-1);
     if (last && last.key === key) last.options.push({ id: f.id, label });
@@ -64,12 +74,15 @@ export default async function EnterTipsPage({
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">{de.admin.enterTips}</h2>
 
-      {upcoming.length === 0 ? (
+      {selectable.length === 0 ? (
         <p className="text-muted-foreground text-sm">{de.admin.tipsNoFixtures}</p>
       ) : (
         <div className="space-y-3">
           <p className="text-muted-foreground text-sm">{de.admin.tipsPickFixture}</p>
           <FixturePicker base={base} selectedId={selected?.id ?? ""} groups={groups} />
+          {selected?.locked && (
+            <p className="text-muted-foreground text-xs">{de.admin.tipsCorrectionNote}</p>
+          )}
           {selected && (
             // key forces a remount on fixture change so the table re-seeds its
             // controlled score state from the new fixture's predictions; without
