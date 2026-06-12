@@ -130,6 +130,12 @@ export function NotificationToggle() {
     <div className="space-y-2">
       <p className="text-muted-foreground text-sm">{de.pwa.notifyDescription}</p>
 
+      {state === "loading" && (
+        <Button disabled>
+          <Bell className="size-4" />
+          {de.common.loading}
+        </Button>
+      )}
       {state === "unsupported" && (
         <p className="text-muted-foreground text-sm">{de.pwa.notifyUnsupported}</p>
       )}
