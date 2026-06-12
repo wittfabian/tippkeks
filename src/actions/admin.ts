@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { invalidateTags } from "@/lib/cache/cache";
 import { isSiteAdmin } from "@/lib/auth/membership";
+import { hasKickedOff } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { de } from "@/messages/de";
@@ -26,9 +27,13 @@ const MANAGED_EMAIL_DOMAIN = "managed.tippkeks.de";
 /** Supabase auth error code when an email is already taken by another account. */
 const EMAIL_EXISTS = "email_exists";
 
-/** Generate a short, readable invite code. */
+/**
+ * Generate an invite code. 16 hex chars ≈ 64 bits of entropy: an invite link is
+ * a bearer token, so the code space must be far too large to guess/enumerate
+ * online (the 8-char ≈ 32-bit code it replaced was brute-forceable in principle).
+ */
 function generateInviteCode(): string {
-  return crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase();
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 16).toUpperCase();
 }
 
 /**
@@ -98,7 +103,10 @@ export async function createInviteAction(
     max_uses: parsed.data.maxUses ?? null,
     created_by: userId,
   });
-  if (error) return { error: de.auth.errorGeneric };
+  if (error) {
+    logActionError("createInvite", error);
+    return { error: de.auth.errorGeneric };
+  }
 
   await supabase.from("admin_audit_log").insert({
     tenant_id: parsed.data.tenantId,
@@ -132,7 +140,10 @@ export async function deleteInviteAction(
     .delete()
     .eq("tenant_id", parsed.data.tenantId)
     .eq("code", parsed.data.code);
-  if (error) return { error: de.auth.errorGeneric };
+  if (error) {
+    logActionError("deleteInvite", error);
+    return { error: de.auth.errorGeneric };
+  }
 
   revalidatePath(`/${parsed.data.tenantId}/admin`);
   return { error: null, info: de.admin.inviteDeleted };
@@ -239,7 +250,7 @@ export async function saveMemberTipsAction(
     .select("kickoff_at")
     .eq("id", parsed.data.fixtureId)
     .maybeSingle();
-  const isCorrection = fixture != null && new Date(fixture.kickoff_at).getTime() <= Date.now();
+  const isCorrection = fixture != null && hasKickedOff(fixture.kickoff_at);
 
   // RLS lets an admin write for any member; the deadline trigger exempts admins
   // so corrections after kickoff go through. The upsert is one statement.
@@ -252,16 +263,10 @@ export async function saveMemberTipsAction(
   }
 
   if (isCorrection) {
-    // Record who corrected which players' tips on which match, and refresh the
-    // leaderboard (the DB rescore trigger already updated a finished fixture).
-    await supabase.from("admin_audit_log").insert({
-      tenant_id: parsed.data.tenantId,
-      actor_id: actorId,
-      action: "tip_correction",
-      target_type: "fixture",
-      target_id: parsed.data.fixtureId,
-      detail: { user_ids: rows.map((r) => r.user_id) },
-    });
+    // Each post-kickoff content change is audited at the DB layer by the deadline
+    // trigger (so a correction made directly via PostgREST is covered too). Here
+    // we only refresh the leaderboard (the DB rescore trigger already updated a
+    // finished fixture).
     await invalidateTags(`leaderboard:${parsed.data.tenantId}`);
     revalidatePath(`/${parsed.data.tenantId}/leaderboard`);
   }
@@ -390,7 +395,11 @@ export async function saveScoringAction(
     .eq("tenant_id", parsed.data.tenantId)
     .eq("is_active", true)
     .maybeSingle();
-  if (!active) return { error: de.auth.errorGeneric };
+  if (!active) {
+    // No active rule set is a data-integrity signal (every tenant should have one).
+    logActionError("saveScoring.noActiveRuleSet", { tenantId: parsed.data.tenantId });
+    return { error: de.auth.errorGeneric };
+  }
 
   const existing = (active.config ?? {}) as { stage_multipliers?: Record<string, number> };
   const config = {
@@ -405,13 +414,20 @@ export async function saveScoringAction(
     .from("scoring_rule_set")
     .update({ config })
     .eq("id", active.id);
-  if (updateError) return { error: de.auth.errorGeneric };
+  if (updateError) {
+    logActionError("saveScoring.update", updateError);
+    return { error: de.auth.errorGeneric };
+  }
 
-  // Recompute every finished fixture for this tenant (admin-checked in SQL).
+  // Recompute every finished fixture for this tenant (admin-checked in SQL). A
+  // failure here leaves the rule set saved but scores stale — must be diagnosable.
   const { error: recomputeError } = await supabase.rpc("recompute_tenant", {
     p_tenant: parsed.data.tenantId,
   });
-  if (recomputeError) return { error: de.auth.errorGeneric };
+  if (recomputeError) {
+    logActionError("saveScoring.recompute", recomputeError);
+    return { error: de.auth.errorGeneric };
+  }
 
   // Recompute only touched this tenant's scores.
   await invalidateTags(`leaderboard:${parsed.data.tenantId}`);

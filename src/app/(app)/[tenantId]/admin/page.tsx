@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { requireAdmin } from "@/lib/auth/membership";
+import { getScoringConfig } from "@/lib/data/scoring-config";
+import { getTenantMembers } from "@/lib/data/members";
 import { cn } from "@/lib/utils";
 import { de } from "@/messages/de";
 
@@ -103,26 +105,11 @@ async function MembersTab({
   page: number;
   base: string;
 }) {
-  const { data: members } = await supabase
-    .from("tenant_member")
-    .select("user_id, role")
-    .eq("tenant_id", tenantId);
-  const memberIds = (members ?? []).map((m) => m.user_id);
-  const { data: profiles } = memberIds.length
-    ? await supabase
-        .from("profile")
-        .select("user_id, display_name, managed")
-        .in("user_id", memberIds)
-    : { data: [] };
-  const profileById = new Map((profiles ?? []).map((p) => [p.user_id, p]));
+  const members = await getTenantMembers(supabase, tenantId);
 
   // Admins first, then alphabetically by display name.
-  const rows = (members ?? [])
-    .map((m) => ({
-      ...m,
-      name: profileById.get(m.user_id)?.display_name ?? "—",
-      managed: profileById.get(m.user_id)?.managed ?? false,
-    }))
+  const rows = members
+    .map((m) => ({ user_id: m.userId, role: m.role, name: m.displayName, managed: m.managed }))
     .filter((m) => (query ? m.name.toLowerCase().includes(query.toLowerCase()) : true))
     .sort((a, b) => {
       if (a.role !== b.role) return a.role === "admin" ? -1 : 1;
@@ -252,18 +239,13 @@ async function InvitesTab({ supabase, tenantId }: { supabase: SupabaseClient; te
 }
 
 async function ScoringTab({ supabase, tenantId }: { supabase: SupabaseClient; tenantId: string }) {
-  const { data: ruleSet } = await supabase
-    .from("scoring_rule_set")
-    .select("config")
-    .eq("tenant_id", tenantId)
-    .eq("is_active", true)
-    .maybeSingle();
-  const config = (ruleSet?.config ?? {}) as Record<string, number>;
+  // Single source of truth for the config + defaults (no re-hardcoding here).
+  const config = await getScoringConfig(supabase, tenantId);
   const scoringValues: ScoringValues = {
-    exact: config.exact ?? 3,
-    goalDiff: config.goal_diff ?? 2,
-    tendency: config.tendency ?? 1,
-    advanceBonus: config.advance_bonus ?? 2,
+    exact: config.exact,
+    goalDiff: config.goal_diff,
+    tendency: config.tendency,
+    advanceBonus: config.advance_bonus,
   };
 
   return (

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { invalidateTags } from "@/lib/cache/cache";
+import { rateLimit } from "@/lib/cache/rate-limit";
 import { isSiteAdmin } from "@/lib/auth/membership";
 import { getAppSettings } from "@/lib/data/settings";
 import { createClient } from "@/lib/supabase/server";
@@ -35,7 +36,10 @@ export async function createGroupAction(
   const { data, error } = await supabase.rpc("create_group", {
     p_name: parsed.data.name,
   });
-  if (error || !data) return { error: de.groups.createError };
+  if (error || !data) {
+    if (error) logActionError("createGroup", error);
+    return { error: de.groups.createError };
+  }
 
   redirect(`/${data.id}`);
 }
@@ -104,6 +108,16 @@ export async function joinGroupAction(
   if (!parsed.success) return { error: de.groups.joinError };
 
   const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return { error: de.groups.joinError };
+
+  // Throttle code guessing: a logged-in attacker could otherwise script the
+  // manual-entry form to enumerate invite codes (defense in depth — the code
+  // space is also far too large to brute-force).
+  const { allowed } = await rateLimit(`invite:redeem:${userId}`, 10, 600);
+  if (!allowed) return { error: de.auth.tooManyRequests };
+
   const { data, error } = await supabase.rpc("redeem_invite", { p_code: parsed.data.code });
   if (error || !data) return { error: de.groups.joinError };
 

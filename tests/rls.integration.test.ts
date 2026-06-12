@@ -12,6 +12,7 @@ const EMAILS = {
 };
 const GROUP_NAME = "Integration Test";
 const SOLO_GROUP_NAME = "Solo";
+const HOP_GROUP_NAME = "Hop Group";
 const INVITE_CODE = "ITESTCODE";
 const FIXTURE_PROVIDER = "itest";
 
@@ -31,7 +32,7 @@ suite("RLS, deadline and scoring (integration)", () => {
   let tippingFixtureId: string;
 
   async function cleanup() {
-    await admin.from("tenant").delete().in("name", [GROUP_NAME, SOLO_GROUP_NAME]);
+    await admin.from("tenant").delete().in("name", [GROUP_NAME, SOLO_GROUP_NAME, HOP_GROUP_NAME]);
     await admin.from("fixture").delete().eq("provider", FIXTURE_PROVIDER);
     await Promise.all([
       deleteUserByEmail(EMAILS.a),
@@ -245,6 +246,35 @@ suite("RLS, deadline and scoring (integration)", () => {
       .eq("user_id", uidB)
       .single();
     expect(score).toMatchObject({ points: 3, category: "exact" });
+  });
+
+  it("blocks the deadline bypass via a tenant_id hop into an own group", async () => {
+    // The attack: a member creates their own group (where they are admin and
+    // which auto-subscribes to every season), then moves a tip row into it to
+    // dodge the deadline trigger's admin exemption. The trigger must reject any
+    // tenant_id change outright. futureFixtureId is finished, so without the fix
+    // this would also let the member rewrite the score after the result.
+    const { data: hopGroup, error: hopError } = await cB.rpc("create_group", {
+      p_name: HOP_GROUP_NAME,
+    });
+    expect(hopError).toBeNull();
+
+    const { error } = await cB
+      .from("prediction")
+      .update({ tenant_id: hopGroup!.id })
+      .eq("tenant_id", tenantId)
+      .eq("user_id", uidB)
+      .eq("fixture_id", futureFixtureId);
+    expect(error).not.toBeNull();
+
+    // The tip is still in the original group, unchanged.
+    const { data: still } = await admin
+      .from("prediction")
+      .select("tenant_id")
+      .eq("user_id", uidB)
+      .eq("fixture_id", futureFixtureId)
+      .single();
+    expect(still?.tenant_id).toBe(tenantId);
   });
 
   it("matches the SQL scoring function to the TypeScript mirror (rpc parity)", async () => {

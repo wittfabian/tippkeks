@@ -31,10 +31,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // session into the app while private.mfa_satisfied() (which sees aal IS NOT
   // 'aal2') denies every personal/tenant read — silently blanking the profile,
   // the site-admin nav, and blocking the account-deletion RPC.
-  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  // AAL and the site-admin check are independent, so fetch them together. (When a
+  // step-up is pending the siteAdmin result is discarded by the redirect below —
+  // a rare path, worth one fewer round-trip on every other request.)
+  const [{ data: aal }, siteAdmin] = await Promise.all([
+    supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+    isSiteAdmin(supabase),
+  ]);
   if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") redirect("/mfa");
-
-  const siteAdmin = await isSiteAdmin(supabase);
 
   return (
     <div className="flex min-h-full flex-1 flex-col">

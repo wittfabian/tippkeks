@@ -26,6 +26,39 @@ export interface PushTarget {
   auth: string;
 }
 
+/** Exact hostnames of the real Web Push services. */
+const PUSH_ENDPOINT_HOSTS = new Set([
+  "fcm.googleapis.com", // FCM — Chrome, Edge, Android
+  "android.googleapis.com", // legacy GCM/FCM
+  "updates.push.services.mozilla.com", // Firefox
+  "web.push.apple.com", // Safari / iOS
+]);
+
+/** Host suffixes for services that shard across subdomains. */
+const PUSH_ENDPOINT_SUFFIXES = [
+  ".push.apple.com", // Apple regional shards
+  ".notify.windows.com", // WNS — legacy Edge
+];
+
+/**
+ * Whether a push subscription endpoint points at a known Web Push service. The
+ * cron dispatcher POSTs to this URL from inside the server (service role), so an
+ * unrestricted endpoint would be a blind-SSRF lever: any logged-in member could
+ * register an internal URL (e.g. http://valkey:6379/, a metadata IP) and have
+ * the server fire requests at it. Restrict to the real push origins (https only).
+ */
+export function isAllowedPushEndpoint(raw: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:") return false;
+  const host = url.hostname.toLowerCase();
+  return PUSH_ENDPOINT_HOSTS.has(host) || PUSH_ENDPOINT_SUFFIXES.some((s) => host.endsWith(s));
+}
+
 /** Outcome of a single send: "gone" means the subscription is dead (prune it). */
 export type PushSender = (target: PushTarget, payload: NotificationPayload) => Promise<SendResult>;
 export type SendResult = "ok" | "gone" | "error";
@@ -243,12 +276,21 @@ async function dispatchReminders(supabase: ServiceClient, sender: PushSender): P
   return sent;
 }
 
+/** How far back to look for finished fixtures to push results for. */
+const RESULT_LOOKBACK_MS = 48 * 60 * 60 * 1000;
+
 /** Result pushes (incl. own points) for finished fixtures not yet notified. */
 async function dispatchResults(supabase: ServiceClient, sender: PushSender): Promise<number> {
+  // Bound the scan to recently-kicked-off fixtures: a result push goes out within
+  // a couple of cron ticks of full time, and the notification_delivery ledger
+  // makes it idempotent — so there is no reason to re-scan the whole tournament
+  // history every 120 s as it grows.
+  const sinceIso = new Date(Date.now() - RESULT_LOOKBACK_MS).toISOString();
   const { data: fixtures } = await supabase
     .from("fixture")
     .select("id, home_team_id, away_team_id, regular_home, regular_away")
     .eq("status", "finished")
+    .gte("kickoff_at", sinceIso)
     .not("regular_home", "is", null)
     .not("regular_away", "is", null);
   if (!fixtures || fixtures.length === 0) return 0;

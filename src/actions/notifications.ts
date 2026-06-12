@@ -2,18 +2,27 @@
 
 import { z } from "zod";
 
-import { webPushSender, type NotificationPayload } from "@/lib/notifications/dispatch";
+import {
+  isAllowedPushEndpoint,
+  webPushSender,
+  type NotificationPayload,
+} from "@/lib/notifications/dispatch";
 import { createClient } from "@/lib/supabase/server";
 import { de } from "@/messages/de";
+
+/** Cap on distinct devices per user, so subscriptions can't be inserted unbounded. */
+const MAX_SUBSCRIPTIONS_PER_USER = 20;
 
 /**
  * Persist a browser Web Push subscription for the current user. Called from the
  * client after the user grants permission (not a form post — the PushSubscription
  * is a JSON object). RLS scopes the row to the caller; the endpoint is the
- * conflict key so re-subscribing the same device updates in place.
+ * conflict key so re-subscribing the same device updates in place. The endpoint
+ * is allowlisted to real push services (the server later POSTs to it — see
+ * isAllowedPushEndpoint).
  */
 const subscriptionSchema = z.object({
-  endpoint: z.string().url(),
+  endpoint: z.string().url().refine(isAllowedPushEndpoint),
   p256dh: z.string().min(1),
   auth: z.string().min(1),
   userAgent: z.string().max(500).optional(),
@@ -27,6 +36,17 @@ export async function savePushSubscriptionAction(input: unknown): Promise<{ ok: 
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims?.sub;
   if (!userId) return { ok: false };
+
+  // Reject a NEW device once the per-user cap is reached (re-subscribing an
+  // existing endpoint still updates in place via the upsert below).
+  const { data: existing } = await supabase
+    .from("push_subscription")
+    .select("endpoint")
+    .eq("user_id", userId);
+  const known = new Set((existing ?? []).map((s) => s.endpoint));
+  if (!known.has(parsed.data.endpoint) && known.size >= MAX_SUBSCRIPTIONS_PER_USER) {
+    return { ok: false };
+  }
 
   const { error } = await supabase.from("push_subscription").upsert(
     {

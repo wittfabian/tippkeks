@@ -11,11 +11,25 @@ import { createClient } from "@/lib/supabase/server";
 import { de } from "@/messages/de";
 import { logActionError, type ActionState } from "@/actions/types";
 
-/** Best-effort client IP from proxy headers (Hetzner/LB sets X-Forwarded-For). */
+/**
+ * Client IP for rate-limit keying. Behind a single trusted reverse proxy
+ * (Caddy/nginx), X-Forwarded-For is "client, proxyhop…" and the proxy APPENDS
+ * the peer it actually saw, so the RIGHTMOST entry is the real client. We must
+ * never key on the leftmost value: it is fully client-controlled, so an attacker
+ * could mint a fresh rate-limit bucket per request and defeat the throttle.
+ *
+ * NOTE: assumes exactly one trusted proxy in front of the app (the documented
+ * deployment). If you chain proxies, drop the last N entries by trusted-hop count.
+ */
 async function getClientIp(): Promise<string> {
   const h = await headers();
-  const forwarded = h.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || h.get("x-real-ip") || "unknown";
+  const xff = h.get("x-forwarded-for");
+  const last = xff
+    ?.split(",")
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .at(-1);
+  return last || h.get("x-real-ip")?.trim() || "unknown";
 }
 
 /**

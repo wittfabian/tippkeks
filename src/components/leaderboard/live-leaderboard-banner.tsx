@@ -1,8 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-
+import { useIntervalRefresh } from "@/lib/hooks/use-interval-refresh";
 import { de } from "@/messages/de";
 
 export interface LiveMatch {
@@ -25,12 +23,7 @@ export function LiveLeaderboardBanner({
   matches: LiveMatch[];
   intervalMs?: number;
 }) {
-  const router = useRouter();
-
-  useEffect(() => {
-    const id = setInterval(() => router.refresh(), intervalMs);
-    return () => clearInterval(id);
-  }, [router, intervalMs]);
+  useIntervalRefresh(intervalMs);
 
   return (
     <div className="border-live/30 bg-live/10 rounded-xl border px-4 py-3" role="status">
