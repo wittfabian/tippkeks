@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { serverEnv } from "@/lib/env.server";
+import { dispatchNotifications } from "@/lib/notifications/dispatch";
 import { footballDataProvider } from "@/lib/providers/footballData";
 import { runSync } from "@/lib/sync/run";
 
@@ -35,7 +36,17 @@ export async function POST(request: NextRequest) {
 
   try {
     const report = await runSync(footballDataProvider());
-    return NextResponse.json({ ok: true, ...report });
+
+    // Push reminders/results run on the same cadence. Isolated so a push failure
+    // never fails the sync (its report is the authoritative success signal).
+    let notifications: Awaited<ReturnType<typeof dispatchNotifications>> | null = null;
+    try {
+      notifications = await dispatchNotifications();
+    } catch (error) {
+      console.error("[cron/sync] notifications failed:", error);
+    }
+
+    return NextResponse.json({ ok: true, ...report, notifications });
   } catch (error) {
     console.error("[cron/sync] failed:", error);
     return NextResponse.json({ ok: false, error: "Sync failed" }, { status: 500 });

@@ -25,8 +25,12 @@
 #   FOOTBALL_DATA_API_TOKEN, FOOTBALL_DATA_COMPETITION        (sync)
 #   REDIS_PASSWORD  (Valkey auth — openssl rand -hex 32; keep it URL-safe so it
 #       can be embedded in REDIS_URL without percent-encoding)
-# NEXT_PUBLIC_SUPABASE_URL / _ANON_KEY are NOT needed here — Next inlines them into
-# the bundle at CI build time (they live as GitHub Variables, not in .env.prod).
+#   VAPID_PRIVATE_KEY, VAPID_SUBJECT  (Web Push — optional; omit to run without
+#       notifications. The matching NEXT_PUBLIC_VAPID_PUBLIC_KEY is baked at CI
+#       build time, NOT here. Generate the pair with scripts/generate-vapid-keys.ts)
+# NEXT_PUBLIC_SUPABASE_URL / _ANON_KEY / _VAPID_PUBLIC_KEY are NOT needed here — Next
+# inlines them into the bundle at CI build time (they live as GitHub Variables, not
+# in .env.prod).
 # REDIS_PASSWORD is consumed at RUNTIME as a container env var (not interpolated
 # into this file): Valkey reads it in its shell entrypoint and the app assembles
 # REDIS_URL from it at startup. Supply it via `--env-file .env.prod` or an

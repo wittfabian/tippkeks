@@ -32,6 +32,15 @@ const ServerEnvSchema = z.object({
   // a runtime env var; the URL is assembled below against the compose service
   // host. An explicit REDIS_URL (local dev) always wins.
   REDIS_PASSWORD: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  // Web Push (VAPID). The private key signs push messages; pairs with the public
+  // NEXT_PUBLIC_VAPID_PUBLIC_KEY. Optional: without it the dispatcher no-ops, so
+  // the app and the cron run fine without push configured. VAPID_SUBJECT is the
+  // contact URL/mailto the push services require; defaults to a mailto.
+  VAPID_PRIVATE_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  VAPID_SUBJECT: z.preprocess(
+    emptyToUndefined,
+    z.string().min(1).default("mailto:kontakt@tippkeks.de"),
+  ),
 });
 
 const parsed = ServerEnvSchema.parse(process.env);

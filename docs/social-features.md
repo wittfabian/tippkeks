@@ -13,9 +13,12 @@ together), after (shared celebration) — plus a cross-cutting identity/rivalry 
 
 These shape every feature below; an idea that violates one is out.
 
-1. **No email / no push.** Explicit product decision. Every "notification", nudge or alert is an
-   **in-app** signal only — visible when the user has the app open. No transactional mail, no web
-   push. (See `docs/email-smtp.md`: mail is reserved for auth/invites.)
+1. **No email; push only for own match events.** No transactional mail (see `docs/email-smtp.md`:
+   mail is reserved for auth/invites). Web Push is now allowed, but **only** for a user's own,
+   self-evident match events: the tip reminder before kickoff and the result of a played match
+   (incl. their own points). See `docs/push-notifications.md`. Everything else — social activity,
+   reactions, nudges about other players — stays an **in-app** signal, visible only when the app is
+   open. A push that carries another player's pre-kickoff tip would violate constraint 2 and is out.
 2. **Pre-kickoff secrecy is DB-enforced.** The `prediction` SELECT policy only reveals another
    member's prediction once `fixture.kickoff_at <= now()` (owner/admin always). Any pre-kickoff
    feature may show **aggregate numbers only** ("5 von 8 haben getippt"), never content. A count

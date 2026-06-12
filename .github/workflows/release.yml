@@ -49,6 +49,7 @@ jobs:
           build-args: |
             NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
           # NEXT_SERVER_ACTIONS_ENCRYPTION_KEY is consumed by `next build` and
           # embedded into the output. It is a genuine secret, so it is passed as a
           # BuildKit secret (mounted, not a build arg → never persists in image
