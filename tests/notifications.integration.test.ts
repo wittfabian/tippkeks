@@ -1,15 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import {
-  dispatchNotifications,
-  type NotificationPayload,
-  type PushSender,
-  type SendResult,
-} from "@/lib/notifications/dispatch";
+import type { NotificationPayload, PushSender, SendResult } from "@/lib/notifications/dispatch";
 import { adminClient, createSignedInUser, deleteUserByEmail, hasSupabase } from "./helpers";
 
 const suite = hasSupabase ? describe : describe.skip;
+
+// Imported lazily in beforeAll (only when hasSupabase) so CI — which has no
+// Supabase env — never loads the env-backed module chain: env.ts throws at import
+// when NEXT_PUBLIC_* are unset. A skipped suite never runs beforeAll.
+let dispatchNotifications: typeof import("@/lib/notifications/dispatch").dispatchNotifications;
 
 const EMAILS = {
   a: "itest_notif_admin@example.com",
@@ -68,6 +68,7 @@ suite("notification dispatch (integration)", () => {
   }
 
   beforeAll(async () => {
+    ({ dispatchNotifications } = await import("@/lib/notifications/dispatch"));
     admin = adminClient();
     await cleanup();
 
