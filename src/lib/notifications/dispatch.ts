@@ -38,9 +38,10 @@ export interface DispatchReport {
 /**
  * Build the real web-push sender, or null when VAPID is not configured (the
  * dispatcher then no-ops, like the cache without REDIS_URL). A 404/410 from the
- * push service means the subscription expired → caller prunes it.
+ * push service means the subscription expired → caller prunes it. Exported so the
+ * "send test" action can reuse the exact same send path.
  */
-function realSender(): PushSender | null {
+export function webPushSender(): PushSender | null {
   const publicKey = publicEnv.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = serverEnv.VAPID_PRIVATE_KEY;
   if (!publicKey || !privateKey) return null;
@@ -72,7 +73,7 @@ function realSender(): PushSender | null {
  * push is not configured, which makes the whole call a no-op).
  */
 export async function dispatchNotifications(
-  sender: PushSender | null = realSender(),
+  sender: PushSender | null = webPushSender(),
 ): Promise<DispatchReport> {
   if (!sender) return { reminders: 0, results: 0 };
   const supabase = createServiceClient();

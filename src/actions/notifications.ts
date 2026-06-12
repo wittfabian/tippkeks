@@ -2,7 +2,9 @@
 
 import { z } from "zod";
 
+import { webPushSender, type NotificationPayload } from "@/lib/notifications/dispatch";
 import { createClient } from "@/lib/supabase/server";
+import { de } from "@/messages/de";
 
 /**
  * Persist a browser Web Push subscription for the current user. Called from the
@@ -51,4 +53,46 @@ export async function deletePushSubscriptionAction(endpoint: string): Promise<{ 
 
   const { error } = await supabase.from("push_subscription").delete().eq("endpoint", parsed.data);
   return { ok: !error };
+}
+
+/**
+ * Send a sample notification to the caller's own devices so they can see what a
+ * push looks like right after enabling. Reads their subscriptions through the
+ * RLS-scoped client (own rows only — no service role) and reuses the dispatcher's
+ * VAPID sender; dead endpoints are pruned. Returns how many devices accepted it.
+ */
+export async function sendTestPushAction(): Promise<{ ok: boolean; sent: number }> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return { ok: false, sent: 0 };
+
+  const sender = webPushSender();
+  if (!sender) return { ok: false, sent: 0 };
+
+  const { data: subs } = await supabase
+    .from("push_subscription")
+    .select("endpoint, p256dh, auth")
+    .eq("user_id", userId);
+  if (!subs || subs.length === 0) return { ok: false, sent: 0 };
+
+  const payload: NotificationPayload = {
+    title: de.notifications.testTitle,
+    body: de.notifications.testBody,
+    url: "/",
+    tag: "test-push",
+  };
+
+  let sent = 0;
+  for (const sub of subs) {
+    const result = await sender(
+      { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
+      payload,
+    );
+    if (result === "ok") sent += 1;
+    else if (result === "gone") {
+      await supabase.from("push_subscription").delete().eq("endpoint", sub.endpoint);
+    }
+  }
+  return { ok: sent > 0, sent };
 }

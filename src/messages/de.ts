@@ -559,6 +559,10 @@ export const de = {
     notifyEnable: "Benachrichtigungen aktivieren",
     notifyDisable: "Benachrichtigungen ausschalten",
     notifyEnabled: "Benachrichtigungen sind aktiv.",
+    notifyDeviceHint: "Gilt nur für dieses Gerät – aktiviere es auf jedem Gerät separat.",
+    notifyTest: "Testbenachrichtigung senden",
+    notifyTestSent: "Gesendet! Schau auf deine Benachrichtigungen.",
+    notifyTestFailed: "Konnte keine Testbenachrichtigung senden.",
     notifyBlocked:
       "Benachrichtigungen sind im Browser blockiert. Erlaube sie in den Einstellungen deines Geräts für TippKeks.",
     notifyUnsupported: "Dieses Gerät unterstützt keine Push-Benachrichtigungen.",
@@ -583,6 +587,8 @@ export const de = {
       const label = category === "goal_diff" ? "Tordifferenz" : "Tendenz";
       return `${label} getroffen – ${points} Punkte für dich.`;
     },
+    testTitle: "TippKeks Test 🔔",
+    testBody: "Geschafft! So sehen deine Benachrichtigungen aus.",
   },
   common: {
     cancel: "Abbrechen",

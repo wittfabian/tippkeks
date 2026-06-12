@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { Bell, BellOff } from "lucide-react";
 
-import { savePushSubscriptionAction, deletePushSubscriptionAction } from "@/actions/notifications";
+import {
+  savePushSubscriptionAction,
+  deletePushSubscriptionAction,
+  sendTestPushAction,
+} from "@/actions/notifications";
 import { Button } from "@/components/ui/button";
 import { publicEnv } from "@/lib/env";
 import { de } from "@/messages/de";
@@ -37,6 +41,7 @@ export function NotificationToggle() {
   const [state, setState] = useState<State>("loading");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
+  const [testMsg, setTestMsg] = useState<string | null>(null);
 
   // Initial state is resolved asynchronously: capability/permission checks plus
   // the current subscription. Kept off the synchronous render path so server and
@@ -108,6 +113,19 @@ export function NotificationToggle() {
     }
   }
 
+  async function sendTest() {
+    setBusy(true);
+    setTestMsg(null);
+    try {
+      const res = await sendTestPushAction();
+      setTestMsg(res.ok ? de.pwa.notifyTestSent : de.pwa.notifyTestFailed);
+    } catch {
+      setTestMsg(de.pwa.notifyTestFailed);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function disable() {
     setBusy(true);
     setError(false);
@@ -145,10 +163,17 @@ export function NotificationToggle() {
       {state === "on" && (
         <div className="space-y-2">
           <p className="text-sm font-medium">{de.pwa.notifyEnabled}</p>
-          <Button variant="outline" onClick={disable} disabled={busy}>
-            <BellOff className="size-4" />
-            {de.pwa.notifyDisable}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={sendTest} disabled={busy}>
+              <Bell className="size-4" />
+              {de.pwa.notifyTest}
+            </Button>
+            <Button variant="ghost" onClick={disable} disabled={busy}>
+              <BellOff className="size-4" />
+              {de.pwa.notifyDisable}
+            </Button>
+          </div>
+          {testMsg && <p className="text-muted-foreground text-sm">{testMsg}</p>}
         </div>
       )}
       {state === "off" && (
@@ -158,6 +183,9 @@ export function NotificationToggle() {
         </Button>
       )}
 
+      {(state === "on" || state === "off") && (
+        <p className="text-muted-foreground text-xs">{de.pwa.notifyDeviceHint}</p>
+      )}
       {error && <p className="text-destructive text-sm">{de.pwa.notifyError}</p>}
       {isIosClient() && <p className="text-muted-foreground text-xs">{de.pwa.notifyIosHint}</p>}
     </div>
