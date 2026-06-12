@@ -221,6 +221,32 @@ suite("RLS, deadline and scoring (integration)", () => {
     expect(leaderboard?.[0]).toMatchObject({ user_id: uidA, total_points: 3, rank: 1 });
   });
 
+  it("lets an admin correct a tip after kickoff and rescores the fixture", async () => {
+    // futureFixtureId is finished 2:1 from the previous test; uidB tipped 1:1
+    // (miss, 0 pts). The admin fixes uidB's tip to the exact score — allowed
+    // despite the deadline (admins are exempt) — and the rescore trigger must
+    // update the stored score immediately.
+    const { error } = await cA.from("prediction").upsert(
+      {
+        tenant_id: tenantId,
+        user_id: uidB,
+        fixture_id: futureFixtureId,
+        home_goals: 2,
+        away_goals: 1,
+      },
+      { onConflict: "tenant_id,user_id,fixture_id" },
+    );
+    expect(error).toBeNull();
+
+    const { data: score } = await admin
+      .from("prediction_score")
+      .select("points, category")
+      .eq("fixture_id", futureFixtureId)
+      .eq("user_id", uidB)
+      .single();
+    expect(score).toMatchObject({ points: 3, category: "exact" });
+  });
+
   it("matches the SQL scoring function to the TypeScript mirror (rpc parity)", async () => {
     const config = { exact: 4, goal_diff: 3, tendency: 2, advance_bonus: 2, stage_multipliers: {} };
     const { data } = await cA.rpc("score_prediction", {

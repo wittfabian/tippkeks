@@ -315,7 +315,9 @@ export const de = {
       "Wenn deaktiviert, sehen Mitglieder alles, können aber nicht selbst tippen – nur Admins tragen dann Tipps ein.",
     memberTippingSaved: "Einstellung gespeichert.",
     tipsPickFixture: "Wähle ein Spiel, um Tipps für alle Mitglieder einzutragen.",
-    tipsNoFixtures: "Keine offenen Spiele zum Tippen.",
+    tipsNoFixtures: "Noch keine Spiele vorhanden.",
+    tipsCorrectionNote:
+      "Dieses Spiel hat bereits begonnen. Als Admin kannst du die Tipps hier nachträglich korrigieren – Punkte und Tabelle werden danach automatisch neu berechnet.",
     tipsSave: "Tipps speichern",
     tipsSaved: (n: number) => (n === 1 ? "1 Tipp gespeichert." : `${n} Tipps gespeichert.`),
     tipsError: "Tipps konnten nicht gespeichert werden (evtl. ist der Anpfiff schon vorbei).",

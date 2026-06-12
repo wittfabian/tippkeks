@@ -780,6 +780,7 @@ export type Database = {
         | "invite_redeem"
         | "member_create_managed"
         | "member_convert_managed"
+        | "tip_correction"
       fixture_status:
         | "scheduled"
         | "live"
@@ -943,6 +944,7 @@ export const Constants = {
         "invite_redeem",
         "member_create_managed",
         "member_convert_managed",
+        "tip_correction",
       ],
       fixture_status: [
         "scheduled",
