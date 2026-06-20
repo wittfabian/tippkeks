@@ -36,7 +36,7 @@ export default async function FixtureDetailPage({
   const { data: fixture } = await supabase
     .from("fixture")
     .select(
-      "id, kickoff_at, status, regular_home, regular_away, after_extra_time, home_team_id, away_team_id, stage:stage_id(kind, name)",
+      "id, kickoff_at, status, regular_home, regular_away, after_extra_time, penalty_home, penalty_away, home_team_id, away_team_id, stage:stage_id(kind, name)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -61,6 +61,8 @@ export default async function FixtureDetailPage({
     regularHome: fixture.regular_home,
     regularAway: fixture.regular_away,
     afterExtraTime: fixture.after_extra_time,
+    penaltyHome: fixture.penalty_home,
+    penaltyAway: fixture.penalty_away,
   });
   // While a match is live and has a score, show a provisional projection of the
   // points each tip would earn IF the current scoreline held. Display only —

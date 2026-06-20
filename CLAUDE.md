@@ -144,10 +144,16 @@ the `leaderboard` view (`security_invoker`), and `admin_audit_log`.
   role needed — keep it atomic; do not reintroduce a multi-step cookie-client + admin-API deletion.
 
 **Scoring** is server-authoritative and stored. The SQL function `score_prediction(...)` is the
-single source of truth; `score_fixture(fixture_id)` (service_role only) recomputes a fixture's
+single source of truth; `score_fixture(fixture_id)` (service*role only) recomputes a fixture's
 scores in one transaction; `recompute_tenant(...)` re-scores after a rule change. `src/lib/scoring/
 engine.ts` is a pure TS **mirror** for unit tests + the in-form preview — never authoritative.
-Knockout matches are scored on the **90-minute** result; `advancing_team` predictions get a bonus.
+Knockout matches are scored on the stored `regular*\*`result;`advancing_team` predictions get a
+bonus keyed on the actual winner (`winner_team_id`, post-penalties). **Product decision (locked
+2026-06-20): extra time counts, a penalty shoot-out does not** — i.e. the result-tip is judged on
+the after-extra-time scoreline, not the strict 90'. This matches what the football-data feed already
+stores (its free-tier `fullTime`includes ET), so no transform is applied; an admin may override a
+single fixture to the 90' score if ever needed. The shoot-out only feeds the advancing-team bonus.
+The player-facing wording lives in`de.ts` (`legal.info.scoring`).
 
 **Sync** (`src/lib/providers/footballData.ts` adapter → `src/lib/sync/run.ts`): idempotent upserts
 by `(provider, external_id)`, then `score_fixture` for finished matches. Triggered by an OS/container

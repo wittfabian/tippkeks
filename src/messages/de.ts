@@ -518,7 +518,7 @@ export const de = {
       ],
       scoringHeading: "Punkte",
       scoring:
-        "Es gibt Punkte für die exakte Vorhersage, die richtige Tordifferenz und die richtige Tendenz (den Sieger). In der K.-o.-Phase gibt es zusätzlich einen Bonus für das richtige weiterkommende Team.",
+        "Es gibt Punkte für die exakte Vorhersage, die richtige Tordifferenz und die richtige Tendenz (den Sieger). In der K.-o.-Phase zählt für den Ergebnis-Tipp das Ergebnis nach Verlängerung, sofern eine gespielt wurde; ein Elfmeterschießen wird beim Ergebnis nicht mitgewertet. Zusätzlich gibt es einen Bonus für das richtige weiterkommende Team — dafür zählt, wer tatsächlich weiterkommt, also auch nach Verlängerung oder Elfmeterschießen.",
       fairnessHeading: "Fair für alle",
       fairness:
         "Tipps sind nur bis zum Anpfiff möglich und für andere erst nach Anpfiff sichtbar — so tippt jeder unbeeinflusst. Maßgeblich ist immer die Uhrzeit auf dem Server, nicht im Browser.",
