@@ -33,7 +33,11 @@ export async function getAppSettings(supabase: ServerClient): Promise<AppSetting
   // under tag "app-settings", invalidated when an admin saves settings. The
   // value is identical for everyone, so sharing one entry is correct.
   return cached({ key: "app-settings", ttlSeconds: 300, tags: ["app-settings"] }, async () => {
-    const { data } = await supabase.from("app_setting").select("key, value");
+    const { data, error } = await supabase.from("app_setting").select("key, value");
+    // Throw on a real query error so we never cache guessed toggles for the TTL
+    // (see getTournamentData). A successful-but-empty result still falls back to
+    // DEFAULTS below — a missing row is legitimate, a failed query is not.
+    if (error) throw new Error(`[data:app-settings] query failed: ${error.message}`);
     const byKey = new Map((data ?? []).map((row) => [row.key, row.value]));
     return {
       registrationEnabled: readFlag(

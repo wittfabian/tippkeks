@@ -37,8 +37,10 @@ export async function getTipPulse(tenantId: string): Promise<TipPulse> {
             .select("user_id", { count: "exact", head: true })
             .eq("tenant_id", tenantId),
         ]);
+      // Throw rather than cache a degraded result (see getTournamentData) — a
+      // cached members:0 would wrongly read "0 von 0 haben getippt" for the TTL.
       if (predError || memberError)
-        console.error("[data:tip-pulse] query failed", predError ?? memberError);
+        throw new Error(`[data:tip-pulse] query failed: ${(predError ?? memberError)?.message}`);
       const counts: Record<string, number> = {};
       for (const p of predictions ?? []) {
         counts[p.fixture_id] = (counts[p.fixture_id] ?? 0) + 1;

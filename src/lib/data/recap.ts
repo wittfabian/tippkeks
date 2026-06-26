@@ -34,14 +34,17 @@ export async function getMatchdayRecap(tenantId: string): Promise<MatchdayRecap 
         .from("prediction_score")
         .select("user_id, points, category, fixture_id")
         .eq("tenant_id", tenantId);
-      if (error) console.error("[data:recap] query failed", error);
+      // Throw rather than cache a degraded result (see getTournamentData).
+      if (error) throw new Error(`[data:recap] query failed: ${error.message}`);
       if (!scores || scores.length === 0) return null;
 
       const fixtureIds = [...new Set(scores.map((s) => s.fixture_id))];
-      const { data: fixtures } = await service
+      const { data: fixtures, error: fixtureError } = await service
         .from("fixture")
         .select("id, matchday, status")
         .in("id", fixtureIds);
+      if (fixtureError)
+        throw new Error(`[data:recap] fixture query failed: ${fixtureError.message}`);
       const matchdayById = new Map<string, number>();
       for (const f of fixtures ?? []) {
         if (f.status === "finished" && f.matchday != null) matchdayById.set(f.id, f.matchday);
