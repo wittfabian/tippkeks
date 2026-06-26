@@ -55,8 +55,12 @@ async function getTournamentData(seasonIds: string[]) {
           .order("kickoff_at", { ascending: true }),
         service.from("team").select("id, name, short_name, crest_url"),
       ]);
+    // Throw on a query error instead of returning a degraded result: `cached`
+    // only persists a value the fetcher RETURNS, so throwing guarantees we never
+    // cache (e.g.) an empty teams list. Caching that would render every team as
+    // "?" for the full TTL — a transient blip would stick for everyone.
     if (fixtureError || teamError)
-      console.error("[data:tournament] query failed", fixtureError ?? teamError);
+      throw new Error(`[data:tournament] query failed: ${(fixtureError ?? teamError)?.message}`);
     const teamList: TeamLite[] = (teams ?? []).map((t) => ({
       id: t.id,
       name: t.name,
