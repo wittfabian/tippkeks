@@ -147,13 +147,15 @@ the `leaderboard` view (`security_invoker`), and `admin_audit_log`.
 single source of truth; `score_fixture(fixture_id)` (service*role only) recomputes a fixture's
 scores in one transaction; `recompute_tenant(...)` re-scores after a rule change. `src/lib/scoring/
 engine.ts` is a pure TS **mirror** for unit tests + the in-form preview — never authoritative.
-Knockout matches are scored on the stored `regular*\*`result;`advancing_team` predictions get a
-bonus keyed on the actual winner (`winner_team_id`, post-penalties). **Product decision (locked
-2026-06-20): extra time counts, a penalty shoot-out does not** — i.e. the result-tip is judged on
-the after-extra-time scoreline, not the strict 90'. This matches what the football-data feed already
-stores (its free-tier `fullTime`includes ET), so no transform is applied; an admin may override a
-single fixture to the 90' score if ever needed. The shoot-out only feeds the advancing-team bonus.
-The player-facing wording lives in`de.ts` (`legal.info.scoring`).
+Knockout matches are scored on the stored `regular\_*`result with the penalty shoot-out goals added
+on top;`advancing*team` predictions get a bonus keyed on the actual winner (`winner_team_id`,
+post-penalties). **Product decision (updated 2026-06-26, supersedes the 2026-06-20 "shoot-out does
+not count" rule): extra time counts AND the penalty shoot-out counts for the result-tip** — the
+scored result is the after-extra-time scoreline plus the shoot-out goals (e.g. 1:1 a.e.t., 4:3 on
+penalties → scored as 5:4). The addition lives in `score_prediction`(the single source of truth,
+which now takes`f_pen_home`/`f_pen_away`); `regular*\*`keeps storing the a.e.t. score unchanged
+(the football-data free-tier`fullTime`includes ET but not penalties, which sit in`penalty_home/away`). The shoot-out independently also feeds the advancing-team bonus. The
+player-facing wording lives in `de.ts` (`legal.info.scoring`).
 
 **Sync** (`src/lib/providers/footballData.ts` adapter → `src/lib/sync/run.ts`): idempotent upserts
 by `(provider, external_id)`, then `score_fixture` for finished matches. Triggered by an OS/container
