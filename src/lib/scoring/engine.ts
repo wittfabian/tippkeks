@@ -50,9 +50,12 @@ export interface ScoreInput {
   predHome: number | null;
   predAway: number | null;
   predAdvancing: string | null;
-  /** Regulation (90') result — the basis for score predictions. */
+  /** After-extra-time result (the basis for score predictions; penalties added below). */
   resHome: number | null;
   resAway: number | null;
+  /** Penalty shoot-out goals, added onto the result when present (knockout only). */
+  resPenaltyHome?: number | null;
+  resPenaltyAway?: number | null;
   /** Actual winner (post extra-time/penalties) for the advancing bonus. */
   resWinner: string | null;
   stage: StageKind;
@@ -60,19 +63,34 @@ export interface ScoreInput {
 }
 
 export function scorePrediction(input: ScoreInput): ScoreOutcome {
-  const { predHome, predAway, predAdvancing, resHome, resAway, resWinner, stage, config } = input;
+  const {
+    predHome,
+    predAway,
+    predAdvancing,
+    resHome,
+    resAway,
+    resPenaltyHome,
+    resPenaltyAway,
+    resWinner,
+    stage,
+    config,
+  } = input;
 
   if (predHome == null || predAway == null || resHome == null || resAway == null) {
     return { points: 0, category: "miss" };
   }
 
+  // Penalty shoot-out goals count for the result (added to the a.e.t. score).
+  const effHome = resHome + (resPenaltyHome ?? 0);
+  const effAway = resAway + (resPenaltyAway ?? 0);
+
   const predDiff = predHome - predAway;
-  const resDiff = resHome - resAway;
+  const resDiff = effHome - effAway;
 
   let category: ScoreCategory;
   let base: number;
 
-  if (predHome === resHome && predAway === resAway) {
+  if (predHome === effHome && predAway === effAway) {
     category = "exact";
     base = config.exact;
   } else if (predDiff === resDiff) {

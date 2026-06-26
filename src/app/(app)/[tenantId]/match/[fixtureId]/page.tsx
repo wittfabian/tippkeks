@@ -105,6 +105,8 @@ export default async function FixtureDetailPage({
           predAdvancing: p.advancing_team_id,
           resHome: fixture.regular_home,
           resAway: fixture.regular_away,
+          resPenaltyHome: fixture.penalty_home,
+          resPenaltyAway: fixture.penalty_away,
           resWinner: null, // not decided mid-match → no advancing bonus yet
           stage,
           config,

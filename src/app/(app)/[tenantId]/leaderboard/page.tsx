@@ -14,6 +14,7 @@ import {
 import { requireMembership } from "@/lib/auth/membership";
 import { getFixtureBoard } from "@/lib/data/fixtures";
 import { getLeaderboard, getLeaderboardForm } from "@/lib/data/leaderboard";
+import { getScoringConfig } from "@/lib/data/scoring-config";
 import { computeDuels } from "@/lib/domain/head-to-head";
 import { cn } from "@/lib/utils";
 import { de } from "@/messages/de";
@@ -63,10 +64,11 @@ export default async function LeaderboardPage({
   const { sort = "rank" } = await searchParams;
   const membership = await requireMembership(tenantId);
 
-  const [rows, board, form, { data: allScores }] = await Promise.all([
+  const [rows, board, form, scoringConfig, { data: allScores }] = await Promise.all([
     getLeaderboard(membership.tenantId),
     getFixtureBoard(membership.supabase, membership.tenantId, membership.userId),
     getLeaderboardForm(membership.tenantId),
+    getScoringConfig(membership.supabase, membership.tenantId),
     // All members' scores in the tenant (RLS lets a member read them); the duel
     // record is per-viewer, so it is computed here, not in the cached layer.
     membership.supabase
@@ -223,7 +225,21 @@ export default async function LeaderboardPage({
           })}
         </TableBody>
       </Table>
-      <p className="text-muted-foreground text-xs">{de.leaderboard.tieBreakNote}</p>
+      <div className="bg-muted/40 space-y-1 rounded-lg border p-3 text-xs">
+        <p className="text-foreground font-medium">{de.leaderboard.scoringHeading}</p>
+        <p className="text-muted-foreground">
+          {de.leaderboard.scoringNote({
+            exact: scoringConfig.exact,
+            goalDiff: scoringConfig.goal_diff,
+            tendency: scoringConfig.tendency,
+            advanceBonus: scoringConfig.advance_bonus,
+          })}
+        </p>
+        <p className="text-muted-foreground">{de.leaderboard.tieBreakNote}</p>
+        <Link href="/info" className="text-primary inline-block hover:underline">
+          {de.leaderboard.scoringMore}
+        </Link>
+      </div>
 
       {duels.length > 0 && (
         <section className="space-y-2">

@@ -827,6 +827,8 @@ export type Database = {
         Args: {
           f_away: number
           f_home: number
+          f_pen_away: number
+          f_pen_home: number
           f_winner: string
           p_advancing: string
           p_away: number

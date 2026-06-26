@@ -223,6 +223,10 @@ export const de = {
     hits: "Treffer",
     you: "Du",
     empty: "Die Rangliste erscheint nach den ersten gewerteten Spielen.",
+    scoringHeading: "So gibt es Punkte",
+    scoringNote: (c: { exact: number; goalDiff: number; tendency: number; advanceBonus: number }) =>
+      `Pro Spiel: ${c.exact} für das exakte Ergebnis, ${c.goalDiff} für die richtige Tordifferenz, ${c.tendency} für die richtige Tendenz (Sieger oder Unentschieden). In der K.-o.-Phase zählt das Ergebnis inklusive Verlängerung, ein Elfmeterschießen wird hinzugezählt; zusätzlich gibt es +${c.advanceBonus} für das richtige weiterkommende Team.`,
+    scoringMore: "Alle Regeln im Detail",
     tieBreakNote:
       "Bei Punktgleichheit entscheiden: exakte Tipps, dann richtige Treffer, dann früheste Tippabgabe.",
     liveHeading: (n: number) => (n === 1 ? "Spiel läuft gerade" : "Spiele laufen gerade"),
@@ -386,7 +390,7 @@ export const de = {
     scoringTendencyInfo:
       "Punkte, wenn nur der richtige Ausgang stimmt – Heimsieg, Auswärtssieg oder Unentschieden – ohne passende Tordifferenz (z. B. Tipp 3:0 bei Ergebnis 1:0).",
     scoringAdvanceInfo:
-      "Zusätzlicher Bonus in der K.-o.-Phase, wenn du das weiterkommende Team richtig tippst. Die Ergebnis-Punkte zählen dort nach 90 Minuten, das Weiterkommen nach Verlängerung bzw. Elfmeterschießen.",
+      "Zusätzlicher Bonus in der K.-o.-Phase, wenn du das weiterkommende Team richtig tippst. Für den Ergebnis-Tipp zählt dort das Ergebnis inklusive Verlängerung; ein Elfmeterschießen wird zum Ergebnis hinzugezählt (z. B. 1:1 n. V., 4:3 i. E. → gewertet als 5:4). Der Bonus richtet sich nach dem tatsächlich weiterkommenden Team.",
     scoringInfoAria: "Erklärung anzeigen",
     scoringSave: "Regeln speichern & neu berechnen",
     scoringSaved: "Punkteregeln gespeichert und Punkte neu berechnet.",
@@ -518,7 +522,7 @@ export const de = {
       ],
       scoringHeading: "Punkte",
       scoring:
-        "Es gibt Punkte für die exakte Vorhersage, die richtige Tordifferenz und die richtige Tendenz (den Sieger). In der K.-o.-Phase zählt für den Ergebnis-Tipp das Ergebnis nach Verlängerung, sofern eine gespielt wurde; ein Elfmeterschießen wird beim Ergebnis nicht mitgewertet. Zusätzlich gibt es einen Bonus für das richtige weiterkommende Team — dafür zählt, wer tatsächlich weiterkommt, also auch nach Verlängerung oder Elfmeterschießen.",
+        "Es gibt Punkte für die exakte Vorhersage, die richtige Tordifferenz und die richtige Tendenz (den Sieger). In der K.-o.-Phase zählt für den Ergebnis-Tipp das Ergebnis inklusive Verlängerung, sofern eine gespielt wurde; ein Elfmeterschießen wird zum Ergebnis hinzugezählt (z. B. 1:1 nach Verlängerung, 4:3 im Elfmeterschießen werden als 5:4 gewertet). Zusätzlich gibt es einen Bonus für das richtige weiterkommende Team — dafür zählt, wer tatsächlich weiterkommt.",
       fairnessHeading: "Fair für alle",
       fairness:
         "Tipps sind nur bis zum Anpfiff möglich und für andere erst nach Anpfiff sichtbar — so tippt jeder unbeeinflusst. Maßgeblich ist immer die Uhrzeit auf dem Server, nicht im Browser.",

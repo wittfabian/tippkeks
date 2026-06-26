@@ -285,11 +285,28 @@ suite("RLS, deadline and scoring (integration)", () => {
       p_advancing: null,
       f_home: 2,
       f_away: 0,
+      f_pen_home: null,
+      f_pen_away: null,
       f_winner: null,
       p_stage: "group",
       p_config: config,
     });
     expect(data).toMatchObject({ points: 3, category: "goal_diff" });
+
+    // Knockout penalty shoot-out goals are added to the result (1:1 + 4:3 -> 5:4).
+    const { data: penData } = await cA.rpc("score_prediction", {
+      p_home: 5,
+      p_away: 4,
+      p_advancing: null,
+      f_home: 1,
+      f_away: 1,
+      f_pen_home: 4,
+      f_pen_away: 3,
+      f_winner: null,
+      p_stage: "final",
+      p_config: config,
+    });
+    expect(penData).toMatchObject({ points: 4, category: "exact" });
   });
 
   it("view-only mode blocks members but lets admins enter tips for them", async () => {
