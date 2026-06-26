@@ -48,7 +48,8 @@ export async function getLeaderboard(tenantId: string): Promise<LeaderboardRow[]
         .select("user_id, display_name, total_points, exact_count, hit_count, rank")
         .eq("tenant_id", tenantId)
         .order("rank", { ascending: true });
-      if (error) console.error("[data:leaderboard] query failed", error);
+      // Throw rather than cache a degraded result (see getTournamentData).
+      if (error) throw new Error(`[data:leaderboard] query failed: ${error.message}`);
       // flatMap drops any row with a null user_id (shouldn't occur) and narrows
       // user_id to string in the kept branch, so no non-null cast is needed.
       return (data ?? []).flatMap((row) =>
@@ -89,14 +90,17 @@ export async function getLeaderboardForm(tenantId: string): Promise<MemberForm[]
         .from("prediction_score")
         .select("user_id, fixture_id, category")
         .eq("tenant_id", tenantId);
-      if (error) console.error("[data:leaderboard-form] query failed", error);
+      // Throw rather than cache a degraded result (see getTournamentData).
+      if (error) throw new Error(`[data:leaderboard-form] query failed: ${error.message}`);
       if (!scores || scores.length === 0) return [];
 
       const fixtureIds = [...new Set(scores.map((s) => s.fixture_id))];
-      const { data: fixtures } = await service
+      const { data: fixtures, error: fixtureError } = await service
         .from("fixture")
         .select("id, kickoff_at")
         .in("id", fixtureIds);
+      if (fixtureError)
+        throw new Error(`[data:leaderboard-form] fixture query failed: ${fixtureError.message}`);
       const kickoffById = new Map((fixtures ?? []).map((f) => [f.id, f.kickoff_at]));
 
       // Collect each member's scored results; summariseForm sorts + reduces them.
