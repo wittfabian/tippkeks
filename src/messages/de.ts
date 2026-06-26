@@ -223,6 +223,10 @@ export const de = {
     hits: "Treffer",
     you: "Du",
     empty: "Die Rangliste erscheint nach den ersten gewerteten Spielen.",
+    scoringHeading: "So gibt es Punkte",
+    scoringNote: (c: { exact: number; goalDiff: number; tendency: number; advanceBonus: number }) =>
+      `Pro Spiel: ${c.exact} für das exakte Ergebnis, ${c.goalDiff} für die richtige Tordifferenz, ${c.tendency} für die richtige Tendenz (Sieger oder Unentschieden). In der K.-o.-Phase zählt das Ergebnis inklusive Verlängerung, ein Elfmeterschießen wird hinzugezählt; zusätzlich gibt es +${c.advanceBonus} für das richtige weiterkommende Team.`,
+    scoringMore: "Alle Regeln im Detail",
     tieBreakNote:
       "Bei Punktgleichheit entscheiden: exakte Tipps, dann richtige Treffer, dann früheste Tippabgabe.",
     liveHeading: (n: number) => (n === 1 ? "Spiel läuft gerade" : "Spiele laufen gerade"),
