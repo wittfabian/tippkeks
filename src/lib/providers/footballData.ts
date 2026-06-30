@@ -133,10 +133,15 @@ function winnerExternalId(match: FdMatch): string | null {
 
 /**
  * football-data.org adapter for one competition's current season (default: the
- * FIFA World Cup, code WC). Caveat: the free tier's `score.fullTime` reflects
- * the result after extra time for knockout matches, so the stored regulation
- * score may include ET; admins can correct via the manual override when the
- * scoring rules require the strict 90' result.
+ * FIFA World Cup, code WC).
+ *
+ * Knockout score caveat: `score.fullTime` is the cumulative scoreline and, for a
+ * penalty shoot-out, *folds the shoot-out goals into it* (e.g. 1:1 a.e.t. won
+ * 4:3 on penalties is reported as fullTime 5:4, penalties 4:3). We store the
+ * after-extra-time scoreline in `regular_home/away` — the shoot-out lives
+ * separately in `penalty_home/away` and is re-added only at scoring time — so we
+ * subtract the shoot-out goals back out of `fullTime` here. `fullTime` already
+ * includes extra-time goals, which is exactly the a.e.t. score we want.
  */
 export function footballDataProvider(
   competitionCode = serverEnv.FOOTBALL_DATA_COMPETITION,
@@ -158,6 +163,13 @@ export function footballDataProvider(
         }
 
         const finished = match.status === "FINISHED";
+        const penaltyHome = match.score.penalties?.home ?? null;
+        const penaltyAway = match.score.penalties?.away ?? null;
+        // `fullTime` folds the shoot-out goals in; strip them back out so the
+        // stored regular score is the after-extra-time scoreline (penalties are
+        // carried separately and re-added at scoring time).
+        const fullTimeHome = match.score.fullTime.home;
+        const fullTimeAway = match.score.fullTime.away;
         fixtures.push({
           externalId: String(match.id),
           stageKind: mapStage(match.stage),
@@ -166,11 +178,11 @@ export function footballDataProvider(
           awayTeamExternalId: match.awayTeam.id != null ? String(match.awayTeam.id) : null,
           kickoffAt: match.utcDate,
           status: mapStatus(match.status),
-          regularHome: finished ? match.score.fullTime.home : null,
-          regularAway: finished ? match.score.fullTime.away : null,
+          regularHome: finished && fullTimeHome != null ? fullTimeHome - (penaltyHome ?? 0) : null,
+          regularAway: finished && fullTimeAway != null ? fullTimeAway - (penaltyAway ?? 0) : null,
           afterExtraTime: match.score.duration !== "REGULAR",
-          penaltyHome: match.score.penalties?.home ?? null,
-          penaltyAway: match.score.penalties?.away ?? null,
+          penaltyHome,
+          penaltyAway,
           winnerTeamExternalId: winnerExternalId(match),
         });
       }
