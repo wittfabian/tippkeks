@@ -1,0 +1,42 @@
+name: CodeQL
+
+# Static security analysis. Free on public repositories, and it reports into the
+# Security tab rather than onto pull requests — which is what a project that is
+# not actively maintained actually wants: a place to look, not a queue to work
+# through.
+#
+# The weekly run matters more than the pull-request one here. Findings appear as
+# new rules ship, long after the last commit.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "23 4 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+
+      # No build step: the JS/TS analyser reads the source directly, so this
+      # needs neither dependencies nor Supabase configuration.
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3

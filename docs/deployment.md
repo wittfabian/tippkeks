@@ -89,6 +89,20 @@ registration and group creation at `/settings`.
 
 ## Continuous integration
 
+Four workflows, none of which need any repository configuration. Actions minutes
+are free on public repositories, so nothing here has to be rationed.
+
+| Workflow        | When                          | What                                                       |
+| --------------- | ----------------------------- | ---------------------------------------------------------- |
+| `ci.yml`        | push to `main`, pull requests | typecheck, lint, format, test, build                       |
+| `codeql.yml`    | push, pull requests, weekly   | static security analysis → Security tab                    |
+| `pr-checks.yml` | pull requests                 | dependency review (vulnerabilities, licences) + link check |
+| `pages.yml`     | changes to the page's inputs  | builds and deploys the project page                        |
+
+Nothing runs on a schedule except CodeQL, and that one reports into the Security
+tab rather than turning `main` red. On an unmaintained project a scheduled job
+that fails and stays failing is worse than no job at all.
+
 [`ci.yml`](../.github/workflows/ci.yml) runs on every push to `main` and every
 pull request: install → `typecheck` → `lint` → `format:check` → `test` → `build`.
 
