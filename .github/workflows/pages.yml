@@ -1,0 +1,84 @@
+name: Project page
+
+# Publishes the public project page (scripts/generate-landing.ts → site/) to
+# GitHub Pages. The page is generated, never committed: its German copy comes
+# from src/messages/de.ts, and the optional Impressum block comes from repository
+# Secrets, which must not end up in the repository.
+#
+# One-time setup: Settings → Pages → Source = "GitHub Actions".
+#
+# Repository configuration (Settings → Secrets and variables → Actions):
+#   Variable PAGE_URL   canonical URL the page is served under, with trailing
+#                       slash (e.g. https://tippkeks.de/). Feeds canonical,
+#                       og:url and the sitemap — set it before pointing a custom
+#                       domain here, or those URLs advertise the github.io one.
+#   Secrets  OPERATOR_NAME / _STREET / _CITY / _COUNTRY / _EMAIL
+#                       renders the § 5 DDG block in the footer. All five or
+#                       none: an incomplete set is skipped entirely.
+
+on:
+  push:
+    branches: [main]
+    # Only the inputs the page is generated from — no rebuild for app-only changes.
+    paths:
+      - "src/messages/de.ts"
+      - "src/app/icon.svg"
+      - "scripts/generate-landing.ts"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never cancel a half-finished deployment; queue behind it instead.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate project page
+        run: pnpm tsx scripts/generate-landing.ts
+        env:
+          PAGE_URL: ${{ vars.PAGE_URL }}
+          # Derived from the checkout, so a fork points at its own repository.
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          OPERATOR_NAME: ${{ secrets.OPERATOR_NAME }}
+          OPERATOR_STREET: ${{ secrets.OPERATOR_STREET }}
+          OPERATOR_CITY: ${{ secrets.OPERATOR_CITY }}
+          OPERATOR_COUNTRY: ${{ secrets.OPERATOR_COUNTRY }}
+          OPERATOR_EMAIL: ${{ secrets.OPERATOR_EMAIL }}
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

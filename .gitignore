@@ -17,6 +17,10 @@
 /.next/
 /out/
 
+# generated project page (scripts/generate-landing.ts) — built by the Pages
+# workflow, and it may embed the operator's Impressum, so it stays out of git
+/site/
+
 # production
 /build
 

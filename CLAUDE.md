@@ -55,6 +55,7 @@ pnpm tsx scripts/generate-pwa-assets.ts  # regenerate PWA icons (from src/app/ic
 pnpm tsx scripts/set-site-admin.ts <email> [--revoke]  # grant/revoke site-admin (service role)
 pnpm tsx scripts/seed-mock.ts [group-id]   # DEV-ONLY: mock players + tips + finished results → leaderboard (defaults to newest group)
 pnpm tsx scripts/generate-vapid-keys.ts    # generate a Web Push VAPID key pair (once per deploy)
+pnpm tsx scripts/generate-landing.ts       # regenerate site/ (GitHub Pages project page + SEO assets, from de.ts)
 
 # Supabase (CLI is a dev dependency → use `pnpm exec supabase`/the db:* scripts)
 pnpm db:start       # supabase start
@@ -199,8 +200,9 @@ src/app/api/cron/sync/route.ts     # secret-protected sync trigger
 src/app/(legal)/{info,privacy,imprint}  # public legal/info pages (own chrome; reachable signed-in + out)
 src/actions/                       # "use server" mutations (auth, tenant, predictions, profile, admin)
 src/components/{ui,...}            # shadcn primitives + feature components
-src/lib/{supabase,auth,data,providers,sync,scoring,domain,i18n,cache,notifications}/
+src/lib/{supabase,auth,data,providers,sync,scoring,domain,i18n,cache,notifications,legal}/
 src/messages/de.ts                 # all German UI strings
+site/                              # GENERATED + git-ignored — public project page for GitHub Pages
 supabase/migrations/               # schema + RLS + triggers + functions (source of truth)
 supabase/seed.sql                  # GENERATED — edit scripts/generate-seed.ts, not this file
 data/openfootball/                 # vendored public-domain WM2026 schedule (seed source)
@@ -213,9 +215,19 @@ tests/                             # vitest integration (RLS/deadline/scoring); 
 `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (server-only — never `NEXT_PUBLIC_`),
 `FOOTBALL_DATA_API_TOKEN` (free key from football-data.org), `FOOTBALL_DATA_COMPETITION` (default
 `WC`), `CRON_SECRET`. Optional Web Push: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (public, build-time +
-runtime) + `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` (server-only) — generate with
-`scripts/generate-vapid-keys.ts`. `.env.example` documents the keys. Env is Zod-validated: public in
-`src/lib/env.ts`, server-only in `src/lib/env.server.ts` (guarded by `server-only`).
+runtime) + `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` (server-only, defaults to `mailto:` +
+`OPERATOR_EMAIL`) — generate with `scripts/generate-vapid-keys.ts`. `.env.example` documents the
+keys. Env is Zod-validated: public in `src/lib/env.ts`, server-only in `src/lib/env.server.ts`
+(guarded by `server-only`).
+
+**Operator identity** (`OPERATOR_NAME` / `_STREET` / `_CITY` / `_COUNTRY` / `_EMAIL`) is
+**server-only runtime env**, resolved by `src/lib/legal/operator.ts` and rendered on
+`/imprint`, `/privacy` and `/info` — which are therefore `dynamic = "force-dynamic"`, so a
+build never bakes one deployment's address into the image. Do NOT move these to `NEXT_PUBLIC_*`
+(build-time inlining would publish personal data in the GHCR image) and do NOT put them back in
+`de.ts`. All five or none: a partial set counts as unconfigured and the pages say so. The rest of
+the legal copy still describes the reference deployment (Hetzner, Supabase Frankfurt, Resend,
+BayLDA) — legal text is not configuration, so a fork rewrites it by hand.
 
 ## Testing
 

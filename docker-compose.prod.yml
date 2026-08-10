@@ -23,6 +23,10 @@
 #       redirect links; without it the email-confirmation link points at the
 #       internal container address 0.0.0.0:3000)
 #   FOOTBALL_DATA_API_TOKEN, FOOTBALL_DATA_COMPETITION        (sync)
+#   OPERATOR_NAME / _STREET / _CITY / _COUNTRY / _EMAIL  (Impressum + Datenschutz;
+#       a public deployment legally needs all five. Runtime on purpose, so the
+#       published image carries no operator's personal data — without them the
+#       legal pages state that no operator is configured)
 #   REDIS_PASSWORD  (Valkey auth — openssl rand -hex 32; keep it URL-safe so it
 #       can be embedded in REDIS_URL without percent-encoding)
 #   VAPID_PRIVATE_KEY, VAPID_SUBJECT  (Web Push — optional; omit to run without

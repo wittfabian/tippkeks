@@ -45,6 +45,92 @@ export const de = {
     stats: { teamsLabel: "Nationen", matchesLabel: "Spiele", winnerLabel: "Sieger pro Gruppe" },
     scoreTags: { exact: "Exakt", tendency: "Tendenz" },
   },
+  // Copy for the public project page on GitHub Pages, generated into
+  // site/index.html by scripts/generate-landing.ts. Not part of the app UI, but
+  // German user-facing text — so it stays in the same dictionary as the rest.
+  projectPage: {
+    title: "Open-Source-Tippspiel",
+    description:
+      "TippKeks ist ein selbst hostbares Fußball-Tippspiel für Freundesgruppen — quelloffen unter MIT-Lizenz.",
+    status: "Die WM 2026 ist gespielt",
+    // Deliberately a plain definitional sentence: it is what search engines put
+    // in the snippet and what an LLM quotes when asked what TippKeks is.
+    summary:
+      "TippKeks ist ein quelloffenes Fußball-Tippspiel für private Freundesgruppen — zum Selbsthosten, werbefrei und unter MIT-Lizenz.",
+    lead: "TippKeks war das private Tippspiel unserer Freundesrunde zur Fußball-Weltmeisterschaft 2026: Ergebnisse tippen, Punkte kassieren, in der Rangliste streiten. Das Turnier ist vorbei — der Code ist jetzt offen. Wer mag, hostet sich seine eigene Runde für das nächste Turnier.",
+    ctaRepo: "Quellcode auf GitHub",
+    ctaSelfHost: "Selbst hosten",
+    // Short enough to fit one line on the 1200×630 social card.
+    ogTagline: "Selbst hostbar · werbefrei · MIT-Lizenz",
+    featuresHeading: "Was drinsteckt",
+    features: [
+      {
+        title: "Tipps bleiben geheim",
+        body: "Getippt wird bis zum Anpfiff, sichtbar für die anderen wird ein Tipp erst danach. Über die Deadline entscheidet die Uhr der Datenbank — nicht der Browser, an dem sich drehen ließe.",
+      },
+      {
+        title: "Punkte rechnet der Server",
+        body: "Ergebnisse kommen automatisch von football-data.org, die Punkte berechnet Postgres. Exakter Tipp, Tordifferenz, Tendenz und ein Bonus auf das weiterkommende Team — die Regeln sind pro Gruppe konfigurierbar.",
+      },
+      {
+        title: "Eine Gruppe pro Freundesrunde",
+        body: "Beitritt per Einladungslink, jede Gruppe mit eigener Rangliste und eigenen Admins. Dass keine Gruppe die Tipps einer anderen sieht, erzwingt Postgres selbst per Row Level Security.",
+      },
+      {
+        title: "Läuft als App auf dem Handy",
+        body: "Installierbar als PWA, mit optionalen Push-Nachrichten: eine Erinnerung, wenn ein Tipp noch fehlt, und die eigene Punktzahl, sobald ein Spiel abgepfiffen ist.",
+      },
+    ],
+    stackHeading: "Technik",
+    stackLead:
+      "Server-first gebaut: gelesen wird in React Server Components, geschrieben über Server Actions, und die Zugriffsrechte hängen nicht am UI, sondern an Postgres-Policies.",
+    stackItems: [
+      "Next.js 16 · React 19 · TypeScript",
+      "Supabase — Postgres, Auth, Row Level Security",
+      "Tailwind CSS v4 · shadcn/ui",
+      "Container-Image für Podman/Docker",
+    ],
+    selfHostHeading: "Selbst hosten",
+    selfHostLead:
+      "Das Datenmodell ist nicht auf die WM 2026 festgelegt — Spielpläne kommen über einen austauschbaren Provider herein, andere Turniere brauchen keinen Umbau.",
+    selfHostSteps: [
+      "Repository klonen und Abhängigkeiten mit pnpm installieren.",
+      "Supabase-Projekt anlegen und die Migrationen einspielen.",
+      "Betreiberangaben und Zugangsdaten als Umgebungsvariablen setzen, dann den Container starten.",
+    ],
+    selfHostHint: "Die ausführliche Anleitung steht in der README im Repository.",
+    faqHeading: "Häufige Fragen",
+    // Each answer has to stand on its own: these feed both the FAQPage rich
+    // result and the answer an assistant gives when it quotes this page.
+    faq: [
+      {
+        q: "Was ist TippKeks?",
+        a: "TippKeks ist ein quelloffenes Fußball-Tippspiel für private Freundesgruppen. Die Mitglieder einer Gruppe tippen vor dem Anpfiff das Ergebnis jedes Spiels, die echten Ergebnisse werden automatisch synchronisiert, und eine Rangliste zeigt, wer vorn liegt. Der Quellcode steht unter MIT-Lizenz auf GitHub.",
+      },
+      {
+        q: "Was kostet TippKeks?",
+        a: "Nichts. TippKeks ist kostenlos, werbefrei und verzichtet auf Tracking. Es gibt keinen öffentlichen Dienst zum Mitmachen: Wer TippKeks nutzen möchte, betreibt seine eigene Instanz.",
+      },
+      {
+        q: "Kann ich TippKeks selbst hosten?",
+        a: "Ja, das ist der vorgesehene Weg. TippKeks ist eine Next.js-Anwendung mit Supabase (PostgreSQL und Auth) als Backend und wird als fertiges Container-Image für Podman oder Docker veröffentlicht. Die Schritt-für-Schritt-Anleitung steht in der README im Repository.",
+      },
+      {
+        q: "Wie werden die Punkte berechnet?",
+        a: "Punkte gibt es für das exakte Ergebnis, für die richtige Tordifferenz und für die richtige Tendenz, dazu einen Bonus für das richtig getippte weiterkommende Team. Die genauen Werte sind pro Gruppe konfigurierbar. Gerechnet wird in der Datenbank, nicht im Browser.",
+      },
+      {
+        q: "Wer kann meine Tipps sehen?",
+        a: "Vor dem Anpfiff niemand außer dir selbst und den Administratoren deiner Gruppe. Erst nach dem Anpfiff werden Tipps für die anderen Mitglieder sichtbar. Durchgesetzt wird das von Row-Level-Security-Policies in PostgreSQL, nicht bloß von der Oberfläche.",
+      },
+      {
+        q: "Funktioniert TippKeks auch für andere Turniere als die WM 2026?",
+        a: "Ja. Sportart, Wettbewerb, Saison und Turnierphase sind getrennt modelliert, und Spielpläne kommen über einen austauschbaren Anbieter herein — in der Standardkonfiguration football-data.org. Ein anderes Turnier erfordert deshalb keinen Umbau am Code.",
+      },
+    ],
+    licenseNote: "MIT-Lizenz",
+    footerImprintHeading: "Angaben gemäß § 5 DDG",
+  },
   dashboard: {
     nextDue: "Als Nächstes fällig",
     tipNow: "Jetzt tippen",
@@ -428,13 +514,13 @@ export const de = {
       privacy: "Datenschutz",
       impressum: "Impressum",
     },
+    // Who runs the instance is deployment config, not copy: the details come
+    // from runtime env via src/lib/legal/operator.ts so every self-hoster shows
+    // their own Impressum. Only the wording around them belongs here.
     operator: {
-      name: "Fabian Witt",
-      street: "Straße und Hausnummer",
-      city: "PLZ Ort",
-      country: "Deutschland",
       emailLabel: "E-Mail",
-      email: "kontakt@tippkeks.de",
+      missing:
+        "Für diese Installation sind keine Betreiberangaben hinterlegt. Wende dich an die Person, die sie betreibt.",
     },
     impressum: {
       title: "Impressum",

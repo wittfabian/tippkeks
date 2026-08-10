@@ -1,13 +1,18 @@
 import Link from "next/link";
 
 import { LegalPage, LegalSection } from "@/components/legal/legal";
+import { OperatorMissing } from "@/components/legal/operator";
+import { getOperator } from "@/lib/legal/operator";
 import { de } from "@/messages/de";
 
 export const metadata = { title: de.legal.info.title };
 
+// See imprint/page.tsx: the contact address is runtime env, so no prerendering.
+export const dynamic = "force-dynamic";
+
 export default function InfoPage() {
   const t = de.legal.info;
-  const op = de.legal.operator;
+  const operator = getOperator();
 
   return (
     <LegalPage title={t.title}>
@@ -39,12 +44,16 @@ export default function InfoPage() {
       </LegalSection>
 
       <LegalSection heading={t.contactHeading}>
-        <p>
-          {t.contact}{" "}
-          <a className="hover:text-foreground underline" href={`mailto:${op.email}`}>
-            {op.email}
-          </a>
-        </p>
+        {operator ? (
+          <p>
+            {t.contact}{" "}
+            <a className="hover:text-foreground underline" href={`mailto:${operator.email}`}>
+              {operator.email}
+            </a>
+          </p>
+        ) : (
+          <OperatorMissing />
+        )}
       </LegalSection>
     </LegalPage>
   );

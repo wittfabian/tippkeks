@@ -1,32 +1,30 @@
 import { LegalPage, LegalSection } from "@/components/legal/legal";
+import { OperatorAddress, OperatorEmail, OperatorMissing } from "@/components/legal/operator";
+import { getOperator } from "@/lib/legal/operator";
 import { de } from "@/messages/de";
 
 export const metadata = { title: de.legal.privacy.title };
 
+// See imprint/page.tsx: the controller is runtime env, so no prerendering.
+export const dynamic = "force-dynamic";
+
 export default function PrivacyPage() {
   const t = de.legal.privacy;
-  const op = de.legal.operator;
+  const operator = getOperator();
 
   return (
     <LegalPage title={t.title} updated={de.legal.lastUpdated}>
       <p className="text-muted-foreground">{t.intro}</p>
 
       <LegalSection heading={t.controllerHeading}>
-        <address className="text-foreground not-italic">
-          {op.name}
-          <br />
-          {op.street}
-          <br />
-          {op.city}
-          <br />
-          {op.country}
-        </address>
-        <p>
-          {op.emailLabel}:{" "}
-          <a className="hover:text-foreground underline" href={`mailto:${op.email}`}>
-            {op.email}
-          </a>
-        </p>
+        {operator ? (
+          <>
+            <OperatorAddress operator={operator} />
+            <OperatorEmail operator={operator} />
+          </>
+        ) : (
+          <OperatorMissing />
+        )}
       </LegalSection>
 
       <LegalSection heading={t.dataHeading}>
