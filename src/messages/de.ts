@@ -41,6 +41,7 @@ export const de = {
     ctaSecondary: "Konto erstellen",
     kickoffIn: "Anpfiff in",
     live: "Das Turnier läuft – jetzt live mittippen!",
+    finished: "Die WM 2026 ist gespielt – danke fürs Mittippen!",
     units: { days: "Tage", hours: "Std", minutes: "Min", seconds: "Sek" },
     stats: { teamsLabel: "Nationen", matchesLabel: "Spiele", winnerLabel: "Sieger pro Gruppe" },
     scoreTags: { exact: "Exakt", tendency: "Tendenz" },
