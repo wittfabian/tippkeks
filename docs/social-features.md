@@ -1,5 +1,9 @@
 # Social / "togetherness" features — concept roadmap
 
+> **Not planned, not in progress.** This was written during development and never
+> built. The project is no longer actively maintained, so treat everything below
+> as notes for whoever forks it — not as a roadmap anyone is working through.
+
 The app today is **"tip alone → read the result."** Every step is private or task-focused
 (countdown, "you tipped 2:1"), and the only social signal is the live banner plus the all-tips
 table that appears _after_ kickoff. There is no activity, no reactions, no shared real-time

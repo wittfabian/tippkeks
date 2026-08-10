@@ -1,42 +1,25 @@
-# Email / SMTP setup (Resend)
+# Email / SMTP setup
 
-**Status:** the privacy policy already names Resend as a processor
-(`de.legal.privacy.recipientsEmail`), but **no email actually flows through Resend
-yet** — the SMTP wiring below is still open. Until it's done, auth emails fall back
-to Supabase's built-in sender, which is capped at ~2 mails/hour and lands in spam.
+A public instance needs its own mail provider. Even with signup confirmation off,
+the app sends real mail:
 
-## Why this matters
-
-Even with `enable_confirmations = false` (signup sends no confirmation), the app
-still sends real mail today:
-
-- **Password reset** (`/forgot-password`) — implemented, sends a recovery link.
+- **Password reset** (`/forgot-password`) — sends a recovery link.
 - **Email change** (`double_confirm_changes = true`) — sends a confirmation link.
 
-So the 2-mails/hour built-in limit will bite at launch. A custom SMTP provider
-fixes both the limit and deliverability.
+Supabase's built-in sender is capped at roughly 2 mails an hour and lands in
+spam, so it is fine for development and not for anything else. Custom SMTP fixes
+both the limit and deliverability.
 
-## Provider
+None of this touches the app: Supabase Auth (GoTrue) sends the mail, so it is
+configured in the Supabase Dashboard and in `supabase/config.toml`.
 
-**Resend** — legal entity Plus Five Five, Inc., San Francisco, USA. EU-US Data
-Privacy Framework certified + EU SCCs (already reflected in the privacy policy).
-Free tier: 3,000 mails/month.
+The walkthrough below uses **Resend** because that is what the reference
+deployment used — any SMTP provider works, and the steps map directly.
 
----
-
-## Open TODOs
-
-- [ ] **1. Verify a sending domain in Resend** (e.g. `mail.tippkeks.de`) and add the
-      DNS records Resend generates for it (see below).
-- [ ] **2. Configure custom SMTP in the hosted Supabase Dashboard** — the only step
-      that takes effect in production.
-- [ ] **3. Raise the auth email rate limit** in the Dashboard (default is 2/hour).
-- [ ] **4. Mirror the SMTP block in `supabase/config.toml`** so the local stack and
-      a `db reset`/CI stay consistent.
-- [ ] **5. Add `RESEND_API_KEY` to `.env.local` / `.env.prod` and to `.env.example`.**
-
-These are independent of code — no app changes are needed; Supabase Auth (GoTrue)
-sends the mail once SMTP is set.
+> Whichever provider you pick becomes a processor of your users' email addresses.
+> Your privacy policy has to name it (see
+> [configuration.md → Legal documents](./configuration.md#legal-documents)), and
+> for a provider outside the EU you need to say what the transfer is based on.
 
 ---
 
@@ -65,7 +48,7 @@ Resend's SMTP credentials are fixed:
 | Port     | `587` (STARTTLS) or `465` (SSL)                                        |
 | Username | `resend`                                                               |
 | Password | your Resend API key (`re_…`)                                           |
-| Sender   | an address **on the verified domain**, e.g. `noreply@mail.tippkeks.de` |
+| Sender   | an address **on the verified domain**, e.g. `noreply@mail.example.org` |
 
 Dashboard → **Authentication → Emails → SMTP Settings** → enable custom SMTP and
 fill these in. Set the sender name to `TippKeks`.
@@ -91,7 +74,7 @@ host = "smtp.resend.com"
 port = 587
 user = "resend"
 pass = "env(RESEND_API_KEY)"
-admin_email = "noreply@mail.tippkeks.de"
+admin_email = "noreply@mail.example.org"
 sender_name = "TippKeks"
 ```
 
@@ -107,14 +90,16 @@ email_sent = 30
 
 ### 5. Env
 
-Add to `.env.local`, `.env.prod`, and document it in `.env.example`:
+Only needed if you enabled SMTP for the local stack in step 4 — put it in
+`.env.local`:
 
 ```
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-The app itself never reads this — only the Supabase CLI (`config.toml`'s
-`env(RESEND_API_KEY)`) and, separately, the value you paste into the Dashboard.
+Deliberately absent from `.env.example`: the app never reads it. It is consumed
+by the Supabase CLI (`config.toml`'s `env(RESEND_API_KEY)`), and in production by
+the value you paste into the Dashboard — not by the container.
 
 ---
 
