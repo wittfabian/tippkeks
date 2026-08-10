@@ -1,0 +1,54 @@
+name: PR checks
+
+# Checks that only make sense on a pull request, and deliberately nowhere else.
+#
+# A project that is not actively maintained must not grow scheduled jobs that go
+# red and stay red. Both jobs here run against a proposed change and report to
+# the person proposing it — so they are useful exactly when someone is around to
+# act on them, and silent otherwise.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependencies:
+    name: Dependency review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Blocks a pull request that pulls in a dependency with a known
+      # vulnerability, or one whose licence does not fit an MIT project.
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          deny-licenses: AGPL-3.0, GPL-2.0, GPL-3.0
+
+  links:
+    name: Documentation links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The documentation points at repository features (Security tab, issue
+      # templates) and external services, and those links rot quietly — three of
+      # them were already dead once. Checked only on pull requests, so a link
+      # that dies on someone else's server never turns main red.
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress
+            --accept 200,206,429
+            --exclude-path node_modules
+            --exclude-path .next
+            --exclude '^https?://(localhost|127\.0\.0\.1)'
+            --exclude 'example\.(org|com)'
+            "**/*.md"
+          fail: true
