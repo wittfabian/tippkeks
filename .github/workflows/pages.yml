@@ -1,0 +1,80 @@
+name: Project page
+
+# Publishes the public project page (scripts/generate-landing.ts → site/) to
+# GitHub Pages. The page is generated, never committed: its German copy comes
+# from src/messages/de.ts.
+#
+# Setup is one click — Settings → Pages → Source = "GitHub Actions". Nothing else
+# needs configuring: the canonical URL and the repository link are derived from
+# the repository itself, so a fork publishes its own page with no changes.
+#
+# Two optional repository Variables, for a deployment that wants them:
+#   PAGE_URL     custom domain the page is served under, with trailing slash.
+#                Set it BEFORE pointing a domain here, or canonical, og:url and
+#                the sitemap keep advertising the github.io address.
+#   IMPRINT_URL  adds an "Impressum" link to the footer, pointing at wherever
+#                yours lives. The page itself carries no operator details.
+
+on:
+  push:
+    branches: [main]
+    # Only the inputs the page is generated from — no rebuild for app-only changes.
+    paths:
+      - "src/messages/de.ts"
+      - "src/app/icon.svg"
+      - "scripts/generate-landing.ts"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never cancel a half-finished deployment; queue behind it instead.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate project page
+        run: pnpm tsx scripts/generate-landing.ts
+        env:
+          # Default to the address GitHub actually serves this repository's page
+          # at; the Variable only takes over for a custom domain.
+          PAGE_URL: ${{ vars.PAGE_URL || format('https://{0}.github.io/{1}/', github.repository_owner, github.event.repository.name) }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          IMPRINT_URL: ${{ vars.IMPRINT_URL }}
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

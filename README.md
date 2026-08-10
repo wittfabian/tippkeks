@@ -1,104 +1,128 @@
-# Tippkeks
+# TippKeks
 
-Private Tippspiel (football prediction game) for closed friend groups. v1 targets the **FIFA World
-Cup 2026**: members submit per-fixture score predictions before kickoff, results are synced, and a
-leaderboard follows. Architecture and conventions live in [`CLAUDE.md`](./CLAUDE.md); operational
-notes are under [`docs/`](./docs).
+[![CI](https://github.com/wittfabian/tippkeks/actions/workflows/ci.yml/badge.svg)](https://github.com/wittfabian/tippkeks/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-e0a458.svg)](./LICENSE)
 
-**Stack:** Next.js 16 (App Router) · React 19 · TypeScript strict · pnpm · Tailwind v4 + shadcn/ui ·
-Supabase (Postgres + Auth) · Podman as the container runtime.
+A self-hostable football prediction game ("Tippspiel") for closed friend groups.
+Members predict the score of each fixture before kickoff, real results are synced
+automatically, points are computed in the database, and a leaderboard settles the
+argument.
+
+Built for the FIFA World Cup 2026 and used for exactly that. The tournament is
+over, the code is open — the data model was never tied to it.
+
+> [!IMPORTANT]
+> **Not actively maintained.** This project reached its goal with the 2026 World
+> Cup and is published as open source rather than developed further. There is no
+> promise of new features, of response times on issues, or of dependency updates.
+> Security reports are read; everything else may sit. If you want to build on it,
+> fork it and plan to run it yourself.
+
+> **The UI is German.** Code, identifiers and documentation are English; every
+> user-facing string lives in `src/messages/de.ts`. Another language means adding
+> a second dictionary, not hunting literals through components.
+
+## What it does
+
+- **Predictions are sealed until kickoff.** Others see your prediction only after
+  the match starts, and the deadline is a database trigger comparing against the
+  database clock — not a disabled button.
+- **Points are computed server-side.** Exact score, goal difference, and tendency,
+  plus a bonus for correctly predicting who advances. Rule sets are versioned and
+  configurable per group; a rule change re-scores retroactively.
+- **One group per circle of friends.** Join by invite link, each group with its
+  own leaderboard and admins. That no group can read another's predictions is
+  enforced by Postgres Row Level Security, not by the UI.
+- **Results sync themselves.** An idempotent job pulls fixtures and results from
+  football-data.org and re-scores finished matches.
+- **Installable as a PWA**, with optional Web Push: a reminder when a prediction
+  is still missing, and your own points once a match is final.
+- **Admin tooling** for the realities of a friend group: managed members without
+  an account, manual result overrides, and an audit log of both.
+
+## Architecture in one paragraph
+
+Server-first Next.js: reads happen in Server Components through a cookie-aware
+Supabase client, mutations are Server Actions that validate with Zod and
+re-resolve the caller's identity and role. Authorization is defence in depth
+across three layers, and the last one is not bypassable — RLS policies in
+Postgres. Scoring lives in SQL (`score_prediction`) with a TypeScript mirror used
+only for tests and the in-form preview. [`CLAUDE.md`](./CLAUDE.md) documents all
+of it, including the footguns.
+
+**Stack:** Next.js 16 (App Router) · React 19 · TypeScript strict · pnpm ·
+Tailwind v4 + shadcn/ui · Supabase (Postgres + Auth) · Podman/Docker.
 
 ## Local development
 
-Prerequisites: Node ≥ 22, pnpm (`corepack enable`), Podman (runs the local Supabase + Valkey).
+Prerequisites: Node ≥ 22, pnpm (`corepack enable`), and Podman or Docker (runs the
+local Supabase stack and Valkey).
 
 ```bash
 pnpm install
 export DOCKER_HOST="unix:///var/run/docker.sock"   # let the Supabase CLI reach Podman
 pnpm db:start                                       # local Postgres + Auth
-pnpm exec supabase status -o env                    # copy URL + keys into .env.local
+pnpm exec supabase status -o env                    # API URL + keys
 cp .env.example .env.local                          # then fill in the values above
 pnpm dev                                            # http://localhost:3000
 ```
 
-Common scripts: `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`,
-`pnpm db:reset`, `pnpm db:types`. See `CLAUDE.md` for the full list.
+Seeded with the public-domain openfootball World Cup 2026 schedule, so there is a
+full fixture list without an API token. `pnpm tsx scripts/seed-mock.ts` adds mock
+players, predictions and finished results if you want a populated leaderboard.
 
-## Continuous integration & GitHub setup
+Common scripts:
 
-Two workflows live in [`.github/workflows/`](./.github/workflows). Nothing is hardcoded in the YAML:
-both read their Supabase config from GitHub repository **Variables/Secrets**, so configure these
-once before the workflows can pass.
+| Command             | Purpose                                                       |
+| ------------------- | ------------------------------------------------------------- |
+| `pnpm typecheck`    | `tsc --noEmit`                                                |
+| `pnpm check-config` | Validate an env file before deploying                         |
+| `pnpm lint`         | ESLint                                                        |
+| `pnpm test`         | Vitest (integration tests need the local stack; else skipped) |
+| `pnpm build`        | Production build                                              |
+| `pnpm db:reset`     | Rebuild the local DB from migrations + seed                   |
+| `pnpm db:types`     | Regenerate `database.types.ts` after a schema change          |
+| `pnpm sync`         | Run the football-data.org sync once                           |
 
-### GitHub repository configuration (one-time)
+The full list is in [`CLAUDE.md`](./CLAUDE.md#commands).
 
-Settings → _Secrets and variables_ → _Actions_.
+## Self-hosting
 
-**Variables** tab — not confidential (the anon key is inlined into the client bundle and already
-ships to browsers), so they live as Variables, not Secrets:
+You need a Supabase project and one machine that can build and run a container.
+Apply the migrations, write your configuration, build the image where it runs:
 
-| Name                            | Used by            | Value                             |
-| ------------------------------- | ------------------ | --------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | CI build + Release | Production Supabase project URL   |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | CI build + Release | Production anon (publishable) key |
+```bash
+cp .env.example .env.prod                       # then fill it in
+pnpm check-config .env.prod --online            # catches the usual mistakes first
+podman compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+```
 
-**Secrets** tab:
+There is no published image and no release workflow. `NEXT_PUBLIC_*` are inlined
+at build time, so a registry image would be tied to whoever built it — and this
+project should not need release infrastructure it will not keep up.
 
-| Name                                 | Used by                  | Value                                                                                                                                                                                                                  |
-| ------------------------------------ | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | Release build (embedded) | `openssl rand -base64 32`. `next build` embeds it into the image (and compiles it into any Edge bundle, where runtime can't override it). Keep it **stable across releases** and inject the **same** value at runtime. |
+One thing that surprises people: **TippKeks ships no Impressum and no privacy
+policy.** Such a text names a specific hosting provider, a specific mail provider
+and a specific supervisory authority, so shipping one would give you a document
+that is false for you. Supply your own via `LEGAL_DIR`; there are starting points
+in [`examples/legal/`](./examples/legal/) — examples, not legal advice.
 
-> `SUPABASE_SERVICE_ROLE_KEY` is **not** a CI secret: it is only needed at runtime
-> (asserted in `createServiceClient`), so the build never sees it. Keeping it out
-> of CI removes any chance of the production service-role key leaking into a build
-> log or artifact. Inject it only into the running container/deployment.
+- **[`docs/configuration.md`](./docs/configuration.md)** — every value you can set
+- **[`docs/deployment.md`](./docs/deployment.md)** — the order to do things in
 
-> The repo's built-in `GITHUB_TOKEN` is used to push images to GHCR — no PAT needed. Just allow
-> Actions to write packages: Settings → Actions → General → Workflow permissions.
+Optional subsystems have their own notes under [`docs/`](./docs) — caching, push
+notifications, SMTP, password reset, and the sync scheduler.
 
-### 1. CI — `ci.yml` (runs on every push to `main` and every PR)
+## Contributing
 
-Steps: install → `typecheck` → `lint` → `format:check` → `test` → `build`.
+Issues and pull requests are welcome, with the maintenance status above in mind:
+they may take a long time, and a fork is often the faster path. Please read
+[`CONTRIBUTING.md`](./CONTRIBUTING.md) first — a few conventions are load-bearing.
 
-- The **build** step pulls only `NEXT_PUBLIC_*` from the repo Variables (they are inlined into the
-  client bundle, so they must be present). It needs no Supabase secret — `next build` validates env
-  but never reaches Supabase, and the service-role key is asserted lazily at runtime.
-- The **integration tests** (`tests/*.integration.test.ts`) self-skip when the Supabase keys are
-  absent (`tests/helpers.ts` → `hasSupabase === false → describe.skip`), so CI runs the unit tests
-  only and needs no live database.
+Found a security problem? Do not open a public issue — see
+[`SECURITY.md`](./SECURITY.md).
 
-Recommended (optional): a **branch protection rule** on `main` requiring the `verify` check to pass
-before merge (Settings → Branches).
+## Licence
 
-#### Running the integration tests in CI (optional)
-
-They are skipped by default. To run them, start a Supabase stack inside the workflow and export
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` (the
-local stack's keys) before `pnpm test` — e.g. via `supabase start` or a Postgres service container
-with the migrations applied.
-
-### 2. Release image — `release.yml` (manual, builds & pushes a Docker image to GHCR)
-
-Triggered from the **Actions** tab → _Release image_ → enter a tag (e.g. `v1.0.0` or `latest`). It
-builds the production image with the two `NEXT_PUBLIC_*` Variables as build args and the
-`NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` Secret above as a **BuildKit secret** (mounted during
-`next build`, never persisted in image layers/history), and pushes it to `ghcr.io/<owner>/<repo>`.
-The encryption key is embedded into the build, so it must be set as a Secret (not provided only at
-runtime) — see the table above.
-
-### Runtime secrets (NOT configured in GitHub)
-
-The release workflow only **builds and pushes** the image; it does not deploy. Server-only secrets
-are injected where the container actually runs (your host / orchestrator), never baked into the
-image and never stored in GitHub Actions. When you `docker run` / deploy, provide:
-
-| Variable                             | Purpose                                                                                                                                                                                              |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SUPABASE_SERVICE_ROLE_KEY`          | Server-only; sync job + admin overrides + managed members (bypasses RLS). A Secret key (`sb_secret_…`, Dashboard → Settings → API Keys), or the legacy `service_role` key (valid until end of 2026). |
-| `CRON_SECRET`                        | Bearer token guarding `POST /api/cron/sync`. `openssl rand -hex 32`.                                                                                                                                 |
-| `FOOTBALL_DATA_API_TOKEN`            | football-data.org API token for the live result sync.                                                                                                                                                |
-| `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | **Same value as the build Secret above** — embedded at build, the Node server re-reads it at runtime and it must match across all replicas.                                                          |
-| `FOOTBALL_DATA_COMPETITION`          | Optional; competition code (default `WC`).                                                                                                                                                           |
-| `REDIS_URL`                          | Optional; Valkey/Redis for the cache + rate limiting.                                                                                                                                                |
-
-See `.env.example` for the full annotated list and `docs/sync-scheduler.md` for the cron setup.
+[MIT](./LICENSE). The bundled fixture data under `data/openfootball/` is public
+domain.

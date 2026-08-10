@@ -9,7 +9,7 @@
  * Then set:
  *   NEXT_PUBLIC_VAPID_PUBLIC_KEY=<public>   (.env.local / .env.prod)
  *   VAPID_PRIVATE_KEY=<private>             (server-only)
- *   VAPID_SUBJECT=mailto:you@example.com    (optional; defaults to a mailto)
+ *   VAPID_SUBJECT=mailto:you@example.com    (optional; defaults to OPERATOR_EMAIL)
  */
 import webpush from "web-push";
 

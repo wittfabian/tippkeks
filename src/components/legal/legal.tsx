@@ -1,20 +1,15 @@
 import type { ReactNode } from "react";
 
-/** Title + optional "last updated" line shared by every legal page. */
-export function LegalPage({
-  title,
-  updated,
-  children,
-}: {
-  title: string;
-  updated?: string;
-  children: ReactNode;
-}) {
+/**
+ * Title and body shared by every legal page. No "last updated" line: the
+ * Impressum and the privacy policy are supplied by the operator now, so their
+ * own text carries whatever date applies to them.
+ */
+export function LegalPage({ title, children }: { title: string; children: ReactNode }) {
   return (
     <article className="space-y-6">
-      <header className="space-y-1">
+      <header>
         <h1 className="font-heading text-2xl font-bold tracking-tight">{title}</h1>
-        {updated ? <p className="text-muted-foreground text-xs">{updated}</p> : null}
       </header>
       {children}
     </article>

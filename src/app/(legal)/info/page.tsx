@@ -1,13 +1,17 @@
 import Link from "next/link";
 
 import { LegalPage, LegalSection } from "@/components/legal/legal";
+import { serverEnv } from "@/lib/env.server";
 import { de } from "@/messages/de";
 
 export const metadata = { title: de.legal.info.title };
 
+// The contact address is runtime env, so this page must not be prerendered.
+export const dynamic = "force-dynamic";
+
 export default function InfoPage() {
   const t = de.legal.info;
-  const op = de.legal.operator;
+  const email = serverEnv.OPERATOR_EMAIL;
 
   return (
     <LegalPage title={t.title}>
@@ -39,12 +43,16 @@ export default function InfoPage() {
       </LegalSection>
 
       <LegalSection heading={t.contactHeading}>
-        <p>
-          {t.contact}{" "}
-          <a className="hover:text-foreground underline" href={`mailto:${op.email}`}>
-            {op.email}
-          </a>
-        </p>
+        {email ? (
+          <p>
+            {t.contact}{" "}
+            <a className="hover:text-foreground underline" href={`mailto:${email}`}>
+              {email}
+            </a>
+          </p>
+        ) : (
+          <p>{de.legal.operator.missing}</p>
+        )}
       </LegalSection>
     </LegalPage>
   );

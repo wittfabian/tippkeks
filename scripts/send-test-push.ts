@@ -19,9 +19,16 @@ config({ path: ".env" });
 async function main() {
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
-  const subject = process.env.VAPID_SUBJECT || "mailto:kontakt@tippkeks.de";
+  // Mirrors webPushSender(): the contact address defaults to the operator mail.
+  const subject =
+    process.env.VAPID_SUBJECT ||
+    (process.env.OPERATOR_EMAIL ? `mailto:${process.env.OPERATOR_EMAIL}` : "");
   if (!publicKey || !privateKey) {
     console.error("VAPID keys missing — set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY.");
+    process.exit(1);
+  }
+  if (!subject) {
+    console.error("VAPID contact missing — set VAPID_SUBJECT or OPERATOR_EMAIL.");
     process.exit(1);
   }
   webpush.setVapidDetails(subject, publicKey, privateKey);

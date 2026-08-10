@@ -77,9 +77,12 @@ export interface DispatchReport {
 export function webPushSender(): PushSender | null {
   const publicKey = publicEnv.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = serverEnv.VAPID_PRIVATE_KEY;
-  if (!publicKey || !privateKey) return null;
+  // The subject is as mandatory as the keys: push services reject requests
+  // without a contact address, so a missing one means push is not configured.
+  const subject = serverEnv.VAPID_SUBJECT;
+  if (!publicKey || !privateKey || !subject) return null;
 
-  webpush.setVapidDetails(serverEnv.VAPID_SUBJECT, publicKey, privateKey);
+  webpush.setVapidDetails(subject, publicKey, privateKey);
 
   return async (target, payload) => {
     try {
