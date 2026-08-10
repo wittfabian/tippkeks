@@ -483,6 +483,23 @@ async function writeOgImage(): Promise<void> {
   writeFileSync(join(outDir, "og.png"), png);
 }
 
+/**
+ * GitHub Pages reads the custom domain from a CNAME file in the deployed
+ * artifact. Setting it in the repository settings alone is not enough with
+ * workflow-based publishing: the next deploy ships an artifact without the file
+ * and the domain can be dropped, taking the site offline until someone notices.
+ *
+ * The domain is simply the host of PAGE_URL, so there is nothing extra to keep in
+ * sync — and a default github.io deployment writes no file at all.
+ */
+function writeCname(): string | null {
+  const host = new URL(PAGE_URL).hostname;
+  if (host.endsWith(".github.io")) return null;
+
+  writeFileSync(join(outDir, "CNAME"), `${host}\n`);
+  return host;
+}
+
 async function main() {
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, "index.html"), renderPage());
@@ -490,9 +507,12 @@ async function main() {
   writeFileSync(join(outDir, "robots.txt"), renderRobotsTxt());
   writeFileSync(join(outDir, "sitemap.xml"), renderSitemap());
   await writeOgImage();
+  const cname = writeCname();
 
   console.log(`Project page written to site/ for ${PAGE_URL}`);
-  console.log("  index.html, og.png, llms.txt, robots.txt, sitemap.xml");
+  console.log(
+    `  index.html, og.png, llms.txt, robots.txt, sitemap.xml${cname ? `, CNAME (${cname})` : ""}`,
+  );
 }
 
 void main();

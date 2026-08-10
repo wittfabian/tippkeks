@@ -132,9 +132,24 @@ from `src/messages/de.ts` and deploys it to GitHub Pages. Set Settings → Pages
 Source to **GitHub Actions** once; everything else is derived from the
 repository. The generated `site/` directory is git-ignored.
 
-For a custom domain, set the repository Variable `PAGE_URL` to the URL the page
-will be served under **before** pointing the domain at it — canonical, `og:url`
-and the sitemap are baked in at generation time.
+### Custom domain
+
+1. At your DNS provider, point the apex at GitHub Pages — four `A` records
+   (`185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`)
+   and, for IPv6, four `AAAA` records (`2606:50c0:8000::153`,
+   `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153`). For
+   `www`, a `CNAME` to `<owner>.github.io` instead.
+2. Set the repository Variable `PAGE_URL` to the new URL **with a trailing
+   slash**. Canonical, `og:url` and the sitemap are baked in at generation time,
+   and the generator derives the `CNAME` file in the artifact from it — which is
+   what actually binds the domain to the site. Setting the domain only in the
+   repository settings is not enough with workflow publishing: the next deploy
+   would ship an artifact without that file.
+3. Re-run the workflow, then turn on **Enforce HTTPS** in Settings → Pages once
+   GitHub has issued the certificate (can take up to 24 hours).
+
+Do step 1 before step 2. With `PAGE_URL` already switched, the published page
+advertises a canonical URL that does not resolve yet.
 
 ## Other subsystems
 
