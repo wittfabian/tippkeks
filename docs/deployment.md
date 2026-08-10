@@ -103,8 +103,27 @@ tests only. To run them for real, start a stack inside the workflow and export
 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and
 `SUPABASE_SERVICE_ROLE_KEY` before `pnpm test`.
 
-If you want the check enforced, add a branch protection rule on `main` requiring
-`verify` (Settings → Branches).
+### Protecting `main`
+
+The repository ships a ruleset in
+[`.github/rulesets/main.json`](../.github/rulesets/main.json): `main` cannot be
+deleted or force-pushed, changes land only through a pull request, and `verify`
+has to pass on a branch that is up to date. Apply it with:
+
+```bash
+gh api --method POST /repos/<owner>/<repo>/rulesets \
+  --input .github/rulesets/main.json
+```
+
+Rulesets need a **public repository** (or GitHub Pro) — on a private free
+repository the call returns 403.
+
+Two deliberate settings. `required_approving_review_count` is **0**: GitHub does
+not let you approve your own pull request, so on a single-maintainer repository
+any higher number makes `main` permanently unmergeable. The pull-request
+requirement still does the real work by ruling out direct pushes. And there are
+**no bypass actors**, so the rule applies to the owner too — you can still edit
+or disable the ruleset, which is the escape hatch that matters.
 
 ## The project page
 
