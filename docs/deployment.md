@@ -48,7 +48,18 @@ starting points in [`examples/legal/`](../examples/legal/).
 Without them the pages state that no document is configured, which is honest but
 unlikely to be what you want on a public site.
 
-## 4. Build and run
+## 4. Check it before you build
+
+```bash
+pnpm check-config .env.prod --online
+```
+
+Catches the mistakes that otherwise surface as a half-working deployment: a
+missing service-role key, legal documents that are still the unedited examples, a
+half-configured VAPID pair, a typo'd variable name. Exit code 1 on errors, so you
+can put it in front of the deploy command.
+
+## 5. Build and run
 
 ```bash
 podman compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
@@ -66,7 +77,7 @@ release infrastructure for a project that is not maintained.
 Check `docker-compose.prod.yml` before the first run — the host path mounted at
 `LEGAL_DIR` and the published port are the two things you will want to adjust.
 
-## 5. Make yourself a site admin
+## 6. Make yourself a site admin
 
 ```bash
 pnpm tsx scripts/set-site-admin.ts <your-email>

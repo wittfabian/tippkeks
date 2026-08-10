@@ -17,6 +17,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "sync": "tsx --conditions=react-server scripts/sync.ts",
+    "check-config": "tsx scripts/check-config.ts",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",

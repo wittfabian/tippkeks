@@ -73,15 +73,16 @@ players, predictions and finished results if you want a populated leaderboard.
 
 Common scripts:
 
-| Command          | Purpose                                                       |
-| ---------------- | ------------------------------------------------------------- |
-| `pnpm typecheck` | `tsc --noEmit`                                                |
-| `pnpm lint`      | ESLint                                                        |
-| `pnpm test`      | Vitest (integration tests need the local stack; else skipped) |
-| `pnpm build`     | Production build                                              |
-| `pnpm db:reset`  | Rebuild the local DB from migrations + seed                   |
-| `pnpm db:types`  | Regenerate `database.types.ts` after a schema change          |
-| `pnpm sync`      | Run the football-data.org sync once                           |
+| Command             | Purpose                                                       |
+| ------------------- | ------------------------------------------------------------- |
+| `pnpm typecheck`    | `tsc --noEmit`                                                |
+| `pnpm check-config` | Validate an env file before deploying                         |
+| `pnpm lint`         | ESLint                                                        |
+| `pnpm test`         | Vitest (integration tests need the local stack; else skipped) |
+| `pnpm build`        | Production build                                              |
+| `pnpm db:reset`     | Rebuild the local DB from migrations + seed                   |
+| `pnpm db:types`     | Regenerate `database.types.ts` after a schema change          |
+| `pnpm sync`         | Run the football-data.org sync once                           |
 
 The full list is in [`CLAUDE.md`](./CLAUDE.md#commands).
 
@@ -92,6 +93,7 @@ Apply the migrations, write your configuration, build the image where it runs:
 
 ```bash
 cp .env.example .env.prod                       # then fill it in
+pnpm check-config .env.prod --online            # catches the usual mistakes first
 podman compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 ```
 

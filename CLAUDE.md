@@ -50,6 +50,7 @@ pnpm test <path>    # single file
 pnpm format         # prettier --write .
 
 pnpm sync                       # run the football-data.org sync once (needs FOOTBALL_DATA_API_TOKEN)
+pnpm check-config [file] [--online]  # validate an env file (completeness, LEGAL_DIR, key sanity)
 pnpm tsx scripts/generate-seed.ts   # regenerate supabase/seed.sql from data/openfootball/
 pnpm tsx scripts/generate-pwa-assets.ts  # regenerate PWA icons (from src/app/icon.svg) + public/offline.html (from de.ts)
 pnpm tsx scripts/set-site-admin.ts <email> [--revoke]  # grant/revoke site-admin (service role)

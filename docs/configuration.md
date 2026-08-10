@@ -12,6 +12,26 @@ hints.
 > and the project-page workflow derives what it needs, so a fork gets a green
 > build with zero setup. See [deployment.md](./deployment.md).
 
+## Checking it
+
+```bash
+pnpm check-config                     # .env.local
+pnpm check-config .env.prod           # before a deployment
+pnpm check-config .env.prod --online  # also verify the Supabase keys are accepted
+```
+
+It reports every variable as present, missing or implausible, and makes the
+checks a schema cannot: that `LEGAL_DIR` really holds both documents and that
+they are not still the unedited examples, that the service-role key is not the
+anon key pasted twice, that the VAPID pair is not half-configured, and that no
+key in the file is an unrecognised typo. Exit code 1 on errors, 0 on warnings
+only, so it can gate a deploy script.
+
+`--online` is skipped against a local stack on purpose: the Supabase CLI's
+gateway accepts any API key, so the probes would come back green regardless. On a
+hosted project it verifies that the anon key is accepted and that the
+service-role key really reaches the admin API.
+
 ## Required
 
 | Variable                        | What it is                                                                                                                                                        |
