@@ -41,13 +41,7 @@ const schedule: { name: string; matches: RawMatch[] } = JSON.parse(
 );
 
 type StageKind =
-  | "group"
-  | "last_32"
-  | "last_16"
-  | "quarter_final"
-  | "semi_final"
-  | "third_place"
-  | "final";
+  "group" | "last_32" | "last_16" | "quarter_final" | "semi_final" | "third_place" | "final";
 
 const STAGES: { kind: StageKind; name: string; ordinal: number }[] = [
   { kind: "group", name: "Gruppenphase", ordinal: 1 },

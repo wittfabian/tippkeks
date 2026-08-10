@@ -1,12 +1,7 @@
 import type { StageKind } from "@/lib/scoring/engine";
 
 export type FixtureStatus =
-  | "scheduled"
-  | "live"
-  | "finished"
-  | "postponed"
-  | "abandoned"
-  | "cancelled";
+  "scheduled" | "live" | "finished" | "postponed" | "abandoned" | "cancelled";
 
 export interface NormalizedTeam {
   externalId: string;
