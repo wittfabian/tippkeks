@@ -4,3 +4,10 @@ pnpm-lock.yaml
 supabase/.branches
 supabase/.temp
 src/lib/supabase/database.types.ts
+
+# Generated — the writing script owns their formatting, not Prettier.
+# Reformatting them here makes every regeneration show up as a spurious diff,
+# and a regenerate-without-format lands a red format:check on CI.
+public/offline.html
+supabase/seed.sql
+site/
