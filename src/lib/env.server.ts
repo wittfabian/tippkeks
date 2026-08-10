@@ -24,17 +24,16 @@ const ServerEnvSchema = z.object({
   // auth redirect URLs, since `request.url` behind the reverse proxy reflects the
   // internal bind address (0.0.0.0:3000), not the public host.
   SITE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
-  // Identity of whoever runs this instance, rendered on the Impressum and
-  // Datenschutz pages (§ 5 DDG, Art. 13 GDPR). Deliberately runtime env and NOT
-  // NEXT_PUBLIC_*: build-time inlining would bake one operator's home address
-  // into the published container image, and every self-hoster must show their
-  // own details anyway. Optional so `next build` and CI need no personal data;
-  // the legal pages render an explicit "not configured" notice when incomplete.
-  OPERATOR_NAME: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
-  OPERATOR_STREET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
-  OPERATOR_CITY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
-  OPERATOR_COUNTRY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  // Contact address of whoever runs this instance: shown on the info page and
+  // used as the Web Push contact. Runtime env and NOT NEXT_PUBLIC_*, so the
+  // published container image carries no operator's address.
   OPERATOR_EMAIL: z.preprocess(emptyToUndefined, z.string().email().optional()),
+  // Directory holding the operator's own Impressum and Datenschutzerklärung as
+  // `imprint.html` / `privacy.html`. The app ships neither: legal texts describe
+  // a specific deployment (its host, its mail provider, its supervisory
+  // authority), so shipping any would hand every self-hoster a document that is
+  // wrong for them. Absent → the pages say the document is not configured.
+  LEGAL_DIR: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   // Valkey/Redis connection for the data cache and rate limiting. Optional: when
   // absent the cache no-ops (reads fall through to Postgres) and rate limits
   // fail open, so the app boots fine without it.

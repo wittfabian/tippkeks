@@ -1,107 +1,114 @@
 # Deployment
 
-How a TippKeks instance is built and run. Two workflows live in
-[`.github/workflows/`](../.github/workflows/); nothing is hardcoded in the YAML,
-so configure the repository first.
+How to run your own TippKeks instance. All configuration values are documented
+in [configuration.md](./configuration.md); this page is the order to do things
+in.
 
-## GitHub repository configuration (one-time)
+> **The project is not actively maintained.** Nobody is watching for a broken
+> dependency or a Supabase API change on your behalf. Running this means taking
+> over the operations yourself.
 
-Settings → _Secrets and variables_ → _Actions_.
+## What you need
 
-**Variables** tab — not confidential (the anon key is inlined into the client
-bundle and already ships to browsers), so they live as Variables, not Secrets:
+- A Supabase project (hosted or self-hosted) — Postgres and Auth.
+- One machine that can build and run a container.
+- A reverse proxy terminating TLS in front of it (Caddy, nginx, Traefik). The app
+  binds to loopback and speaks plain HTTP.
+- Optionally an SMTP provider wired into Supabase Auth, for confirmation and
+  password-reset mail. See [email-smtp.md](./email-smtp.md).
 
-| Name                            | Used by            | Value                                                       |
-| ------------------------------- | ------------------ | ----------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | CI build + Release | Production Supabase project URL                             |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | CI build + Release | Production anon (publishable) key                           |
-| `PAGE_URL`                      | Project page       | Canonical URL of the GitHub Pages site, with trailing slash |
+## 1. Prepare the database
 
-**Secrets** tab:
+Apply the migrations in `supabase/migrations/` to your project, in filename
+order — they carry the schema, the RLS policies, the triggers and the scoring
+functions. With the Supabase CLI linked to your project:
 
-| Name                                                          | Used by                  | Value                                                                                                                                                                                                                  |
-| ------------------------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`                          | Release build (embedded) | `openssl rand -base64 32`. `next build` embeds it into the image (and compiles it into any Edge bundle, where runtime can't override it). Keep it **stable across releases** and inject the **same** value at runtime. |
-| `OPERATOR_NAME` / `_STREET` / `_CITY` / `_COUNTRY` / `_EMAIL` | Project page             | Renders the § 5 DDG block in the published page's footer. All five or none.                                                                                                                                            |
+```bash
+pnpm exec supabase link --project-ref <ref>
+pnpm exec supabase db push
+```
 
-> `SUPABASE_SERVICE_ROLE_KEY` is **not** a CI secret: it is only needed at runtime
-> (asserted in `createServiceClient`), so the build never sees it. Keeping it out
-> of CI removes any chance of the production service-role key leaking into a build
-> log or artifact. Inject it only into the running container/deployment.
+The RLS policies are the security boundary, not a nice-to-have. An instance
+running without them is readable by anyone holding the anon key — which is
+everyone, since it ships to the browser.
 
-> The repo's built-in `GITHUB_TOKEN` is used to push images to GHCR — no PAT needed.
-> Just allow Actions to write packages: Settings → Actions → General → Workflow
-> permissions.
+## 2. Write your configuration
 
-## 1. CI — `ci.yml` (runs on every push to `main` and every PR)
+Copy `.env.example` to `.env.prod` and fill it in following
+[configuration.md](./configuration.md). `.env.prod` is git-ignored; keep it that
+way.
 
-Steps: install → `typecheck` → `lint` → `format:check` → `test` → `build`.
+## 3. Supply your legal documents
 
-- The **build** step pulls only `NEXT_PUBLIC_*` from the repo Variables (they are
-  inlined into the client bundle, so they must be present). It needs no Supabase
-  secret — `next build` validates env but never reaches Supabase, and the
-  service-role key is asserted lazily at runtime.
-- The **integration tests** (`tests/*.integration.test.ts`) self-skip when the
-  Supabase keys are absent (`tests/helpers.ts` → `hasSupabase === false →
-describe.skip`), so CI runs the unit tests only and needs no live database.
+Put your own `imprint.html` and `privacy.html` in a directory and point
+`LEGAL_DIR` at it. The app ships neither — see
+[configuration.md → Legal documents](./configuration.md#legal-documents) and the
+starting points in [`examples/legal/`](../examples/legal/).
 
-Recommended: a **branch protection rule** on `main` requiring the `verify` check
-to pass before merge (Settings → Branches).
+Without them the pages state that no document is configured, which is honest but
+unlikely to be what you want on a public site.
 
-### Running the integration tests in CI (optional)
+## 4. Build and run
 
-They are skipped by default. To run them, start a Supabase stack inside the
-workflow and export `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-and `SUPABASE_SERVICE_ROLE_KEY` (the local stack's keys) before `pnpm test` —
-e.g. via `supabase start` or a Postgres service container with the migrations
-applied.
+```bash
+podman compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+```
 
-## 2. Release image — `release.yml` (manual, builds & pushes to GHCR)
+That builds the image on the machine that runs it and starts three containers:
+the app, a Valkey instance for the cache and rate limiting, and a small curl loop
+that pokes the sync endpoint every two minutes.
 
-Triggered from the **Actions** tab → _Release image_ → enter a tag (e.g. `v1.0.0`
-or `latest`). It builds the production image with the two `NEXT_PUBLIC_*`
-Variables as build args and the `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` Secret as a
-**BuildKit secret** (mounted during `next build`, never persisted in image
-layers/history), and pushes it to `ghcr.io/<owner>/<repo>`. The encryption key is
-embedded into the build, so it must be set as a Secret (not provided only at
-runtime).
+The image is built locally on purpose. There is no published image and no release
+workflow: `NEXT_PUBLIC_*` are inlined at build time, so a registry image would be
+bound to whoever built it, and publishing one would mean maintaining
+release infrastructure for a project that is not maintained.
 
-## 3. Project page — `pages.yml`
+Check `docker-compose.prod.yml` before the first run — the host path mounted at
+`LEGAL_DIR` and the published port are the two things you will want to adjust.
 
-Generates the public project page from `src/messages/de.ts` via
-`scripts/generate-landing.ts` and deploys it to GitHub Pages. Set Settings →
-Pages → Source to **GitHub Actions** once. The generated `site/` directory is
-git-ignored — it is built in the workflow, partly from Secrets.
+## 5. Make yourself a site admin
 
-## Runtime configuration (NOT in GitHub)
+```bash
+pnpm tsx scripts/set-site-admin.ts <your-email>
+```
 
-The release workflow only **builds and pushes** the image; it does not deploy.
-Server-only secrets are injected where the container actually runs (your host or
-orchestrator), never baked into the image and never stored in GitHub Actions.
-When you `docker run` / deploy, provide:
+Needs `SUPABASE_SERVICE_ROLE_KEY` in the environment. This is the only way to
+grant it — there is deliberately no self-service path. Site admins can toggle
+registration and group creation at `/settings`.
 
-| Variable                                                      | Purpose                                                                                                                                                                                              |
-| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SUPABASE_SERVICE_ROLE_KEY`                                   | Server-only; sync job + admin overrides + managed members (bypasses RLS). A Secret key (`sb_secret_…`, Dashboard → Settings → API Keys), or the legacy `service_role` key (valid until end of 2026). |
-| `OPERATOR_NAME` / `_STREET` / `_CITY` / `_COUNTRY` / `_EMAIL` | Who runs this instance. Rendered on `/imprint` and `/privacy` — a public deployment legally needs all five. Read per request, so the image itself stays free of personal data.                       |
-| `CRON_SECRET`                                                 | Bearer token guarding `POST /api/cron/sync`. `openssl rand -hex 32`.                                                                                                                                 |
-| `FOOTBALL_DATA_API_TOKEN`                                     | football-data.org API token for the live result sync.                                                                                                                                                |
-| `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`                          | **Same value as the build Secret above** — embedded at build, the Node server re-reads it at runtime and it must match across all replicas.                                                          |
-| `SITE_URL`                                                    | Canonical public origin, e.g. `https://example.org`. Without it, auth redirect links point at the internal container address.                                                                        |
-| `FOOTBALL_DATA_COMPETITION`                                   | Optional; competition code (default `WC`).                                                                                                                                                           |
-| `REDIS_URL` / `REDIS_PASSWORD`                                | Optional; Valkey/Redis for the cache + rate limiting.                                                                                                                                                |
-| `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT`                         | Optional; Web Push. Without them the dispatcher no-ops.                                                                                                                                              |
+## Continuous integration
 
-See [`.env.example`](../.env.example) for the full annotated list,
-[`docker-compose.prod.yml`](../docker-compose.prod.yml) for a working
-composition, and [`sync-scheduler.md`](./sync-scheduler.md) for the cron setup.
+[`ci.yml`](../.github/workflows/ci.yml) runs on every push to `main` and every
+pull request: install → `typecheck` → `lint` → `format:check` → `test` → `build`.
 
-## Legal pages
+**It needs no repository configuration.** The build step uses placeholder
+Supabase values, because `next build` validates the public env but never contacts
+Supabase, and the service-role key is asserted at runtime only — so it never has
+to exist in CI, and cannot leak into a build log. A fork gets a green build with
+nothing to set up.
 
-`/imprint` and `/privacy` describe **the reference deployment**: hosting at
-Hetzner, Supabase in Frankfurt, Resend for mail, football-data.org for fixtures,
-and the Bavarian supervisory authority. The operator identity is configuration,
-but the rest of that text is not — if you run your own instance, read
-`de.legal.privacy` and `de.legal.impressum` in `src/messages/de.ts` and rewrite
-whatever does not match your setup. That is your legal responsibility, and no
-environment variable can do it for you.
+Integration tests self-skip without a local Supabase stack, so CI runs the unit
+tests only. To run them for real, start a stack inside the workflow and export
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and
+`SUPABASE_SERVICE_ROLE_KEY` before `pnpm test`.
+
+If you want the check enforced, add a branch protection rule on `main` requiring
+`verify` (Settings → Branches).
+
+## The project page
+
+[`pages.yml`](../.github/workflows/pages.yml) generates the public project page
+from `src/messages/de.ts` and deploys it to GitHub Pages. Set Settings → Pages →
+Source to **GitHub Actions** once; everything else is derived from the
+repository. The generated `site/` directory is git-ignored.
+
+For a custom domain, set the repository Variable `PAGE_URL` to the URL the page
+will be served under **before** pointing the domain at it — canonical, `og:url`
+and the sitemap are baked in at generation time.
+
+## Other subsystems
+
+Each optional piece has its own note: [caching.md](./caching.md),
+[push-notifications.md](./push-notifications.md),
+[sync-scheduler.md](./sync-scheduler.md),
+[password-reset.md](./password-reset.md), [email-smtp.md](./email-smtp.md).

@@ -1,9 +1,15 @@
 # Security policy
 
-TippKeks is a small, non-commercial side project. There is no bug bounty and no
-guaranteed response window — but security reports are taken seriously and fixed
-with priority, because the whole design rests on the database refusing what the
-UI merely hides.
+**TippKeks is not actively maintained.** It is a small, non-commercial side
+project that reached its goal with the 2026 World Cup. There is no bug bounty, no
+guaranteed response window, and no promise that a report will be fixed at all.
+
+What is promised: reports are read, and a confirmed vulnerability is disclosed
+publicly even if it is not fixed, so anyone running an instance can decide for
+themselves. Security is the one category that still gets attention here, because
+the whole design rests on the database refusing what the UI merely hides.
+
+If you run an instance, plan on being the one who patches it.
 
 ## Reporting a vulnerability
 
@@ -50,5 +56,5 @@ The interesting attack surface is authorization, and it is enforced in Postgres:
 
 ## Supported versions
 
-Only `main` is supported. There are no backports to older tags — self-hosters
-should track the latest release image.
+Only `main`, and only in the limited sense above. There are no releases, no tags
+and no backports — self-hosters build from source and track `main` themselves.

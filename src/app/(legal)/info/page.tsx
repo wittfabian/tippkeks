@@ -1,18 +1,17 @@
 import Link from "next/link";
 
 import { LegalPage, LegalSection } from "@/components/legal/legal";
-import { OperatorMissing } from "@/components/legal/operator";
-import { getOperator } from "@/lib/legal/operator";
+import { serverEnv } from "@/lib/env.server";
 import { de } from "@/messages/de";
 
 export const metadata = { title: de.legal.info.title };
 
-// See imprint/page.tsx: the contact address is runtime env, so no prerendering.
+// The contact address is runtime env, so this page must not be prerendered.
 export const dynamic = "force-dynamic";
 
 export default function InfoPage() {
   const t = de.legal.info;
-  const operator = getOperator();
+  const email = serverEnv.OPERATOR_EMAIL;
 
   return (
     <LegalPage title={t.title}>
@@ -44,15 +43,15 @@ export default function InfoPage() {
       </LegalSection>
 
       <LegalSection heading={t.contactHeading}>
-        {operator ? (
+        {email ? (
           <p>
             {t.contact}{" "}
-            <a className="hover:text-foreground underline" href={`mailto:${operator.email}`}>
-              {operator.email}
+            <a className="hover:text-foreground underline" href={`mailto:${email}`}>
+              {email}
             </a>
           </p>
         ) : (
-          <OperatorMissing />
+          <p>{de.legal.operator.missing}</p>
         )}
       </LegalSection>
     </LegalPage>

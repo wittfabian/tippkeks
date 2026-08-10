@@ -11,6 +11,13 @@ argument.
 Built for the FIFA World Cup 2026 and used for exactly that. The tournament is
 over, the code is open — the data model was never tied to it.
 
+> [!IMPORTANT]
+> **Not actively maintained.** This project reached its goal with the 2026 World
+> Cup and is published as open source rather than developed further. There is no
+> promise of new features, of response times on issues, or of dependency updates.
+> Security reports are read; everything else may sit. If you want to build on it,
+> fork it and plan to run it yourself.
+
 > **The UI is German.** Code, identifiers and documentation are English; every
 > user-facing string lives in `src/messages/de.ts`. Another language means adding
 > a second dictionary, not hunting literals through components.
@@ -80,26 +87,34 @@ The full list is in [`CLAUDE.md`](./CLAUDE.md#commands).
 
 ## Self-hosting
 
-You need a Supabase project (or a self-hosted Supabase) and somewhere to run one
-container. Apply the migrations in `supabase/migrations/`, pull the published
-image from GHCR, and inject the runtime configuration.
+You need a Supabase project and one machine that can build and run a container.
+Apply the migrations, write your configuration, build the image where it runs:
 
-Two things are easy to get wrong and worth reading before you go live:
+```bash
+cp .env.example .env.prod                       # then fill it in
+podman compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+```
 
-1. **The operator details** (`OPERATOR_NAME`, `_STREET`, `_CITY`, `_COUNTRY`,
-   `_EMAIL`) are runtime configuration, so the published image contains nobody's
-   address. Without them the legal pages state that no operator is configured.
-2. **The legal texts describe the reference deployment.** Hosting provider,
-   mail provider and supervisory authority are baked into the German copy —
-   rewrite them for your setup.
+There is no published image and no release workflow. `NEXT_PUBLIC_*` are inlined
+at build time, so a registry image would be tied to whoever built it — and this
+project should not need release infrastructure it will not keep up.
 
-Details: [`docs/deployment.md`](./docs/deployment.md). Optional subsystems have
-their own notes under [`docs/`](./docs) — caching, push notifications, SMTP,
-password reset, and the sync scheduler.
+One thing that surprises people: **TippKeks ships no Impressum and no privacy
+policy.** Such a text names a specific hosting provider, a specific mail provider
+and a specific supervisory authority, so shipping one would give you a document
+that is false for you. Supply your own via `LEGAL_DIR`; there are starting points
+in [`examples/legal/`](./examples/legal/) — examples, not legal advice.
+
+- **[`docs/configuration.md`](./docs/configuration.md)** — every value you can set
+- **[`docs/deployment.md`](./docs/deployment.md)** — the order to do things in
+
+Optional subsystems have their own notes under [`docs/`](./docs) — caching, push
+notifications, SMTP, password reset, and the sync scheduler.
 
 ## Contributing
 
-Issues and pull requests are welcome; please read
+Issues and pull requests are welcome, with the maintenance status above in mind:
+they may take a long time, and a fork is often the faster path. Please read
 [`CONTRIBUTING.md`](./CONTRIBUTING.md) first — a few conventions are load-bearing.
 
 Found a security problem? Do not open a public issue — see

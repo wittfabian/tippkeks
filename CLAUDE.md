@@ -55,7 +55,7 @@ pnpm tsx scripts/generate-pwa-assets.ts  # regenerate PWA icons (from src/app/ic
 pnpm tsx scripts/set-site-admin.ts <email> [--revoke]  # grant/revoke site-admin (service role)
 pnpm tsx scripts/seed-mock.ts [group-id]   # DEV-ONLY: mock players + tips + finished results → leaderboard (defaults to newest group)
 pnpm tsx scripts/generate-vapid-keys.ts    # generate a Web Push VAPID key pair (once per deploy)
-pnpm tsx scripts/generate-landing.ts       # regenerate site/ (GitHub Pages project page + SEO assets, from de.ts)
+PAGE_URL=… REPO_URL=… pnpm tsx scripts/generate-landing.ts   # regenerate site/ (Pages project page + SEO assets, from de.ts)
 
 # Supabase (CLI is a dev dependency → use `pnpm exec supabase`/the db:* scripts)
 pnpm db:start       # supabase start
@@ -206,6 +206,7 @@ site/                              # GENERATED + git-ignored — public project 
 supabase/migrations/               # schema + RLS + triggers + functions (source of truth)
 supabase/seed.sql                  # GENERATED — edit scripts/generate-seed.ts, not this file
 data/openfootball/                 # vendored public-domain WM2026 schedule (seed source)
+examples/legal/                    # non-binding Impressum/Datenschutz examples — never imported
 tests/                             # vitest integration (RLS/deadline/scoring); *.test.ts is unit
 ```
 
@@ -216,18 +217,28 @@ tests/                             # vitest integration (RLS/deadline/scoring); 
 `FOOTBALL_DATA_API_TOKEN` (free key from football-data.org), `FOOTBALL_DATA_COMPETITION` (default
 `WC`), `CRON_SECRET`. Optional Web Push: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (public, build-time +
 runtime) + `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` (server-only, defaults to `mailto:` +
-`OPERATOR_EMAIL`) — generate with `scripts/generate-vapid-keys.ts`. `.env.example` documents the
-keys. Env is Zod-validated: public in `src/lib/env.ts`, server-only in `src/lib/env.server.ts`
-(guarded by `server-only`).
+`OPERATOR_EMAIL`) — generate with `scripts/generate-vapid-keys.ts`. Env is Zod-validated: public in
+`src/lib/env.ts`, server-only in `src/lib/env.server.ts` (guarded by `server-only`).
 
-**Operator identity** (`OPERATOR_NAME` / `_STREET` / `_CITY` / `_COUNTRY` / `_EMAIL`) is
-**server-only runtime env**, resolved by `src/lib/legal/operator.ts` and rendered on
-`/imprint`, `/privacy` and `/info` — which are therefore `dynamic = "force-dynamic"`, so a
-build never bakes one deployment's address into the image. Do NOT move these to `NEXT_PUBLIC_*`
-(build-time inlining would publish personal data in the GHCR image) and do NOT put them back in
-`de.ts`. All five or none: a partial set counts as unconfigured and the pages say so. The rest of
-the legal copy still describes the reference deployment (Hetzner, Supabase Frankfurt, Resend,
-BayLDA) — legal text is not configuration, so a fork rewrites it by hand.
+**`docs/configuration.md` is the single reference for everything an operator can set** —
+`.env.example` is just the key list, and code comments must not grow into a second copy of it.
+Anything a deployment configures belongs there, not in the code.
+
+**The repo ships no Impressum and no Datenschutzerklärung, on purpose.** Such a text names one
+deployment's hosting provider, mail provider and supervisory authority, so shipping one hands every
+self-hoster a false document. The operator supplies `imprint.html` / `privacy.html` in `LEGAL_DIR`;
+`src/lib/legal/documents.ts` reads them per request, so `/imprint`, `/privacy` and `/info` are
+`dynamic = "force-dynamic"`. Missing → the page says the document is not configured; the app never
+invents one. `examples/legal/` holds the reference deployment's texts as non-binding examples (with
+placeholder operator details) and is never imported. Do NOT reintroduce legal prose into `de.ts`,
+and do NOT move `OPERATOR_EMAIL` to `NEXT_PUBLIC_*` — build-time inlining would bake an address
+into any published image.
+
+**No release workflow and no published image**, deliberately: `NEXT_PUBLIC_*` are inlined at build
+time, so an image is bound to whoever built it. Self-hosters build locally via
+`docker-compose.prod.yml`. CI builds with placeholder Supabase values, so **the repo needs no
+GitHub Variables or Secrets at all** — keep it that way; a fork must get a green build with zero
+setup.
 
 ## Testing
 

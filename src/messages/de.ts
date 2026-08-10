@@ -58,6 +58,11 @@ export const de = {
     summary:
       "TippKeks ist ein quelloffenes Fußball-Tippspiel für private Freundesgruppen — zum Selbsthosten, werbefrei und unter MIT-Lizenz.",
     lead: "TippKeks war das private Tippspiel unserer Freundesrunde zur Fußball-Weltmeisterschaft 2026: Ergebnisse tippen, Punkte kassieren, in der Rangliste streiten. Das Turnier ist vorbei — der Code ist jetzt offen. Wer mag, hostet sich seine eigene Runde für das nächste Turnier.",
+    // Stated up front, not buried: someone evaluating the project should learn
+    // this before they invest time, not after.
+    maintenanceHeading: "Wartungsstand",
+    maintenance:
+      "Das Projekt wird derzeit nicht aktiv weiterentwickelt. Es hat mit der WM 2026 sein Ziel erreicht und liegt jetzt als Open Source vor. Es gibt keine Zusage für neue Funktionen, für Antwortzeiten auf Issues oder für regelmäßige Updates — auch nicht für Abhängigkeiten. Wer TippKeks einsetzen möchte, sollte einplanen, den Betrieb selbst zu übernehmen; ein Fork ist ausdrücklich erwünscht.",
     ctaRepo: "Quellcode auf GitHub",
     ctaSelfHost: "Selbst hosten",
     // Short enough to fit one line on the 1200×630 social card.
@@ -127,9 +132,13 @@ export const de = {
         q: "Funktioniert TippKeks auch für andere Turniere als die WM 2026?",
         a: "Ja. Sportart, Wettbewerb, Saison und Turnierphase sind getrennt modelliert, und Spielpläne kommen über einen austauschbaren Anbieter herein — in der Standardkonfiguration football-data.org. Ein anderes Turnier erfordert deshalb keinen Umbau am Code.",
       },
+      {
+        q: "Wird TippKeks aktiv weiterentwickelt?",
+        a: "Nein. Das Projekt wird derzeit nicht aktiv gewartet. Es entstand für die WM 2026 und ist danach als Open Source veröffentlicht worden. Der Code bleibt verfügbar und Sicherheitsmeldungen werden gelesen, aber es gibt keine Zusage für neue Funktionen, Antwortzeiten oder Updates. Wer darauf aufbauen möchte, sollte forken und den Betrieb selbst übernehmen.",
+      },
     ],
     licenseNote: "MIT-Lizenz",
-    footerImprintHeading: "Angaben gemäß § 5 DDG",
+    footerImprint: "Impressum",
   },
   dashboard: {
     nextDue: "Als Nächstes fällig",
@@ -508,93 +517,25 @@ export const de = {
   },
   legal: {
     backHome: "Zur Startseite",
-    lastUpdated: "Stand: Juni 2026",
     footerNav: {
       info: "Über TippKeks",
       privacy: "Datenschutz",
       impressum: "Impressum",
     },
-    // Who runs the instance is deployment config, not copy: the details come
-    // from runtime env via src/lib/legal/operator.ts so every self-hoster shows
-    // their own Impressum. Only the wording around them belongs here.
-    operator: {
-      emailLabel: "E-Mail",
+    // The Impressum and the Datenschutzerklärung are NOT here. They describe one
+    // specific deployment — its host, its mail provider, its supervisory
+    // authority — so the operator supplies them as HTML via LEGAL_DIR (see
+    // src/lib/legal/documents.ts). Only the page titles and the
+    // not-configured notice are app copy.
+    documents: {
+      impressumTitle: "Impressum",
+      privacyTitle: "Datenschutzerklärung",
       missing:
-        "Für diese Installation sind keine Betreiberangaben hinterlegt. Wende dich an die Person, die sie betreibt.",
+        "Für diese Installation ist dieses Dokument nicht hinterlegt. Wende dich an die Person, die sie betreibt.",
     },
-    impressum: {
-      title: "Impressum",
-      providerHeading: "Angaben gemäß § 5 DDG",
-      contactHeading: "Kontakt",
-      responsibleHeading: "Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV",
-      natureHeading: "Hinweis zum Angebot",
-      nature:
-        "TippKeks ist ein privates, nicht-kommerzielles Freizeitprojekt und richtet sich ausschließlich an einen geschlossenen Freundeskreis. Es wird kein Geldeinsatz erhoben und es werden keine Gewinne ausgespielt.",
-      liabilityContentHeading: "Haftung für Inhalte",
-      liabilityContent:
-        "Als Diensteanbieter sind wir für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Wir sind jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen. Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen bleiben hiervon unberührt.",
-      liabilityLinksHeading: "Haftung für Links",
-      liabilityLinks:
-        "Unser Angebot kann Links zu externen Websites Dritter enthalten, auf deren Inhalte wir keinen Einfluss haben. Für diese fremden Inhalte können wir keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber verantwortlich. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links umgehend entfernen.",
-      copyrightHeading: "Urheberrecht",
-      copyright:
-        "Die durch den Betreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Spielpläne, Ergebnisse und damit verbundene Daten werden von football-data.org bezogen; die Rechte hieran liegen bei den jeweiligen Rechteinhabern.",
-      disputeHeading: "Verbraucherstreitbeilegung",
-      dispute:
-        "Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.",
-    },
-    privacy: {
-      title: "Datenschutzerklärung",
-      intro:
-        "Der Schutz deiner personenbezogenen Daten ist uns wichtig. Diese Erklärung informiert dich darüber, welche Daten wir im Rahmen von TippKeks verarbeiten, zu welchem Zweck und auf welcher Rechtsgrundlage. TippKeks ist ein privates, nicht-kommerzielles Tippspiel für einen geschlossenen Freundeskreis.",
-      controllerHeading: "Verantwortlicher im Sinne der DSGVO",
-      dataHeading: "Welche Daten wir verarbeiten",
-      dataAccountHeading: "Konto-Daten",
-      dataAccount:
-        "E-Mail-Adresse, Passwort (ausschließlich verschlüsselt bzw. als Hash gespeichert) und dein Anzeigename. Diese Daten sind für Registrierung und Anmeldung erforderlich. Optional kannst du eine Zwei-Faktor-Authentifizierung (TOTP) aktivieren; dabei wird das zugehörige Geheimnis sicher bei unserem Authentifizierungs-Dienstleister gespeichert.",
-      dataGameHeading: "Spiel-Daten",
-      dataGame:
-        "Deine abgegebenen Tipps, die daraus berechneten Punkte sowie deine Mitgliedschaft in Tippgruppen. Gruppen-Administratoren können zudem Mitglieder mit einem Anzeigenamen anlegen und für diese Tipps eintragen (etwa für Teilnehmende, die die App nicht selbst nutzen).",
-      dataLogHeading: "Server-Logfiles",
-      dataLog:
-        "Beim Aufruf der Anwendung werden technisch notwendige Zugriffsdaten verarbeitet (z. B. gekürzte IP-Adresse, Datum und Uhrzeit des Zugriffs, abgerufene Ressource, Browsertyp). Sie dienen der Sicherstellung des technischen Betriebs und der Fehleranalyse. Zum Schutz vor missbräuchlichen Anmelde- und Passwort-Zurücksetzen-Versuchen begrenzen wir die Häufigkeit solcher Anfragen; hierfür wird die IP-Adresse kurzzeitig verarbeitet.",
-      dataCookiesHeading: "Cookies",
-      dataCookies:
-        "TippKeks verwendet ausschließlich technisch notwendige Cookies, um deine Anmeldesitzung aufrechtzuerhalten. Es findet kein Tracking und keine Analyse deines Verhaltens statt; es werden keine Cookies zu Werbezwecken eingesetzt.",
-      purposeHeading: "Zwecke und Rechtsgrundlagen",
-      purposeItems: [
-        "Bereitstellung des Tippspiels und Verwaltung deines Kontos: Art. 6 Abs. 1 lit. b DSGVO (Erfüllung des Nutzungsverhältnisses).",
-        "Technischer Betrieb, Sicherheit und Fehleranalyse: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse am stabilen und sicheren Betrieb).",
-      ],
-      hostingHeading: "Hosting",
-      hosting:
-        "Die Anwendung wird bei der Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, betrieben. Die Server stehen in Deutschland. Mit Hetzner besteht ein Vertrag zur Auftragsverarbeitung gemäß Art. 28 DSGVO.",
-      recipientsHeading: "Empfänger und Auftragsverarbeiter",
-      recipientsSupabase:
-        "Für Datenbank und Authentifizierung setzen wir den Dienst Supabase ein. Die personenbezogenen Daten werden in einem Rechenzentrum in Frankfurt am Main (Deutschland, EU) gespeichert. Es besteht ein Auftragsverarbeitungsvertrag; soweit eine Übermittlung in ein Drittland nicht ausgeschlossen werden kann (etwa durch den US-Mutterkonzern), erfolgt diese auf Grundlage geeigneter Garantien (insbesondere EU-Standardvertragsklauseln).",
-      recipientsEmail:
-        "Für den Versand von System-E-Mails (z. B. zur Bestätigung deiner E-Mail-Adresse, zum Zurücksetzen des Passworts oder zur Bestätigung einer E-Mail-Änderung) setzen wir den Dienst Resend (betrieben von Plus Five Five, Inc., 2261 Market Street #5039, San Francisco, CA 94114, USA) ein. Hierzu wird deine E-Mail-Adresse an den Dienst übermittelt; die Verarbeitung erfolgt über die EU-Infrastruktur des Anbieters (Rechenzentrum in der EU). Es besteht ein Auftragsverarbeitungsvertrag. Soweit eine Übermittlung in die USA nicht ausgeschlossen werden kann (etwa durch den US-Anbieter), stützt sich diese auf geeignete Garantien: Der Anbieter ist unter dem EU-US Data Privacy Framework zertifiziert; ergänzend gelten die EU-Standardvertragsklauseln gemäß Art. 46 DSGVO.",
-      gameDataHeading: "Spieldaten von Dritten",
-      gameData:
-        "Spielpläne und Ergebnisse beziehen wir vom Dienst football-data.org. Dabei werden ausschließlich Sportdaten abgerufen — es werden keine personenbezogenen Daten unserer Nutzer an diesen Dienst übermittelt.",
-      retentionHeading: "Speicherdauer",
-      retention:
-        "Wir speichern deine personenbezogenen Daten, solange dein Konto besteht bzw. solange dies für den Betrieb des Tippspiels erforderlich ist. Server-Logfiles werden nach kurzer Zeit automatisch gelöscht. Löschst du dein Konto, werden deine personenbezogenen Daten und deine Tipps gelöscht, soweit keine gesetzlichen Aufbewahrungspflichten entgegenstehen.",
-      rightsHeading: "Deine Rechte",
-      rights:
-        "Du hast jederzeit das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) sowie ein Widerspruchsrecht (Art. 21 DSGVO). Wende dich dazu an die oben genannten Kontaktdaten.",
-      accountDeletionHeading: "Konto selbst löschen",
-      accountDeletion:
-        "Du kannst dein Konto jederzeit selbst über „Profil → Konto löschen“ dauerhaft entfernen.",
-      complaintHeading: "Beschwerderecht",
-      complaint:
-        "Dir steht ein Beschwerderecht bei einer Datenschutz-Aufsichtsbehörde zu. Für uns zuständig ist das Bayerische Landesamt für Datenschutzaufsicht (BayLDA), Promenade 18, 91522 Ansbach.",
-      automatedHeading: "Keine automatisierte Entscheidungsfindung",
-      automated:
-        "Eine automatisierte Entscheidungsfindung oder ein Profiling im Sinne des Art. 22 DSGVO findet nicht statt.",
-      changesHeading: "Änderungen dieser Erklärung",
-      changes:
-        "Wir passen diese Datenschutzerklärung an, wenn sich die Anwendung oder die Rechtslage ändert. Es gilt die jeweils hier veröffentlichte Fassung.",
+    operator: {
+      missing:
+        "Für diese Installation ist keine Kontaktadresse hinterlegt. Wende dich an die Person, die sie betreibt.",
     },
     info: {
       title: "Über TippKeks",

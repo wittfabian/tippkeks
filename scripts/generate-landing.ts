@@ -18,12 +18,13 @@
  * Run:
  *   pnpm tsx scripts/generate-landing.ts
  *
- * Optional env (the Pages workflow supplies these):
- *   PAGE_URL         canonical origin of the published page, with trailing slash
- *   REPO_URL         project repository, defaults to the upstream one
- *   OPERATOR_NAME / _STREET / _CITY / _COUNTRY / _EMAIL
- *                    renders an Impressum block in the footer; omitted entirely
- *                    when incomplete, so no fork accidentally publishes ours
+ * Env (the Pages workflow derives all of these from the repository itself, so
+ * you only set them by hand for a local preview — see docs/configuration.md):
+ *   PAGE_URL     required — canonical URL the page is served under, with a
+ *                trailing slash. No default: guessing it would silently publish
+ *                a canonical tag and sitemap pointing at the wrong site.
+ *   REPO_URL     required — repository the page links to.
+ *   IMPRINT_URL  optional — adds an "Impressum" link to the footer.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -37,16 +38,26 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 const outDir = join(root, "site");
 
-/** An unset repository Variable arrives as "", which must fall back like absent. */
-function envOr(name: string, fallback: string): string {
+/** An unset repository Variable arrives as "", which must read as absent. */
+function optionalEnv(name: string): string | undefined {
   const value = process.env[name];
-  return value && value.trim() !== "" ? value.trim() : fallback;
+  return value && value.trim() !== "" ? value.trim() : undefined;
 }
 
-const REPO_URL = envOr("REPO_URL", "https://github.com/wittfabian/tippkeks");
+function requiredEnv(name: string): string {
+  const value = optionalEnv(name);
+  if (!value) {
+    console.error(`${name} is not set. See docs/configuration.md → The project page.`);
+    process.exit(1);
+  }
+  return value;
+}
+
+const REPO_URL = requiredEnv("REPO_URL");
 // Trailing slash matters: canonical, og:url and the sitemap must agree exactly
 // with the URL the host serves, or the signals point at two different pages.
-const PAGE_URL = envOr("PAGE_URL", "https://wittfabian.github.io/tippkeks/").replace(/\/?$/, "/");
+const PAGE_URL = requiredEnv("PAGE_URL").replace(/\/?$/, "/");
+const IMPRINT_URL = optionalEnv("IMPRINT_URL");
 const LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
 const README_URL = `${REPO_URL}#readme`;
 const OG_IMAGE_URL = `${PAGE_URL}og.png`;
@@ -67,33 +78,13 @@ function esc(value: string): string {
 }
 
 /**
- * The operator block only renders with every field present — same rule as the
- * app's legal pages: a half-filled Impressum is worse than none.
+ * A link, never an address. The page carries no operator details of its own:
+ * whoever publishes it points at wherever their Impressum already lives, so
+ * nobody's postal address ends up in this repository or in a fork of it.
  */
-function operatorFooter(): string {
-  const { OPERATOR_NAME, OPERATOR_STREET, OPERATOR_CITY, OPERATOR_COUNTRY, OPERATOR_EMAIL } =
-    process.env;
-  if (
-    !OPERATOR_NAME ||
-    !OPERATOR_STREET ||
-    !OPERATOR_CITY ||
-    !OPERATOR_COUNTRY ||
-    !OPERATOR_EMAIL
-  ) {
-    return "";
-  }
-
-  return `
-        <div class="imprint">
-          <h2>${esc(de.projectPage.footerImprintHeading)}</h2>
-          <address>
-            ${esc(OPERATOR_NAME)}<br />
-            ${esc(OPERATOR_STREET)}<br />
-            ${esc(OPERATOR_CITY)}<br />
-            ${esc(OPERATOR_COUNTRY)}<br />
-            <a href="mailto:${esc(OPERATOR_EMAIL)}">${esc(OPERATOR_EMAIL)}</a>
-          </address>
-        </div>`;
+function imprintLink(): string {
+  if (!IMPRINT_URL) return "";
+  return `\n          <a href="${esc(IMPRINT_URL)}">${esc(de.projectPage.footerImprint)}</a>`;
 }
 
 /**
@@ -119,6 +110,9 @@ function jsonLd(): string {
       license: "https://spdx.org/licenses/MIT.html",
       inLanguage: "de",
       isAccessibleForFree: true,
+      // So an assistant summarising the project states the maintenance status
+      // rather than implying an actively developed tool.
+      creativeWorkStatus: "Unmaintained",
       image: OG_IMAGE_URL,
       dateModified: buildDate,
     },
@@ -299,17 +293,22 @@ function renderPage(): string {
       .qa { margin-bottom: 1.5rem; }
       .qa p { margin: 0; font-size: 0.9375rem; }
 
+      /* Gold left rule: reads as a caveat, not as another feature block. */
+      .notice {
+        margin-top: 2.5rem; padding: 1rem 1.25rem;
+        border-left: 3px solid var(--gold); background: var(--card);
+        border-radius: 0 0.625rem 0.625rem 0;
+      }
+      .notice h2 { font-size: 0.9375rem; margin: 0 0 0.375rem; }
+      .notice p { margin: 0; font-size: 0.9375rem; color: var(--muted); max-width: 44rem; }
+
       ul, ol { color: var(--muted); margin: 0 0 1rem; padding-left: 1.25rem; }
       li { margin-bottom: 0.375rem; }
       .hint { font-size: 0.9375rem; }
 
       footer { border-top: 1px solid var(--border); padding-block: 2rem 3rem; }
-      footer .wrap { display: flex; flex-wrap: wrap; gap: 2rem; justify-content: space-between; }
       footer a { color: var(--muted); }
       .links { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.875rem; }
-      .imprint { font-size: 0.8125rem; color: var(--muted); }
-      .imprint h2 { font-size: 0.8125rem; margin: 0 0 0.375rem; color: var(--fg); }
-      .imprint address { font-style: normal; line-height: 1.5; }
     </style>
   </head>
   <body>
@@ -336,6 +335,10 @@ function renderPage(): string {
           <a class="btn btn-primary" href="${REPO_URL}">${esc(projectPage.ctaRepo)}</a>
           <a class="btn" href="${README_URL}">${esc(projectPage.ctaSelfHost)}</a>
         </div>
+        <aside class="notice" aria-labelledby="maintenance-heading">
+          <h2 id="maintenance-heading">${esc(projectPage.maintenanceHeading)}</h2>
+          <p>${esc(projectPage.maintenance)}</p>
+        </aside>
       </article>
 
       <section id="features" aria-labelledby="features-heading">
@@ -378,8 +381,8 @@ function renderPage(): string {
       <div class="wrap">
         <div class="links">
           <a href="${REPO_URL}">${esc(projectPage.ctaRepo)}</a>
-          <a href="${LICENSE_URL}">${esc(projectPage.licenseNote)}</a>
-        </div>${operatorFooter()}
+          <a href="${LICENSE_URL}">${esc(projectPage.licenseNote)}</a>${imprintLink()}
+        </div>
       </div>
     </footer>
   </body>
@@ -403,6 +406,10 @@ function renderLlmsTxt(): string {
 > ${projectPage.summary}
 
 ${projectPage.lead}
+
+## ${projectPage.maintenanceHeading}
+
+${projectPage.maintenance}
 
 ## Funktionsumfang
 

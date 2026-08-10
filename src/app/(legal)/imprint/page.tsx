@@ -1,59 +1,20 @@
-import { LegalPage, LegalSection } from "@/components/legal/legal";
-import { OperatorAddress, OperatorEmail, OperatorMissing } from "@/components/legal/operator";
-import { getOperator } from "@/lib/legal/operator";
+import { LegalPage } from "@/components/legal/legal";
+import { LegalDocument, LegalDocumentMissing } from "@/components/legal/legal-document";
+import { readLegalDocument } from "@/lib/legal/documents";
 import { de } from "@/messages/de";
 
-export const metadata = { title: de.legal.impressum.title };
+export const metadata = { title: de.legal.documents.impressumTitle };
 
-// The operator details are runtime env, so this page must not be prerendered:
-// a static build would freeze one deployment's address into the container image.
+// The document is read from disk per request, so this page must not be
+// prerendered — see src/lib/legal/documents.ts.
 export const dynamic = "force-dynamic";
 
-export default function ImpressumPage() {
-  const t = de.legal.impressum;
-  const operator = getOperator();
+export default async function ImpressumPage() {
+  const html = await readLegalDocument("imprint");
 
   return (
-    <LegalPage title={t.title}>
-      {operator ? (
-        <>
-          <LegalSection heading={t.providerHeading}>
-            <OperatorAddress operator={operator} />
-          </LegalSection>
-
-          <LegalSection heading={t.contactHeading}>
-            <OperatorEmail operator={operator} />
-          </LegalSection>
-
-          <LegalSection heading={t.responsibleHeading}>
-            <OperatorAddress operator={operator} showCountry={false} />
-          </LegalSection>
-        </>
-      ) : (
-        <LegalSection heading={t.providerHeading}>
-          <OperatorMissing />
-        </LegalSection>
-      )}
-
-      <LegalSection heading={t.natureHeading}>
-        <p>{t.nature}</p>
-      </LegalSection>
-
-      <LegalSection heading={t.liabilityContentHeading}>
-        <p>{t.liabilityContent}</p>
-      </LegalSection>
-
-      <LegalSection heading={t.liabilityLinksHeading}>
-        <p>{t.liabilityLinks}</p>
-      </LegalSection>
-
-      <LegalSection heading={t.copyrightHeading}>
-        <p>{t.copyright}</p>
-      </LegalSection>
-
-      <LegalSection heading={t.disputeHeading}>
-        <p>{t.dispute}</p>
-      </LegalSection>
+    <LegalPage title={de.legal.documents.impressumTitle}>
+      {html ? <LegalDocument html={html} /> : <LegalDocumentMissing />}
     </LegalPage>
   );
 }

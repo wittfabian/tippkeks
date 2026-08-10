@@ -3,13 +3,20 @@
 Thanks for looking. TippKeks is a hobby project, so the bar is "does it fit the
 existing design", not "is it big enough to matter" — small fixes are welcome.
 
+**Please read this first: the project is not actively maintained.** It reached
+its goal with the 2026 World Cup. Issues and pull requests may sit for a long
+time or go unanswered, and there is no roadmap to contribute towards. That is not
+a comment on your change — it is the honest state of the project. If you need
+something to happen on a schedule, fork it; the licence exists for exactly that.
+
 Security problems do **not** belong in a public issue; see [SECURITY.md](./SECURITY.md).
 
 ## Before you start
 
 Open an issue first for anything beyond a bug fix. The data model and the
 authorization layer are opinionated, and a pull request that fights them costs
-both of us more than a five-line discussion up front.
+more than a five-line discussion up front — especially given how long the reply
+may take.
 
 [`CLAUDE.md`](./CLAUDE.md) documents the architecture in detail — the RLS
 policies, the scoring rules, the sync job, and the reasoning behind them. It is
