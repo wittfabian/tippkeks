@@ -30,6 +30,27 @@ function safeNext(next: string | null, origin: string): string {
 }
 
 /**
+ * The email OTP types Supabase can send to this endpoint.
+ *
+ * Worth being explicit about: `EmailOtpType` ends in `(string & {})`, so it widens
+ * to any string — a `searchParams.get("type") as EmailOtpType` cast therefore type-
+ * checks whatever arrives in the query and tells the reader nothing. Matching
+ * against this list instead means an unexpected value never reaches verifyOtp.
+ */
+const EMAIL_OTP_TYPES = [
+  "signup",
+  "invite",
+  "magiclink",
+  "recovery",
+  "email_change",
+  "email",
+] as const satisfies readonly EmailOtpType[];
+
+function parseOtpType(value: string | null): EmailOtpType | null {
+  return EMAIL_OTP_TYPES.find((candidate) => candidate === value) ?? null;
+}
+
+/**
  * Extract the invite code from a `/join/<code>` redirect path, if present. A signup
  * that began from a shared invite link routes its confirmation here with this path
  * as `next`; redeeming the code after verifyOtp lands the user straight in the group.
@@ -61,7 +82,7 @@ function resolveOrigin(request: NextRequest): string {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const tokenHash = searchParams.get("token_hash");
-  const type = searchParams.get("type") as EmailOtpType | null;
+  const type = parseOtpType(searchParams.get("type"));
   const origin = resolveOrigin(request);
   const next = safeNext(searchParams.get("next"), origin);
 
